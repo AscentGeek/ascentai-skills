@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# ascent-skills-saas 저장소 전역 pre-commit hook
+#
+# 설치 (저장소 최초 클론 후 한 번):
+#   cd <repo root>
+#   ln -sf ../../scripts/hooks/pre-commit .git/hooks/pre-commit
+#
+# 하는 일:
+#   1) DaaS 유입 차단 — 이 리포의 존재 이유 (아래 참조)
+#   2) 공통 검사 — 스테이지된 모든 스킬 (scripts/skill_common_check.py)
+#   3) 스킬 고유 검사 — skills/<name>/scripts/skill_check.py 가 있으면 실행
+#   4) 공통 grep — 금지 표현
+#
+# 왜 1번이 있는가:
+#   SaaS 스킬이 DaaS API 를 부르면 그쪽 계정에 과금된다. 이 리포는 lima-skills 에서
+#   이식해 온 것이라, 형제 리포의 코드를 복사해 오다가 DaaS 호출 경로가 딸려 들어올
+#   위험이 상시 존재한다. 사람 주의력에 맡기지 않고 훅에서 막는다.
+#
+# 실패 시 커밋 차단. 우회는 --no-verify (권장하지 않음).
+
+set -euo pipefail
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
+CHANGED_SKILLS=$(git diff --cached --name-only --diff-filter=ACMR \
+    | grep -E '^skills/[^/]+/' \
+    | cut -d/ -f2 \
+    | sort -u || true)
+
+STAGED_ALL=$(git diff --cached --name-only --diff-filter=ACMR || true)
+
+# ---------------------------------------------------------------------------
+# 1) DaaS 유입 차단 — 스킬 변경이 없어도 항상 검사한다
+# ---------------------------------------------------------------------------
+if [ -n "$STAGED_ALL" ]; then
+    # (a) 금지 파일명 — daas_call.py 는 DaaS REST 호출기 그 자체
+    BANNED_FILES=$(echo "$STAGED_ALL" | grep -E '(^|/)daas_call\.py$' || true)
+    if [ -n "$BANNED_FILES" ]; then
+        echo ""
+        echo "✗ DaaS 호출기가 스테이지됨 · SaaS 리포에 들어올 수 없는 파일"
+        echo "$BANNED_FILES"
+        echo "  근거: SaaS 스킬은 MCP 로만 데이터를 받는다 (README.md)"
+        echo "  → scripts/mcp_cache.py + MCP 도구 호출로 대체하세요."
+        exit 1
+    fi
+
+    # (b) 금지 문자열 — DaaS 엔드포인트·API 키 헤더가 추가된 줄
+    #     문서가 '쓰지 않는다'고 서술하는 경우가 있으므로 정본 문서는 제외한다.
+    #     api/logging.py 는 예외 — 로그에서 API 키를 **지우는** 마스킹 정규식이라
+    #     DaaS 호출 경로가 아니다. 오히려 지우면 키가 로그에 새어 나간다.
+    DAAS_EXCLUDE='(^README\.md$|^AGENTS\.md$|^docs/|scripts/hooks/pre-commit$|api/logging\.py$)'
+    CHECK_DAAS=$(echo "$STAGED_ALL" | grep -Ev "$DAAS_EXCLUDE" || true)
+
+    if [ -n "$CHECK_DAAS" ]; then
+        DAAS_DIFF=$(echo "$CHECK_DAAS" \
+            | xargs -I {} git diff --cached -- "{}" 2>/dev/null \
+            | grep -E '^\+' || true)
+
+        DAAS_LEAK=$(echo "$DAAS_DIFF" \
+            | grep -E 'listeningmind-data-api|LM-API-KEY|LIMA_DAAS_API_KEY|LIMA_DAAS_BASE' || true)
+        if [ -n "$DAAS_LEAK" ]; then
+            echo ""
+            echo "✗ DaaS API 참조가 추가됨 · SaaS 스킬은 DaaS 에 과금되면 안 된다"
+            echo "$DAAS_LEAK" | head -8
+            echo "  근거: README.md · 데이터 경로는 ListeningMind MCP 전용"
+            exit 1
+        fi
+    fi
+fi
+
+if [ -z "$CHANGED_SKILLS" ]; then
+    exit 0
+fi
+
+echo "▶ pre-commit 검사 · 대상 스킬: $(echo "$CHANGED_SKILLS" | tr '\n' ' ')"
+
+# ---------------------------------------------------------------------------
+# 2) 공통 검사
+# ---------------------------------------------------------------------------
+if [ -f scripts/skill_common_check.py ]; then
+    # shellcheck disable=SC2086
+    if ! python3 scripts/skill_common_check.py $(echo "$CHANGED_SKILLS" | tr '\n' ' '); then
+        echo ""
+        echo "✗ 공통 검사 실패 · 위 오류를 수정한 뒤 다시 커밋하세요."
+        exit 1
+    fi
+else
+    echo "  ⚠ scripts/skill_common_check.py 없음 · 공통 검사 스킵"
+fi
+
+# ---------------------------------------------------------------------------
+# 3) 스킬 고유 검사
+# ---------------------------------------------------------------------------
+for skill in $CHANGED_SKILLS; do
+    own_check="skills/$skill/scripts/skill_check.py"
+    if [ -f "$own_check" ]; then
+        echo "  · $skill 고유 검사 실행"
+        if ! python3 "$own_check"; then
+            echo ""
+            echo "✗ $skill 고유 검사 실패 · 정본 무결성 위반"
+            exit 1
+        fi
+    fi
+done
+
+# ---------------------------------------------------------------------------
+# 4) 공통 grep — 금지 표현
+# ---------------------------------------------------------------------------
+EXCLUDE='(CLAUDE\.md|SKILL\.md|references/_contracts\.md|references/methods/.*\.md|references/outputs/.*\.md|scripts/hooks/pre-commit)$'
+
+CHECK_FILES=$(echo "$STAGED_ALL" | grep -E '^skills/[^/]+/' | grep -Ev "$EXCLUDE" || true)
+
+if [ -n "$CHECK_FILES" ]; then
+    STAGED_DIFF=$(echo "$CHECK_FILES" \
+        | xargs -I {} git diff --cached -- "{}" 2>/dev/null \
+        | grep -E '^\+' || true)
+
+    MD_FILES=$(echo "$CHECK_FILES" | grep -E '\.md$' || true)
+    MD_DIFF=""
+    if [ -n "$MD_FILES" ]; then
+        MD_DIFF=$(echo "$MD_FILES" \
+            | xargs -I {} git diff --cached -- "{}" 2>/dev/null \
+            | grep -E '^\+' || true)
+    fi
+
+    LEAK=$(echo "$STAGED_DIFF" | grep -E "잔량|남은 크레딧" || true)
+    if [ -n "$LEAK" ]; then
+        echo ""
+        echo "✗ 스테이지된 diff 에 '잔량' 또는 '남은 크레딧' 표현 발견"
+        echo "  근거: 크레딧 표기 규약 · 잔고 필드 부재로 표시 금지"
+        echo "$LEAK" | head -5
+        exit 1
+    fi
+
+    if [ -n "$MD_DIFF" ]; then
+        BARE_LEAK=$(echo "$MD_DIFF" | grep -E 'ListeningMind:' || true)
+        if [ -n "$BARE_LEAK" ]; then
+            echo ""
+            echo "✗ 카드 본문에 'ListeningMind:' 접두어 사용 발견"
+            echo "  근거: 카드는 bare 이름만 사용"
+            echo "$BARE_LEAK" | head -5
+            exit 1
+        fi
+
+        PATH_LEAK=$(echo "$MD_DIFF" | grep -E '/mnt/user-data/outputs' || true)
+        if [ -n "$PATH_LEAK" ]; then
+            echo ""
+            echo "✗ 카드 본문에 '/mnt/user-data/outputs' 하드코딩 발견"
+            echo "  근거: '\$WORKDIR' 로 참조"
+            echo "$PATH_LEAK" | head -5
+            exit 1
+        fi
+    fi
+fi
+
+echo "✓ pre-commit 통과"
+exit 0

@@ -1,0 +1,142 @@
+/* =====================================================================
+   overlay.css
+   스킬 전용 wrapper: 사이드바 없는 단독 HTML 환경에 맞춘 보정 +
+   뷰 토글(대시보드/A4) + 미니 툴바 + 인쇄 강제 A4 출력.
+   ===================================================================== */
+
+/* 단독 HTML — ListeningMind.AI 의 .rpt-main 사이드바 오프셋 제거.
+   페이지 전체를 채우도록 보정. */
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: var(--font-family);
+  background: var(--gray-100);
+  color: var(--gray-900);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 스크롤은 페이지 전체가 담당 (ListeningMind.AI 는 .rpt-main 내부 스크롤). */
+.view-dash, .view-a4 { min-height: 100vh; }
+
+/* ===== A4 page sizing (no JS paginate) =====
+   ListeningMind.AI 는 useA4Paginate 가 런타임에 .rpt-page 를 복제해 콘텐츠를 페이지
+   단위로 옮긴다. 단독 HTML 환경에선 그 훅이 없으므로 render_report.py 가
+   페르소나 카드마다 새 .rpt-page 를 emit 한다 (components.py:a4_body_page_html).
+   그래도 한 카드가 1013px 를 넘는 극단적 케이스에 대비해 본문 페이지의 고정
+   높이를 풀고 min-height 만 유지한다. cover 페이지는 1123px 고정. */
+.view-a4 .rpt-page:not(.rpt-page--cover) {
+  height: auto;
+  min-height: 1123px;
+}
+.view-a4 .page-body > * { break-inside: avoid; page-break-inside: avoid; }
+
+/* ===== View Toggle ===== */
+body.view-mode-dash .view-a4   { display: none; }
+body.view-mode-a4   .view-dash { display: none; }
+
+/* ===== Mini Toolbar (스킬 전용 - 화면에서만 보임) ===== */
+.mini-toolbar {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 8px;
+  background: var(--white);
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-family);
+}
+
+.mini-toolbar__view {
+  display: flex;
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.mini-toolbar__view button {
+  border: none;
+  background: var(--white);
+  padding: 5px 12px;
+  font-size: var(--font-size-b4);
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-600);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mini-toolbar__view button.active {
+  background: var(--gray-800);
+  color: var(--white);
+}
+
+.mini-toolbar__view button:not(.active):hover {
+  background: var(--gray-100);
+  color: var(--gray-800);
+}
+
+.mini-toolbar__print {
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  padding: 5px 12px;
+  font-size: var(--font-size-b4);
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-700);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.mini-toolbar__print:hover { background: var(--gray-100); }
+
+/* ===== Print Override =====
+   인쇄는 어떤 모드에 있건 A4 만 출력.
+   ListeningMind.AI 의 report-shell.css @media print 가 .view-dash 를 숨기지만
+   .view-mode-a4 일 때 .view-dash 는 이미 display:none, .view-mode-dash 일 때는
+   .view-a4 가 display:none 인 상태를 뒤집어야 한다. */
+@media print {
+  .mini-toolbar { display: none !important; }
+  body.view-mode-dash .view-dash,
+  body.view-mode-a4   .view-dash { display: none !important; }
+  body.view-mode-dash .view-a4,
+  body.view-mode-a4   .view-a4 { display: block !important; }
+
+  /* 인쇄 시에도 데스크톱 그리드 유지. 일부 브라우저는 인쇄 미리보기에서
+     뷰포트를 화면 폭으로 잡아 max-width:767px 모바일 규칙이 발동한다. */
+  .ticker-list { grid-template-columns: repeat(2, 1fr) !important; }
+  .ticker-row { flex-wrap: nowrap !important; }
+  .ticker-kw  { flex: 1 1 auto !important; font-size: var(--font-size-b3) !important; }
+  .ticker-vol { margin-left: 10px !important; }
+  .change-grid { grid-template-columns: 1fr 1fr !important; }
+  .ctx-grid    { grid-template-columns: repeat(3, 1fr) !important; }
+  .type-grid   { grid-template-columns: repeat(2, 1fr) !important; }
+  .action-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .br-card-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .persona-fields { grid-template-columns: repeat(3, 1fr) !important; }
+  .cmp-table   { min-width: auto !important; font-size: var(--font-size-b3) !important; }
+}
+
+/* ===== Force desktop layout in narrow viewports =====
+   ListeningMind.AI 의 모바일 미디어쿼리(@media max-width:767px)는 사이드바·툴바·
+   2열 그리드를 1열로 떨어뜨린다. Claude Desktop 의 내장 HTML 미리뷰는
+   뷰포트가 좁은 경우가 많아 그 규칙이 의도치 않게 작동한다. 우리 스킬은
+   "maistro 와 동일한 데스크톱 레이아웃" 을 목표로 하므로 좁은 뷰포트에서도
+   2열 그리드와 트렌드 ticker 2열을 유지하도록 강제한다. */
+@media (max-width: 767px) {
+  .ticker-list { grid-template-columns: repeat(2, 1fr) !important; }
+  .ticker-row { flex-wrap: nowrap !important; }
+  .ticker-kw  { flex: 1 1 auto !important; font-size: var(--font-size-b3) !important; }
+  .ticker-vol { margin-left: 10px !important; }
+  .change-grid { grid-template-columns: 1fr 1fr !important; }
+  .ctx-grid    { grid-template-columns: repeat(3, 1fr) !important; }
+  .type-grid   { grid-template-columns: repeat(2, 1fr) !important; }
+  .action-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .br-card-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .persona-fields { grid-template-columns: repeat(3, 1fr) !important; }
+  .cmp-table   { min-width: auto !important; font-size: var(--font-size-b3) !important; }
+}

@@ -1,0 +1,32 @@
+/* =====================================================================
+   audience-shared.css
+   ListeningMind.AI audience-analysis.css 에서 .mr-summary-box* 만 발췌.
+   ReportPurposeBox 가 사용하는 공통 스타일.
+   ===================================================================== */
+
+.mr-summary-box {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--gray-100);
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+.mr-summary-box--dash { padding: 20px 24px; margin: 0; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+.mr-summary-box--insight {
+  background: var(--gray-100);
+  border: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: 16px 20px;
+  margin: 0;
+}
+.mr-summary-box--insight .mr-summary-box__title { color: var(--gray-800); }
+.mr-summary-box__title {
+  font-size: var(--font-size-cap); font-weight: var(--font-weight-bold);
+  color: var(--gray-800);
+  letter-spacing: 0.08em; margin-bottom: var(--spacing-xs);
+}
+.mr-summary-box p    { font-size: var(--font-size-b3); line-height: 1.7; }
+.mr-summary-text     { font-size: 14px; line-height: 1.7; }
+.mr-summary-text--sm { font-size: 13px; line-height: 1.7; }
+
+/* A4 view 에서 mr-summary-box 의 radius 보강 (audience-analysis.css 의 .view-a4 override) */
+.view-a4 .mr-summary-box { border-radius: var(--radius-md); margin-bottom: var(--spacing-md); }
