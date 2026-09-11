@@ -1,0 +1,6 @@
+name: queryfinder-report
+version: "1.0.0"
+slug: query-opportunity
+mcp_tools: [intent_finder, keyword_info]
+vendor_chart: true
+locales: [kr]

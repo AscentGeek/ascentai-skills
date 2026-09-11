@@ -125,6 +125,20 @@ MCP 도구가 `user_query` 파라미터를 받으므로, **사용자 발화 원�
 
 ---
 
+## 3-1. 스킬 작명 규약
+
+```
+lm-<스킬명>         ListeningMind MCP 를 쓰는 판 (SaaS · 이 리포)
+lm-<스킬명>-daas    DaaS API 를 직접 호출하는 판 (lima-skills 리포)
+```
+
+이 리포의 스킬은 전부 `lm-` 으로 시작하고 접미사가 없다. 두 판을 한 호스트에 나란히
+설치해도 이름이 충돌하지 않고, admin 대시보드에서 `skill_name` 으로 사용량이 갈린다.
+
+일본어판은 `lm-<스킬명>-jp` 로 만든다.
+
+---
+
 ## 3-2. 세션 격리
 
 한 대화 = 한 세션. `api/logging.py` 가 호스트별 env 로 세션을 갈라낸다:
@@ -149,57 +163,72 @@ env 를 못 찾으면 `~/.lima-agents/current-session` 파일로 떨어지는데
 
 ---
 
-## 3-1. 스킬 작명 규약
+## 4. 스킬 구조 · 빌드
+
+**소스는 스킬당 1벌 · zip 은 (스킬 × 언어) 만큼** 나온다. 언어를 늘려도 `skills/` 의
+폴더 수는 안 늘어난다 (8종 × 3언어여도 폴더는 8개).
 
 ```
-lm-<스킬명>         ListeningMind MCP 를 쓰는 판 (SaaS · 이 리포)
-lm-<스킬명>-daas    DaaS API 를 직접 호출하는 판 (lima-skills 리포)
+_core/                          전 스킬·전 언어 공통 · 여기만 고치면 전부 반영
+├── styles/                     CSS 6종 (4스킬 바이트 동일 · 측정 확인)
+├── render/components.py        (cluster 판이 상위집합 · 통합)
+├── api/{logging.py,__init__.py}
+└── scripts/{mcp_cache.py,log_event.py}
+     └ skill_name·version 은 __SKILL_NAME__ · __SKILL_VERSION__ 플레이스홀더
+
+skills/<스킬명>/                 스킬 수만큼만
+├── skill.yaml                  version · slug · mcp_tools · vendor_chart · locales
+├── render/                     이 스킬 전용 렌더러 (스킬마다 실제로 다름)
+├── styles/ templates/ vendor/  이 스킬 전용 자산
+├── prompts/                    원본 프롬프트 스냅샷 (언어 무관 · 번역 금지)
+├── LICENSE.txt
+└── locales/<언어>/              ← 언어가 늘어나는 자리
+    ├── SKILL.md                name·description·문서 (그 언어로)
+    ├── references/*.md
+    └── labels/*.json
+
+dist/lm-<스킬명>[-<언어>].zip     빌드 산출 (kr 은 접미사 없음)
 ```
 
-이 리포의 스킬은 전부 `lm-` 으로 시작하고 접미사가 없다. 두 판을 한 호스트에 나란히
-설치해도 이름이 충돌하지 않고, admin 대시보드에서 `skill_name` 으로 사용량이 갈린다.
+### 빌드
 
-일본어판은 `lm-<스킬명>-jp` 로 만든다.
+```bash
+scripts/build.sh                        # 전 스킬 · skill.yaml 의 locales 전부
+scripts/build.sh queryfinder-report     # 한 스킬만
+scripts/build.sh queryfinder-report jp  # 한 스킬 · 한 언어
+```
+
+빌드가 하는 일 · `_core` + 스킬 전용 + 로케일 문서를 합쳐 **기존과 같은 zip 내부 구조**
+(`_shared/` · `api/` · `scripts/` · `references/`)로 되돌리고, 플레이스홀더에 스킬명·버전을
+박아 넣는다. **플레이스홀더 주입을 빠뜨리면 admin 에 `__SKILL_NAME__` 으로 기록된다.**
+
+> **코드를 고칠 때는 `_core/` 또는 `skills/<n>/render/` 를 고친다.** zip 안이나
+> 빌드 산출물을 직접 고치면 다음 빌드에 덮어써진다.
 
 ---
 
-## 4. 스킬 구조
+## 5. i18n · 언어 추가
 
-```
-skills/<name>/
-├── SKILL.md          # frontmatter allowed-tools 에 MCP 4도구 명시
-├── LICENSE.txt       # 필수
-├── references/       # 실행 절차 · 분석틀
-│   └── prompts/      # 원본 프롬프트 스냅샷 (런타임 미사용 · 번역 금지)
-├── scripts/
-│   ├── mcp_cache.py  # 세션 캐시
-│   └── log_event.py  # 로깅 CLI
-├── api/              # logging.py
-└── _shared/          # render · styles · labels · templates
-```
+언어 추가 = `skills/<n>/locales/<언어>/` 를 만들고 `skill.yaml` 의 `locales` 에 추가.
+**코드는 손대지 않는다.**
 
-`_shared/` 는 4종에 복사돼 있다 (스킬 독립성 원칙 · zip 이 자체완결이어야 함).
-**렌더 로직을 고칠 때는 4곳 모두 고쳐야 한다.**
+번역 대상 (그 언어로 새로 씀):
+- `SKILL.md` · frontmatter `name`(`lm-<스킬명>-<언어>`) · `description`(**트리거 문구가
+  그 언어여야 스킬이 발동한다**) · 본문
+- `references/*.md` · LLM 이 읽고 그 언어로 사용자에게 말한다
+- `labels/*.<언어>.json` · 리포트 UI 라벨
 
----
+번역하지 않는 것:
+- `prompts/*.md` · 운영 프롬프트와 diff 대조용이라 번역하면 대조가 깨진다
+- 코드 주석·docstring · 유지보수자가 읽는 것
+- 리포트 **본문**은 번역 대상이 아니다 · `출력 언어 = 분석 시장(gl) 언어` 규칙이
+  이미 있어 `gl=jp` 면 LLM 이 일본어로 쓴다
 
-## 5. i18n · 일본어판
+`render_report.py` 에 `HTML_LANG`·`FONT_HREF`(Noto Sans KR/JP) · 툴바 라벨이 kr/jp/us
+로 이미 들어 있다. 라벨 JSON 만 추가하면 UI 가 그 언어로 렌더된다.
 
-`gl` 은 런타임 파라미터다. 문서·코드 어디에도 `kr` 을 하드코딩하지 않는다.
-
-- 라벨 · `_shared/labels/{skill}.{gl}.json` · `_load_labels(skill, gl)` 가 동적 선택
-- 폰트·툴바 · `render_report.py` 의 `FONT_HREF`·`TOOLBAR_*` 에 kr/jp/us 매핑 존재
-- LLM 산출물 언어 · "출력 언어 = 분석 시장(`<GL>`) 언어" 규칙이 자동 처리
-
-**일본어판은 별도 스킬 4종**(`lm-<스킬명>-jp`)으로 만든다. SKILL.md·references 까지 전부 일본어로
-번역한다 — 일본 고객이 zip 을 풀어 문서를 읽을 수 있어야 하기 때문이다.
-
-번역 대상이 **아닌** 것:
-- 코드 주석·docstring · 유지보수자가 읽는 것이므로 한국어 유지
-- `references/prompts/*.kr.md` · 런타임에 읽히지 않고 **운영 프롬프트와 diff 대조용**이라
-  번역하면 대조 기능이 깨진다
-
-한국어판이 확정된 뒤에 착수한다.
+`skill_common_check.py` 는 **로케일마다** 검사하므로, 한 언어만 `name` 이 틀리거나
+description 이 비면 그 자리에서 잡힌다.
 
 ---
 

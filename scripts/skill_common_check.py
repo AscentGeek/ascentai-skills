@@ -106,7 +106,17 @@ def parse_frontmatter(text: str) -> dict | None:
 
 
 def check_skill(skill_dir: Path, res: Result) -> None:
-    name = skill_dir.name
+    # 로케일 구조면 skill_dir 은 skills/<skill>/locales/<loc> 다.
+    # 표시 이름과 frontmatter 기대값은 빌드가 만들 zip 이름(lm-<skill>[-<loc>])을 따른다.
+    if skill_dir.parent.name == "locales":
+        loc = skill_dir.name
+        skill = skill_dir.parent.parent.name
+        expected_name = f"lm-{skill}" if loc == "kr" else f"lm-{skill}-{loc}"
+        name = f"{skill}/{loc}"
+        license_dir = skill_dir.parent.parent          # LICENSE 는 스킬 루트에 1개
+    else:
+        expected_name = name = skill_dir.name
+        license_dir = skill_dir
     skill_md = skill_dir / "SKILL.md"
 
     # 1) SKILL.md 존재
@@ -128,8 +138,8 @@ def check_skill(skill_dir: Path, res: Result) -> None:
     if not fm_name:
         res.fail(name, "frontmatter 에 name 부재")
     else:
-        if fm_name != name:
-            res.fail(name, f"frontmatter name({fm_name!r}) != 폴더명({name!r})")
+        if fm_name != expected_name:
+            res.fail(name, f"frontmatter name({fm_name!r}) != 기대값({expected_name!r})")
         if len(fm_name) > NAME_MAX:
             res.fail(name, f"name 길이 {len(fm_name)} > {NAME_MAX}")
         if not NAME_RE.match(fm_name):
@@ -161,7 +171,7 @@ def check_skill(skill_dir: Path, res: Result) -> None:
     # 4) LICENSE.txt — 경고. 현재 9개 중 8개가 미보유 상태라 실패로 걸면 커밋이 전부 막힌다.
     #    별건으로 채운 뒤 fail 로 승격할 것.
     res.tick()
-    if not (skill_dir / "LICENSE.txt").exists():
+    if not (license_dir / "LICENSE.txt").exists():
         res.warn(name, "LICENSE.txt 부재 (AGENTS.md 최소 구조 규약)")
 
     # 5) 참조 깊이 1단계
@@ -199,11 +209,26 @@ def main(argv: list[str]) -> int:
     else:
         targets = sorted(d for d in SKILLS_DIR.iterdir() if d.is_dir() and not d.name.startswith("."))
 
-    res = Result()
+    # 로케일 구조 · skills/<name>/locales/<loc>/ 가 실제 검사 대상이다.
+    # 스킬 폴더 자체에는 SKILL.md 가 없고, 언어별로 한 벌씩 있다.
+    # 로케일마다 검사해야 "jp 만 description 이 비어 있다" 같은 누락이 잡힌다.
+    units: list[Path] = []
     for skill_dir in targets:
-        check_skill(skill_dir, res)
+        loc_root = skill_dir / "locales"
+        if loc_root.is_dir():
+            locs = sorted(d for d in loc_root.iterdir() if d.is_dir())
+            if not locs:
+                print(f"✗ [{skill_dir.name}] locales/ 가 비어 있음")
+                return 1
+            units += locs
+        else:
+            units.append(skill_dir)   # 옛 평평한 구조 (하위 호환)
 
-    return res.summary(len(targets))
+    res = Result()
+    for unit in units:
+        check_skill(unit, res)
+
+    return res.summary(len(units))
 
 
 if __name__ == "__main__":
