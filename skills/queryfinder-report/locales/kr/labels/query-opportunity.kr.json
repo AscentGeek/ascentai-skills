@@ -35,6 +35,8 @@
   "customerAnalysis.stage.explore": "정보 탐색",
   "customerAnalysis.stage.compare": "비교 검토",
   "customerAnalysis.stage.purchase": "구매 직전",
+  "customerAnalysis.stage.brand": "브랜드",
+  "customerAnalysis.stage.nonbrand": "논브랜드",
   "customerAnalysis.purpose.body": "이 리포트는 '{category}'와 함께 검색되는 연관 쿼리를 검색 의도별로 묶어, {market} 시장에서 어떤 검색 목적과 브랜드 수요가 있는지 파악하기 위해 작성되었습니다. ListeningMind의 검색 데이터로 함께 검색되는 연관 쿼리를 수집하고, 검색량에 근거해 검색 목적 그룹과 근거 키워드를 도출하였습니다.",
   "customerAnalysis.purpose.bodyNoMarket": "이 리포트는 '{category}'와 함께 검색되는 연관 쿼리를 검색 의도별로 묶어, 어떤 검색 목적과 브랜드 수요가 있는지 파악하기 위해 작성되었습니다. ListeningMind의 검색 데이터로 함께 검색되는 연관 쿼리를 수집하고, 검색량에 근거해 검색 목적 그룹과 근거 키워드를 도출하였습니다.",
   "report.purpose.title": "배경과 목적",

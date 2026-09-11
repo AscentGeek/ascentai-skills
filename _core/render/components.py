@@ -20,6 +20,10 @@ STAGE_LABEL_KEY = {
     "정보 탐색": "customerAnalysis.stage.explore",
     "비교 검토": "customerAnalysis.stage.compare",
     "구매 직전": "customerAnalysis.stage.purchase",
+    # brandGroups 의 stage · query_aggregate 가 kind 로 채운다 (한국어 enum).
+    # 라벨을 거치지 않으면 jp/us 리포트에 한국어가 그대로 노출된다 (실측).
+    "브랜드": "customerAnalysis.stage.brand",
+    "논브랜드": "customerAnalysis.stage.nonbrand",
 }
 
 _STRONG_RE = re.compile(r"&lt;strong&gt;(.*?)&lt;/strong&gt;", flags=re.DOTALL)

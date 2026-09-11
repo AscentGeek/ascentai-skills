@@ -36,6 +36,8 @@
   "customerAnalysis.stage.explore": "정보 탐색",
   "customerAnalysis.stage.compare": "비교 검토",
   "customerAnalysis.stage.purchase": "구매 직전",
+  "customerAnalysis.stage.brand": "브랜드",
+  "customerAnalysis.stage.nonbrand": "논브랜드",
   "customerAnalysis.purpose.body": "이 리포트는 '{category}'와 함께 검색되는 키워드들이 이루는 검색 클러스터(동시검색 군집)를 분석해, {market} 시장에서 어떤 검색목적 지형과 탐색 흐름이 존재하는지 파악하기 위해 작성되었습니다. ListeningMind 클러스터파인더의 동시검색 그래프로 키워드 군집을 수집하고, 검색량에 근거해 검색목적 클러스터와 허브 키워드를 도출하였습니다.",
   "customerAnalysis.purpose.bodyNoMarket": "이 리포트는 '{category}'와 함께 검색되는 키워드들이 이루는 검색 클러스터(동시검색 군집)를 분석해, 어떤 검색목적 지형과 탐색 흐름이 존재하는지 파악하기 위해 작성되었습니다. ListeningMind 클러스터파인더의 동시검색 그래프로 키워드 군집을 수집하고, 검색량에 근거해 검색목적 클러스터와 허브 키워드를 도출하였습니다.",
   "clusterLandscape.hubTable.title": "허브 키워드 요약",

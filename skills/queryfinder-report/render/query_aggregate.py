@@ -490,7 +490,7 @@ def main(argv=None):
     p_context.add_argument("--seed", required=True)
     # kr-only for now: label JSON (_shared/labels/query-opportunity.<gl>.json)
     # only exists for "kr" — add "jp"/"us" back once their label files land.
-    p_context.add_argument("--gl", required=True, choices=["kr"])
+    p_context.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
     p_context.add_argument("--date", required=True, help="YYYY-MM-DD")
     p_context.add_argument("--out", required=True)
     p_context.set_defaults(func=_cmd_context)
