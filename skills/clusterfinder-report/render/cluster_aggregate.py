@@ -472,7 +472,7 @@ def main(argv=None):
     p_context.add_argument("--cluster", required=True, help="/cluster_finder 응답 JSON 경로 (data_type=all)")
     p_context.add_argument("--keyword-info", required=True, help="/keyword_info 응답 JSON 경로")
     p_context.add_argument("--seed", required=True)
-    p_context.add_argument("--gl", required=True, choices=["kr"])
+    p_context.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
     p_context.add_argument("--date", required=True, help="YYYY-MM-DD")
     p_context.add_argument("--out", required=True)
     p_context.set_defaults(func=_cmd_context)

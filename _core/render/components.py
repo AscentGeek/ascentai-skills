@@ -26,6 +26,12 @@ STAGE_LABEL_KEY = {
     "논브랜드": "customerAnalysis.stage.nonbrand",
 }
 
+# cluster_aggregate 가 코드로 채우는 kbf.factor → label key
+KBF_FACTOR_LABEL_KEY = {
+    "허브(대표) 키워드": "clusterLandscape.hubTable.colHub",
+}
+
+
 _STRONG_RE = re.compile(r"&lt;strong&gt;(.*?)&lt;/strong&gt;", flags=re.DOTALL)
 
 
@@ -160,7 +166,12 @@ def persona_card_html(persona: Dict[str, Any], index: int, labels: Dict[str, str
     # ── ② KBF block
     kbf_rows = []
     for kbf in (persona.get("kbf") or []):
-        factor = html.escape(str(kbf.get("factor", "")))
+        # factor 는 보통 LLM 이 분석 언어로 쓴 자유 문구지만,
+        # cluster_aggregate 가 허브 행만 한국어 상수로 채운다. 라벨 키로 등록된 값이면
+        # 그 언어의 라벨로 바꿔 준다 (안 하면 jp/us 리포트에 한국어가 노출된다 · 실측).
+        raw_factor = str(kbf.get("factor", ""))
+        factor = html.escape(t(labels, KBF_FACTOR_LABEL_KEY[raw_factor])
+                             if raw_factor in KBF_FACTOR_LABEL_KEY else raw_factor)
         ev_kws = kbf.get("evidence_keywords") or []
         kws_html = ""
         if ev_kws:

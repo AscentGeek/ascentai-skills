@@ -225,7 +225,7 @@ def main() -> int:
     parser.add_argument("--category", required=True)
     # kr-only for now: label JSON (_shared/labels/<skill>.<gl>.json) only ships
     # for "kr" — add "jp"/"us" back once their label files land.
-    parser.add_argument("--gl", required=True, choices=["kr"])
+    parser.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument("--out", required=True, help="Output HTML path")
     parser.add_argument("--groups", help="cluster-landscape: lm_groups.json path")

@@ -952,7 +952,7 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("total", help="Join query/path/cluster outputs → lm_total_facts.json")
     p.add_argument("--seed", required=True)
-    p.add_argument("--gl", required=True, choices=["kr"])
+    p.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
     p.add_argument("--date", required=True, help="YYYY-MM-DD")
     p.add_argument("--query-meta", help="q/lm_query_result.json")
     p.add_argument("--query-groups", help="q/lm_groups.json")

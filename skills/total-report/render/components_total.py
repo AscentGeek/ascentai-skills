@@ -326,7 +326,8 @@ def tab1_intro_html(facts: Dict[str, Any], notes: Dict[str, Any], labels: Dict[s
 # M1 — 커버리지 갭 (UpSet 막대 + 갭 칩 + 커버리지 미터)
 # ─────────────────────────────────────────
 
-def _upset_row(sets: List[str], count: int, vol: int, maxvol: int) -> str:
+def _upset_row(sets: List[str], count: int, vol: int, maxvol: int,
+               labels: Dict[str, str]) -> str:
     on = set(sets)
     dots = "".join(
         f'<span class="ti-dot ti-dot--{k.lower()}{" is-on" if k in on else ""}"></span>'
@@ -343,7 +344,8 @@ def _upset_row(sets: List[str], count: int, vol: int, maxvol: int) -> str:
         '<div class="ti-up">'
         f'<div class="ti-up__set">{dots}</div>'
         f'<div class="ti-bar"><i class="ti-bar__fill ti-bar__fill--{tone}" style="width:{w}%"></i></div>'
-        f'<span class="ti-up__val">{int(count)}개 · {_fmt(vol)}</span>'
+        f'<span class="ti-up__val">'
+        f'{t(labels, "ti.unit.count").replace("{n}", str(int(count)))} · {_fmt(vol)}</span>'
         '</div>'
     )
 
@@ -373,7 +375,7 @@ def module_coverage(facts: Dict[str, Any], labels: Dict[str, str], *,
     if combos:
         maxvol = max((c.get("volume", 0) or 0) for c in combos) or 1
         rows = "".join(
-            _upset_row(c.get("sets", []), c.get("count", 0), c.get("volume", 0), maxvol)
+            _upset_row(c.get("sets", []), c.get("count", 0), c.get("volume", 0), maxvol, labels)
             for c in combos
         )
         body_parts.append(f'<div class="ti-upset">{rows}</div>')
@@ -426,7 +428,7 @@ def _mini_axis(axis_key: str, rank: Any, labels: Dict[str, str]) -> str:
     tone = {"journey": "how", "connectivity": "who", "demand": "what"}[axis_key]
     if rank is None:
         bar = f'<div class="ti-bar ti-bar--na"><i class="ti-bar__fill ti-bar__fill--na" style="width:0%"></i></div>'
-        na = '<span class="ti-axis__na">자료 없음</span>'
+        na = f'<span class="ti-axis__na">{t(labels, "ti.axis.na")}</span>'
     else:
         bar = f'<div class="ti-bar"><i class="ti-bar__fill ti-bar__fill--{tone}" style="width:{_pctw(rank)}%"></i></div>'
         na = ""

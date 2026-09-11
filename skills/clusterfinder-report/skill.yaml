@@ -3,4 +3,4 @@ version: "1.0.0"
 slug: cluster-landscape
 mcp_tools: [cluster_finder, keyword_info]
 vendor_chart: false
-locales: [kr]
+locales: [kr, jp]

@@ -160,7 +160,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Render ListeningMind.AI-style path-opportunity HTML report.")
     parser.add_argument("--skill", required=True, choices=["path-opportunity"])
     parser.add_argument("--category", required=True)
-    parser.add_argument("--gl", required=True, choices=["kr"])
+    parser.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument("--out", required=True, help="Output HTML path")
     parser.add_argument("--paths", help="path-opportunity: lm_paths.json path")

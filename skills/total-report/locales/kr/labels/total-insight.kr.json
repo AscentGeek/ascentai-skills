@@ -136,5 +136,7 @@
   "report.marketLabel.JP": "일본 (구글)",
   "report.marketLabel.US": "미국 (구글)",
   "customerAnalysis.stage.brand": "브랜드",
-  "customerAnalysis.stage.nonbrand": "논브랜드"
+  "customerAnalysis.stage.nonbrand": "논브랜드",
+  "ti.unit.count": "{n}개",
+  "ti.axis.na": "자료 없음"
 }

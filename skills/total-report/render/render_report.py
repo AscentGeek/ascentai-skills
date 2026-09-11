@@ -550,7 +550,7 @@ def main() -> int:
                         choices=["query-opportunity", "path-opportunity", "cluster-landscape", "total-insight"])
     parser.add_argument("--category", required=True)
     # kr-only for now: label JSON only ships for "kr".
-    parser.add_argument("--gl", required=True, choices=["kr"])
+    parser.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument("--out", required=True, help="Output HTML path")
 

@@ -573,7 +573,7 @@ def main(argv=None):
     p_ctx.add_argument("--paths", required=True, help="path_finder 응답 JSON 경로")
     p_ctx.add_argument("--nodes", required=False, help="keyword_info 응답 JSON 경로 (검색량 보강)")
     p_ctx.add_argument("--seed", required=True)
-    p_ctx.add_argument("--gl", required=True, choices=["kr"])
+    p_ctx.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
     p_ctx.add_argument("--date", required=True, help="YYYY-MM-DD")
     p_ctx.add_argument("--time-point", default="curr", dest="time_point")
     p_ctx.add_argument("--out", required=True)
