@@ -77,6 +77,18 @@ build_one() {
     sed -i '' -e "s/__SKILL_NAME__/$skill_name/g" -e "s/__SKILL_VERSION__/$version/g" "$py"
   done
 
+  # ── frontmatter 에 service_type · locale 선언 ──
+  #   admin 이 스킬 목록을 "SaaS/DaaS × 언어" 로 갈라 보기 위해 읽는 값이다.
+  #   이름(-daas/-jp)에서 추론하게 두면 작명 규칙이 바뀔 때 admin 파싱도 같이 깨지므로,
+  #   빌드가 여기서 박아 스킬이 자기 정체를 선언하게 한다. 손으로 적을 일은 없다.
+  #   이 리포는 SaaS 판 전용이라 service_type 은 항상 saas.
+  if ! grep -q '^  service_type:' "$d/SKILL.md"; then
+    awk -v loc="$loc" '
+      { print }
+      /^  author:/ && !done { print "  service_type: saas"; print "  locale: " loc; done=1 }
+    ' "$d/SKILL.md" > "$d/SKILL.md.tmp" && mv "$d/SKILL.md.tmp" "$d/SKILL.md"
+  fi
+
   # ── zip ──
   mkdir -p "$OUT"
   rm -f "$OUT/$skill_name.zip"
