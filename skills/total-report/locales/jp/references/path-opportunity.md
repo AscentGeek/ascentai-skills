@@ -93,7 +93,7 @@ SKILL.md §応答ファイルの規則を参照):
 # ② キャッシュ保存
 python3 {SKILL_DIR}/scripts/mcp_cache.py store path_finder \
   --params '{"keyword":"<SEED>","gl":"<GL>","time_point":"<TIME_POINT>","limit":300}' \
-  --file "{WORKDIR}/lm_path.json"
+  --file "{WORKDIR}/lm_path.json" --expect <data 配列の長さ>
 
 # ③ tool_call の発行
 python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \

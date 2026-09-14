@@ -93,7 +93,7 @@ SKILL.md §응답 파일 규칙 참조):
 # ② 캐시 저장
 python3 {SKILL_DIR}/scripts/mcp_cache.py store path_finder \
   --params '{"keyword":"<SEED>","gl":"<GL>","time_point":"<TIME_POINT>","limit":300}' \
-  --file "{WORKDIR}/lm_path.json"
+  --file "{WORKDIR}/lm_path.json" --expect <data 배열 길이>
 
 # ③ tool_call 발행
 python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \

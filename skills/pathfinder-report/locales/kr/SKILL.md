@@ -189,16 +189,20 @@ python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
 그래서 응답은 **가공 없이 원문 그대로** 파일에 있어야 한다.
 
 **원칙 · 파일은 경로로만 주고받는다.** `mcp_cache.py store --file` 도
-`query_aggregate.py --raw` 도 경로를 받아 스스로 읽는다. 내용을 네 컨텍스트로
+`*_aggregate.py` 도 경로를 받아 스스로 읽는다. 내용을 네 컨텍스트로
 읽어들여 다시 쓸 필요가 없고, 그래서도 안 된다 (대용량에서 누락이 생긴다).
 
 - **요약·발췌·재구성 금지.** 하는 순간 집계기가 못 읽거나 수치가 어긋난다.
 - 레코드를 **하나도 빠뜨리지 마라.** 상위 1,000개면 1,000개 전부다.
-- `--expect` 에 봉투에서 읽은 레코드 수를 넣어 대조한다. 어긋나면 `store` 가 거부하니
+- `--expect` 에 레코드 수를 넣어 대조한다 — `data` 배열 길이 (cluster_finder 는 `rels` 길이 + `communities` 개수).
+  keyword_info 는 요청한 키워드보다 몇 건 **많이** 올 수 있다(서버가 표기 변형을 덧붙임) · 요청 수가 아니라 받은 수를 넣는다. 어긋나면 `store` 가 거부하니
   그때는 다시 한다. **잘린 데이터로 진행하지 마라.**
 **기본 · 호스트가 파일로 저장한 경우** (대량 조회는 대개 여기)
 도구 결과가 본문 대신 이렇게 온다:
 `Tool result too large for context, stored at /mnt/user-data/tool_results/....json`
+Claude Code 에서는 `Error: result (N characters) exceeds maximum allowed tokens. Output has been
+saved to …/tool-results/….txt` 로 온다. **앞의 `Error:` 와 확장자 `.txt` 에 속지 마라** — 내용은 JSON 원문
+그대로다. 같이 붙는 "파일을 끝까지 읽으라"는 안내도 따르지 않고 경로만 넘긴다. **재호출하지 마라**(크레딧 중복).
 **실패가 아니라 응답 전체가 그 파일에 있다는 뜻이다.** 그 경로를 그대로 넘긴다:
 ```bash
 cp "<저장된 경로>" "{WORKDIR}/lm_query.json"

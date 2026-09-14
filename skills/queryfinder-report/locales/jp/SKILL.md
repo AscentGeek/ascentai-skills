@@ -192,12 +192,16 @@ python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
 
 - **要約・抜粋・再構成は禁止。** やった時点で集計スクリプトが読めないか数値がずれる。
 - レコードを**一つも落とさないこと。** 上位 1,000 件なら 1,000 件すべてである。
-- `--expect` にエンベロープから読んだレコード数を入れて照合する。ずれると `store` が
+- `--expect` にレコード数を入れて照合する — `data` 配列の長さ(cluster_finder は `rels` の長さ + `communities` の数)。
+  keyword_info はリクエストしたキーワードより数件**多く**返ることがある(サーバーが表記揺れを追加する)· リクエスト数ではなく受け取った数を入れる。ずれると `store` が
   拒否するので、そのときはやり直す。**切れたデータで先に進まないこと。**
 
 **基本 · ホストがファイルとして保存した場合**(大量取得は大抵こちら)
 ツールの結果が本文の代わりに次のように返る:
 `Tool result too large for context, stored at /mnt/user-data/tool_results/....json`
+Claude Code では `Error: result (N characters) exceeds maximum allowed tokens. Output has been
+saved to …/tool-results/….txt` という形で返る。**先頭の `Error:` や拡張子 `.txt` に惑わされないこと** — 中身は
+JSON の原文そのままである。一緒に付く「ファイルを最後まで読め」という案内にも従わず、パスだけを渡す。**再呼び出ししないこと**(クレジットの重複)。
 **失敗ではなく、応答の全体がそのファイルにあるという意味である。** そのパスをそのまま渡す:
 ```bash
 cp "<保存されたパス>" "{WORKDIR}/lm_query.json"

@@ -95,7 +95,7 @@ SKILL.md §応答ファイル規則を参照):
 # ② キャッシュ保存
 python3 {SKILL_DIR}/scripts/mcp_cache.py store cluster_finder \
   --params '{"keyword":"<SEED>","gl":"<GL>","data_type":"all","hop":2,"limit":1000,"orientation":"UNDIRECTED","time_point":"curr"}' \
-  --file "{WORKDIR}/lm_cluster.json"
+  --file "{WORKDIR}/lm_cluster.json" --expect <rels の長さ + communities の数>
 
 # ③ tool_call の発行
 python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \

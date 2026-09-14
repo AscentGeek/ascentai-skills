@@ -89,6 +89,9 @@ echo "作業フォルダ: $WORKDIR"
 
 **1-A. 構造の取得(ファインダーごとに 1 コールずつ)** — 兄弟ドキュメントの 1a ブロックをそのまま使い、保存パスだけ変えます。
 
+> **3 つのファインダーは一度に 1 つずつ順番に呼び出します。** ListeningMind MCP は同時リクエスト上限が 1 のため、
+> まとめて呼ぶと後の呼び出しが `429 concurrent request limit` で失敗します。前の呼び出しの保存まで終えてから次を呼びます。
+
 | ファインダー | 必須度 | MCP ツール | 参照(1a そのまま) | 保存 |
 |---|---|---|---|---|
 | クエリ | **必須** | `intent_finder` | `references/query-opportunity.md` §1a | `{WORKDIR}/q/lm_keyword_list.json` |

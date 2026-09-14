@@ -89,6 +89,9 @@ echo "작업 폴더: $WORKDIR"
 
 **1-A. 구조 조회 (파인더별 1콜씩)** — 형제 문서의 1a 블록을 그대로 쓰되 저장 경로만 바꿉니다.
 
+> **세 파인더는 한 번에 하나씩 순서대로 호출합니다.** ListeningMind MCP 는 동시 요청 한도가 1이라,
+> 한꺼번에 부르면 뒤의 호출이 `429 concurrent request limit` 로 실패합니다. 앞 호출의 저장까지 끝낸 뒤 다음을 부릅니다.
+
 | 파인더 | 필수도 | MCP 도구 | 참조(1a 그대로) | 저장 |
 |---|---|---|---|---|
 | 쿼리 | **필수** | `intent_finder` | `references/query-opportunity.md` §1a | `{WORKDIR}/q/lm_keyword_list.json` |

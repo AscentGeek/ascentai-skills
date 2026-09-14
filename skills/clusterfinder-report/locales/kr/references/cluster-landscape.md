@@ -94,7 +94,7 @@ SKILL.md §응답 파일 규칙 참조):
 # ② 캐시 저장
 python3 {SKILL_DIR}/scripts/mcp_cache.py store cluster_finder \
   --params '{"keyword":"<SEED>","gl":"<GL>","data_type":"all","hop":2,"limit":1000,"orientation":"UNDIRECTED","time_point":"curr"}' \
-  --file "{WORKDIR}/lm_cluster.json"
+  --file "{WORKDIR}/lm_cluster.json" --expect <rels 길이 + communities 개수>
 
 # ③ tool_call 발행
 python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
