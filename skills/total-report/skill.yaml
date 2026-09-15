@@ -1,0 +1,6 @@
+name: total-report
+version: "1.0.0"
+slug: total-insight
+mcp_tools: [intent_finder, keyword_info, cluster_finder, path_finder]
+vendor_chart: false
+locales: [kr, jp]

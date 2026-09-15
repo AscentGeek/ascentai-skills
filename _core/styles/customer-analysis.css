@@ -1,0 +1,129 @@
+/*
+   customer-analysis.css
+   원본: listeningmind-ai-design/pages/agents/audience-analysis/run.html <style> 블록 (페르소나 카드)
+        + listeningmind-ai-design/styles/components/report-components.css:500-512 (.persona-card 컨테이너·번호)
+   의존: design-tokens.css (CSS 변수), audience-analysis.css (dash-* / rpt-* / cover-* 공통 레이아웃)
+
+   페르소나 카드 구조:
+     head (번호 · 이름 · 메타)
+     body × 3 (① WHO · ② KBF · ③ 종합결론 = 인사이트 + 근거 키워드)
+   세 묶음 모두 동일 클래스 .persona-card__body — 관리 일원화
+*/
+
+/* 페르소나 카드 컨테이너 — dash-card 베이스 위에 padding 분리 */
+.persona-card { padding: var(--spacing-xl); border-bottom: 1px solid var(--gray-100); }
+.persona-card:first-child { padding-top: var(--spacing-lg); }
+.persona-card:last-child { border-bottom: none; }
+
+.persona-card__head { padding: 0; border: none; }
+.persona-card__body { margin-top: var(--spacing-lg); margin-left: var(--spacing-5xl); padding-left: var(--spacing-sm); }
+/* 항목 간격은 페르소나 padding이 담당 → 컨테이너 gap 제거 */
+.persona-card .dash-card__body { gap: 0; }
+
+.persona-card__top { display: flex; gap: var(--spacing-lg); align-items: flex-start; }
+/* 카드 번호 (01, 02 ...) — 원본: report-components.css:506-508 */
+.persona-card__num { font-size: 28px; font-weight: 900; color: var(--gray-200); line-height: 1; flex-shrink: 0; min-width: 40px; text-align: right; letter-spacing: -0.02em; }
+/* 카드 헤더 메인 영역 (제목 + 메타) — 원본: report-components.css:510-512 */
+.persona-card__topmain { flex: 1; min-width: 0; }
+
+.persona-card__titlerow { display: flex; align-items: center; gap: var(--spacing-sm); flex-wrap: wrap; min-height: 28px; }
+.persona-card__name { font-size: var(--font-size-b1); font-weight: 700; color: var(--gray-900); line-height: 1.35; }
+.persona-relbadge { font-size: var(--font-size-cap); font-weight: 600; color: var(--brand-magenta-darker); background: var(--brand-magenta-lightest); border-radius: var(--radius-sm); padding: 2px 7px; }
+.persona-card__meta { margin-top: var(--spacing-xs); display: flex; flex-wrap: wrap; gap: var(--spacing-xs) var(--spacing-lg); font-size: var(--font-size-b4); color: var(--gray-600); }
+.persona-card__meta b { color: var(--gray-800); font-weight: 600; }
+
+/* A4 뷰: 카드 분해 후 head 간격으로 카드 구분 */
+.view-a4 .persona-card__top { margin-top: var(--spacing-6xl); }
+
+.persona-section-desc { font-size: var(--font-size-b4); color: var(--gray-500); line-height: 1.5; margin: 0; padding: var(--spacing-md) var(--spacing-xl) 0; }
+
+/* 소제목 — 세 묶음 동일. ③ 묶음 내부 두 번째 subhead만 추가 간격 */
+.persona-subhead { font-size: var(--font-size-b4); font-weight: 700; color: var(--gray-500); margin: 0 0 var(--spacing-sm); display: flex; align-items: center; gap: var(--spacing-sm); }
+.persona-subhead__badge { font-size: 10px; font-weight: 600; color: var(--gray-500); background: var(--gray-100); border-radius: var(--radius-sm); padding: 1px 6px; letter-spacing: 0.02em; }
+.persona-insight + .persona-subhead { margin-top: var(--spacing-lg); }
+
+/* ① WHO — 박스 안에 [설명 + fields(하위 근거)] */
+.persona-who { background: var(--gray-50); border-radius: var(--radius-md); padding: var(--spacing-md) 14px; }
+.persona-who__text { font-size: var(--font-size-b4); color: var(--gray-800); line-height: 1.6; }
+.persona-fields { margin-top: var(--spacing-md); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacing-sm); }
+.persona-field { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: var(--spacing-md); }
+.persona-field__label { font-size: var(--font-size-cap); font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: var(--spacing-xs); }
+.persona-field__val { font-size: var(--font-size-b4); color: var(--gray-800); line-height: 1.5; }
+
+/* ② KBF — factor 제목 + 키워드 chip 배열 */
+.persona-kbf { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.persona-kbf__row { background: var(--gray-50); border-radius: var(--radius-md); padding: var(--spacing-md) 13px; }
+.persona-kbf__factor { font-size: var(--font-size-b3); font-weight: 700; color: var(--gray-900); margin-bottom: var(--spacing-xs); }
+.persona-kbf__kws { display: flex; flex-wrap: wrap; gap: 5px; }
+.persona-kbf__kw { font-size: var(--font-size-cap); padding: 2px 7px; border-radius: var(--radius-sm); background: #fff; color: var(--gray-600); border: 1px solid var(--gray-200); }
+
+/* ③ 종합 결론 — insight 박스 (label + text) + 근거 키워드 chip */
+.persona-insight { border-left: 3px solid var(--brand-purple-main); background: var(--brand-purple-lightest); border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: var(--spacing-md) 14px; }
+.persona-insight__label { font-size: var(--font-size-cap); font-weight: 700; color: var(--brand-purple-darker); margin-bottom: var(--spacing-xs); }
+.persona-insight__text { font-size: var(--font-size-b3); color: var(--gray-800); line-height: 1.55; }
+.persona-ev-note { font-size: var(--font-size-cap); font-weight: 400; color: var(--gray-400); margin-left: auto; }
+.persona-ev { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+.persona-ev__item { font-size: var(--font-size-cap); padding: 3px 9px; border-radius: var(--radius-sm); background: var(--gray-50); color: var(--gray-700); border: 1px solid var(--gray-200); display: inline-flex; gap: var(--spacing-sm); align-items: baseline; }
+.persona-ev__vol { font-size: 10px; color: var(--brand-purple-main); font-weight: 700; }
+
+@media (max-width: 640px) {
+  .persona-fields { grid-template-columns: 1fr; }
+  .persona-card__top { gap: var(--spacing-md); }
+  .persona-card__num { font-size: 20px; min-width: 28px; }
+  .persona-card__body { margin-left: 0; padding-left: 0; }
+}
+
+/* ───────────────────────────────────────────────
+   실행 제안 패널 — 액션 카드 (rpt-act-card)
+   원본: listeningmind-ai-design/styles/components/report-components.css:155-171
+   ─────────────────────────────────────────────── */
+.rpt-act-list { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.rpt-act-card { border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 13px 15px; background: #fff; }
+.rpt-act-card__title { font-size: var(--font-size-b3); font-weight: 700; color: var(--gray-900); margin-bottom: var(--spacing-xs); display: flex; align-items: center; gap: var(--spacing-sm); }
+.rpt-act-card__body { font-size: var(--font-size-b3); color: var(--gray-700); line-height: 1.55; }
+.rpt-act-empty { color: var(--gray-400); font-size: 12px; padding: var(--spacing-md); }
+
+/* action-dot 디자인 원본 크기로 정렬 (8px) — ListeningMind.AI 기본 10px 보다 작음 */
+.rpt-act-card .action-dot { width: 8px; height: 8px; }
+/* future 도트 색상 — 디자인은 회색 (gray-400) 이지만 ListeningMind.AI 는 보라색 유지 가능
+   디자인 기준: .action-dot--future { background: var(--gray-400); } */
+.rpt-act-card .action-dot--future { background: var(--gray-400); }
+/* query-opportunity 확장: #1958 ④ 세부 인사이트 카드 (총평/실행과 구분되는 마젠타 점) */
+.rpt-act-card .action-dot--insight { background: var(--brand-magenta-main); }
+/* evidence 캡 밖 키워드 안내 칩 */
+.persona-ev__more { color: var(--gray-500); font-style: normal; }
+
+/* 그룹 검색량 뱃지 마우스오버 툴팁 — 전체 member 키워드+검색량.
+   본문은 10행 높이로 고정, 초과분은 스크롤. 우상단 X 로 닫기(JS). */
+.persona-card__volbadge { position: relative; cursor: pointer; }
+.persona-card__volbadge .volbadge-tip {
+  display: none; position: absolute; top: 100%; left: 0; z-index: 30;
+  margin-top: 6px; min-width: 240px; max-width: 360px;
+  background: #fff; border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm); box-shadow: 0 6px 20px rgba(0,0,0,.14);
+  text-align: left; cursor: default; overflow: hidden;
+}
+/* 목록은 클릭으로 연다(tip-open). 마우스오버 시엔 native title 힌트만 뜬다. */
+.persona-card__volbadge.tip-open .volbadge-tip { display: block; }
+.volbadge-tip__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; padding: 6px 8px 6px 12px; border-bottom: 1px solid var(--gray-100);
+  position: sticky; top: 0; background: #fff;
+}
+.volbadge-tip__title { font-size: 11px; font-weight: 700; color: var(--gray-900); }
+.volbadge-tip__close {
+  border: 0; background: transparent; color: var(--gray-500);
+  font-size: 16px; line-height: 1; cursor: pointer; padding: 0 2px; border-radius: 4px;
+}
+.volbadge-tip__close:hover { color: var(--gray-900); background: var(--gray-100); }
+/* 본문: 10행 높이(행 약 22px)로 고정, 초과분 스크롤.
+   span 은 기본 inline 이라 max-height 가 안 먹으므로 block 필수. */
+.volbadge-tip__body { display: block; max-height: 220px; overflow-y: auto; padding: 4px 0; }
+.volbadge-tip__row {
+  display: flex; justify-content: space-between; gap: 16px;
+  padding: 3px 12px; font-size: 11px; font-weight: 500; white-space: nowrap;
+}
+.volbadge-tip__kw { color: var(--gray-700); }
+.volbadge-tip__vol { color: var(--brand-purple-main); font-variant-numeric: tabular-nums; }
+/* 인쇄(A4)에서는 호버가 무의미하므로 툴팁 숨김 */
+@media print { .persona-card__volbadge .volbadge-tip { display: none !important; } }

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="{{LANG}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{REPORT_TITLE}} · {{CATEGORY}}</title>
+  <link href="{{FONT_HREF}}" rel="stylesheet">
+  <style>{{INLINED_CSS}}</style>
+</head>
+<body class="view-mode-dash">
+
+  <!-- 공용 외곽 미니 툴바 — 대시보드/A4 토글 + 인쇄. 4개 리포트 공용. -->
+  <div class="mini-toolbar">
+    <div class="mini-toolbar__view">
+      <button type="button" data-view="dash" class="active">{{TOOLBAR_DASH_BTN}}</button>
+      <button type="button" data-view="a4">{{TOOLBAR_A4_LABEL}}</button>
+    </div>
+    <button type="button" class="mini-toolbar__print" onclick="window.print()">{{TOOLBAR_PRINT_BTN}}</button>
+  </div>
+
+  <!-- ===== Dashboard view: 통합 커버 + 상단 4탭 + 4개 탭 패널 ===== -->
+  <div class="view-dash">
+    <div class="dash-scroll">
+      {{TOTAL_COVER}}
+      {{TOTAL_TABNAV}}
+
+      <!-- 탭 1: 통합 요약 — 세 파인더를 합쳐야만 나오는 6개 교차 인사이트 모듈.
+           머리글(리드·읽는 법·recap·통합 요약)은 {{TAB1_INTRO}} 로,
+           각 모듈은 {{TAB1_M#}} 슬롯으로 주입된다(facts 숫자 + id-키드 LLM 노트 머지). -->
+      <section class="tot-panel tot-panel--t is-active" data-tab="t" role="tabpanel">
+        {{TAB1_INTRO}}
+        <div class="ti-modules">
+          {{TAB1_M1_COVERAGE}}
+          {{TAB1_M2_HUB}}
+          {{TAB1_M3_MATRIX}}
+          {{TAB1_M4_LEAK}}
+          {{TAB1_M5_CORRIDOR}}
+          {{TAB1_M6_BACKLOG}}
+        </div>
+      </section>
+
+      {{TAB_QUERY}}
+      {{TAB_PATH}}
+      {{TAB_CLUSTER}}
+    </div>
+  </div>
+
+  <!-- ===== A4 view: 통합 → 쿼리 → 패스 → 클러스터 순서로 한 PDF ===== -->
+  <div class="view-a4">
+    <div class="a4-scroll">
+      {{A4_PAGES}}
+    </div>
+  </div>
+
+  <script>{{INLINE_SCRIPT}}</script>
+</body>
+</html>

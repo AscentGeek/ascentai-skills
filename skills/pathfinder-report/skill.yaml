@@ -1,0 +1,6 @@
+name: pathfinder-report
+version: "1.0.0"
+slug: path-opportunity
+mcp_tools: [path_finder, keyword_info]
+vendor_chart: false
+locales: [kr, jp]

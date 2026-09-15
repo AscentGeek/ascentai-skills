@@ -1,0 +1,1283 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>검색 여정 분석 · 마켓오</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>/* === design-tokens.css === */
+/**
+ * 디자인 시스템 - 일관된 CSS 규칙
+ * 타이포그래피, 색상, 간격, Border Radius, Border Width
+ */
+
+/* Font imports handled by globals.css */
+
+/* ========== CSS Custom Properties (Design Tokens) ========== */
+:root {
+  /* ----- Font Family ----- */
+  --font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, Sans-serif;
+
+  /* ----- Typography (폰트 굵기 / 줄높이 / 크기) ----- */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-black: 900;
+  --line-height-snug: 1.3;
+  --line-height-normal: 1.5;
+  --line-height-tight: 1.4;
+  --font-size-display: 48px;  /* Display */
+  --font-size-headline1: 32px;
+  --font-size-headline2: 28px;
+  --font-size-headline3: 24px;
+  --font-size-headline4: 20px;
+  --font-size-headline5: 18px;
+  --font-size-b1: 16px;
+  --font-size-b2: 14px;
+  --font-size-b3: 13px;
+  --font-size-b4: 12px;
+  --font-size-cap: 11px;      /* Cap */
+
+  /* ----- Brand Colors ----- */
+  --brand-coral-lightest: #FFF0F6;
+  --brand-coral-main:     #FF247A;   /* LM Coral Pink  PANTONE 2039C */
+  --brand-coral-darker:   #A81650;
+
+  --brand-magenta-lightest: #F8E6F4;
+  --brand-magenta-main:     #CD3197;  /* LM Magenta  PANTONE 3527C */
+  --brand-magenta-darker:   #821E60;
+
+  --brand-purple-lightest: #FEF9FF;
+  --brand-purple-lighter:  #F5E6FA;
+  --brand-purple-main:     #AA18CC;  /* LM Purple  PANTONE 254C */
+  --brand-purple-darker:   #7A1194;
+
+  --brand-violet-lightest: #EDE6FF;
+  --brand-violet-main:     #7F18FF;  /* LM Violet  PANTONE 2091C */
+  --brand-violet-darker:   #5A10B8;
+
+  --brand-gradient: linear-gradient(135deg, #FF247A 0%, #CD3197 100%);
+
+  /* ----- Grayscale (블루그레이) ----- */
+  --white: #FFFFFF;
+  --gray-50: #F9FAFB;
+  --gray-100: #F7F8FA;
+  --gray-200: #E3E8F2;
+  --gray-300: #D1D9E6;
+  --gray-400: #AAB4C4;
+  --gray-500: #7A8699;
+  --gray-600: #586882;
+  --gray-700: #3B4A60;
+  --gray-800: #1E2A3A;
+  --gray-900: #101828;
+  --black: #000000;
+
+  /* ----- System Colors ----- */
+  /* PayPal (DEPRECATED — 정리 Phase에서 결제 페이지 sync 후 일괄 제거) */
+  --paypal-primary: #0070ba;
+  --paypal-primary-dark: #005ea6;
+  --paypal-logo-light: #c2e0f4;
+
+  --success-light: #EDF9F6;
+  --success-main: #1ABC9C;
+  --success-dark: #148F77;
+  --error-lightest: #FFF0F6;
+  --error-lighter:  #FFF0F6;
+  --error-light:    #FFAED0;
+  --error-main:     var(--brand-coral-main);
+  --error-dark:     var(--brand-coral-darker);
+  --error-darker:   #7A0F38;
+  --warning-lighter: #FFFBE6;
+  --warning-main: #FBBD08;
+  --warning-dark: #8A6600;
+
+  /* ----- Overlay Colors (반투명 레이어용 — rgba 직접 사용 금지) ----- */
+  --overlay-dark-72: rgba(16, 24, 40, 0.72);    /* gray-900@72% — 미디어 그라디언트 */
+  --overlay-dark-0: rgba(16, 24, 40, 0);         /* gray-900@0%  — 그라디언트 끝 투명 */
+  --overlay-white-82: rgba(255, 255, 255, 0.82); /* white@82%   — 히어로 설명 텍스트 */
+  --overlay-white-25: rgba(255, 255, 255, 0.25); /* white@25%   — 미디어 카드 버튼 hover */
+  --overlay-backdrop: rgba(16, 24, 40, 0.45);    /* gray-900@45% — 모바일 사이드바 백드롭 */
+
+  /* ----- Layout Tokens (컴포넌트 치수 — 8px 그리드 외 설계 고정값) ----- */
+  --sidebar-width: 280px;
+  --sidebar-width-collapsed: 53px;
+  --process-panel-width: 320px;
+  --process-panel-width-desktop: 420px;
+  --page-header-height: 56px;
+  --wizard-tab-bar-height: 48px; /* 모바일 setup wizard 탭바 높이 */
+  /*
+   * 본문 min-height(calc(100vh − 헤더 − 아래 값))용 푸터 예약 높이(대략값).
+   * 런타임에 SiteFooter(shared/layout/SiteFooter.tsx)가 실제 offsetHeight 를 측정해 덮어씀.
+   * 아래 정적 값은 SSR / 측정 전 fallback.
+   */
+  --site-footer-reserved-height: 180px;
+  --site-footer-compact-reserved-height: 72px;
+  --settings-bar-height: calc(var(--spacing-5xl) - var(--spacing-2xs)); /* 46px */
+  --btn-height-xl: 52px;
+  --process-panel-action-bar-height: 56px;
+  --process-panel-sheet-height: 65vh;
+
+  /* ----- Spacing (8px 기반) ----- */
+  --spacing-none: 0;
+  --spacing-3xs: 1px;      /* 0.0625rem */
+  --spacing-2xs: 2px;      /* 0.125rem */
+  --spacing-xs: 4px;       /* 0.25rem */
+  --spacing-sm: 8px;       /* 0.5rem */
+  --spacing-md: 12px;      /* 0.75rem */
+  --spacing-lg: 16px;      /* 1rem */
+  --spacing-xl: 20px;      /* 1.25rem */
+  --spacing-2xl: 24px;     /* 1.5rem */
+  --spacing-3xl: 32px;     /* 2rem */
+  --spacing-4xl: 40px;     /* 2.5rem */
+  --spacing-5xl: 48px;     /* 3rem */
+  --spacing-6xl: 64px;     /* 4rem */
+  --spacing-7xl: 80px;     /* 5rem */
+  --spacing-8xl: 96px;     /* 6rem */
+  --spacing-9xl: 112px;    /* 7rem */
+
+  /* ----- Border Radius ----- */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+
+  /* ----- Border Width ----- */
+  --border-none: 0;
+  --border-thin: 1px;           /* 0.0625rem */
+  --border-default: 2px;        /* 0.125rem */
+  --border-thick: 3px;          /* 0.1875rem */
+  --border-extra-thick: 4px;    /* 0.25rem */
+
+  /* ----- Transition ----- */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.35s ease;
+
+  /* ----- Z-Index Scale ----- */
+  --z-base: 1;
+  --z-header: 10;
+  --z-sidebar: 100;
+  --z-dropdown: 200;
+  --z-backdrop: 290;
+  --z-sidebar-mobile: 300; /* 모바일 오버레이 사이드바 — 백드롭(290) 위에 위치 */
+  --z-process-sheet: 310;
+  --z-modal: 500;
+  --z-modal-dropdown: 600;
+  --z-toast: 700;
+
+  /* ----- Breakpoints (media query 기준값 — CSS 변수 미지원, 숫자 그대로 사용)
+     Mobile : max-width 767px
+     Tablet : 768px ~ 1279px
+     Desktop: min-width 1280px
+  ----- */
+
+  /* ----- Shadow (Figma Shadow Scale 참조) ----- */
+  /* 중요도·계층에 맞게 적용. 색상: gray-800 기반 rgba */
+  --shadow-none: none;
+  --shadow-xs: 0 1px 2px rgba(30, 42, 58, 0.04);                                    /* 미세한 깊이감, 구분선 */
+  --shadow-sm: 0 1px 3px rgba(30, 42, 58, 0.06), 0 1px 2px rgba(30, 42, 58, 0.04);  /* 미세한 깊이감, 구분선 */
+  --shadow-md: 0 4px 6px -1px rgba(30, 42, 58, 0.08), 0 2px 4px -2px rgba(30, 42, 58, 0.05);  /* 카드, 드롭다운 */
+  --shadow-lg: 0 10px 15px -3px rgba(30, 42, 58, 0.08), 0 4px 6px -4px rgba(30, 42, 58, 0.05); /* 모달, 팝오버 */
+  --shadow-xl: 0 20px 25px -5px rgba(30, 42, 58, 0.1), 0 8px 10px -6px rgba(30, 42, 58, 0.06); /* 다이얼로그, 드로어 */
+  --shadow-2xl: 0 25px 50px -12px rgba(30, 42, 58, 0.15);                            /* 최상위 레이어 */
+}
+
+html[lang="en"] {
+  --font-family: var(--font-noto-sans, 'Noto Sans'), -apple-system, BlinkMacSystemFont, Sans-serif;
+}
+
+html[lang="ja"] {
+  --font-family: var(--font-noto-sans-jp, 'Noto Sans JP'), -apple-system, BlinkMacSystemFont, Sans-serif;
+}
+
+/* ========== Base / Reset ----- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:focus:not(:focus-visible) { outline: none; }
+:focus-visible { outline: 2px solid var(--gray-400); outline-offset: 2px; }
+
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-b1);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  color: var(--gray-900);
+  background-color: var(--white);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========== Border Radius Utility Classes ----- */
+.radius-none   { border-radius: var(--radius-none); }
+.radius-sm     { border-radius: var(--radius-sm); }
+.radius-md     { border-radius: var(--radius-md); }
+.radius-lg     { border-radius: var(--radius-lg); }
+.radius-xl     { border-radius: var(--radius-xl); }
+.radius-2xl    { border-radius: var(--radius-2xl); }
+.radius-full   { border-radius: var(--radius-full); }
+
+/* ========== Border Width Utility Classes ----- */
+.border-none         { border-width: var(--border-none); }
+
+
+/* ========== Color Utility Classes (배경/텍스트) ----- */
+.bg-white       { background-color: var(--white); }
+.text-disabled  { color: var(--gray-500); }
+.text-error     { color: var(--error-main); }
+
+/* ========== Global Scrollbar ========== */
+* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.is-scrolling { scrollbar-color: var(--gray-300) transparent; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: var(--radius-sm); }
+.is-scrolling::-webkit-scrollbar-thumb { background: var(--gray-300); }
+
+/* ========== Scroll Utilities ========== */
+.scroll-y { overflow-y: auto; }
+.scroll   { overflow: auto; }
+
+
+
+/* === report-shell.css === */
+/* =====================================================================
+   report-shell.css
+   리포트 공통 레이아웃 / 툴바 / 뷰 전환 / 대시보드 / A4 뷰 / 인쇄
+   의존: design-system.css
+   6개 에이전트 공용: audience-analysis, brand-context, market-synthesis,
+                      brand-share, decision-factors, trend-analysis
+   ===================================================================== */
+
+/* ===== Main Layout ===== */
+.rpt-main {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column;
+  height: 100vh; /* fallback: dvh 미지원 브라우저 */
+  height: 100dvh; /* 모바일 툴바에 하단 콘텐츠 가려지는 문제 해결 */
+  overflow: hidden;
+  margin-left: var(--sidebar-width);
+  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar--collapsed ~ .rpt-main { margin-left: var(--sidebar-width-collapsed); }
+
+/* ===== Toolbar ===== */
+.rpt-toolbar {
+  position: sticky; top: 0;
+  height: 56px; z-index: 200; flex-shrink: 0;
+  background: var(--white);
+  border-bottom: var(--border-thin) solid var(--gray-200);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--spacing-2xl);
+  gap: var(--spacing-lg);
+  box-shadow: var(--shadow-xs);
+}
+.rpt-toolbar__left  { display: flex; align-items: center; gap: var(--spacing-md); min-width: 0; flex: 1; }
+.rpt-toolbar__right { display: flex; align-items: center; gap: var(--spacing-sm); flex: 1; justify-content: flex-end; }
+
+.rpt-product-badge {
+  display: flex; align-items: center; gap: var(--spacing-sm);
+  min-width: 0; flex: 1;
+  font-size: var(--font-size-b2);
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-900);
+}
+.rpt-product-badge__label { flex-shrink: 0; }
+.rpt-product-badge__sep { color: var(--gray-300); flex-shrink: 0; }
+.rpt-product-badge__text {
+  min-width: 0; flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: var(--font-weight-regular);
+  color: var(--gray-500);
+}
+
+/* ===== View Toggle ===== */
+.view-toggle {
+  display: flex;
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.view-toggle-btn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: none; background: none; cursor: pointer;
+  font-family: var(--font-family);
+  font-size: var(--font-size-b4);
+  font-weight: var(--font-weight-medium);
+  color: var(--gray-500);
+  display: flex; align-items: center; gap: 5px;
+  transition: background 0.15s, color 0.15s;
+}
+.view-toggle-btn.active { background: var(--gray-800); color: var(--white); }
+.view-toggle-btn:not(.active):hover { background: var(--gray-100); color: var(--gray-700); }
+
+/* ===== Print Button ===== */
+.rpt-print-btn {
+  display: inline-flex; align-items: center; gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: none; cursor: pointer;
+  font-family: var(--font-family);
+  font-size: var(--font-size-b3);
+  font-weight: var(--font-weight-medium);
+  color: var(--gray-600);
+  transition: background 0.15s;
+}
+.rpt-print-btn:hover { background: var(--gray-100); }
+
+/* ===== Dashboard View ===== */
+.view-dash { flex: 1; overflow-y: auto; background: var(--gray-100); position: relative; min-height: 0; }
+
+/* view-dash 안 footer: view-dash 배경(gray-100)과 일체화 */
+.view-dash .site-footer {
+  background: transparent !important;
+}
+.dash-scroll {
+  max-width: 1024px; margin: 0 auto;
+  padding: var(--spacing-2xl) var(--spacing-2xl) var(--spacing-7xl);
+  display: flex; flex-direction: column; gap: 0;
+}
+
+/* ===== Dashboard Cover (listeningmind-ai-design report-components.css 동일) ===== */
+.dash-cover-block { flex-shrink: 0; margin-bottom: var(--spacing-lg); }
+.dash-cover-gradient {
+  background: linear-gradient(135deg, rgb(10, 5, 16) 0%, rgb(26, 8, 48) 50%, rgb(13, 21, 40) 100%);
+  padding: 22px 28px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  position: relative;
+  overflow: hidden;
+}
+.dash-cover-gradient::before {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -30px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(170, 24, 204, 0.35) 0%, transparent 70%);
+  pointer-events: none;
+}
+.dash-cover-gradient::after {
+  content: "";
+  position: absolute;
+  bottom: -30px;
+  left: 35%;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(255, 36, 122, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+.dash-cover-eyebrow {
+  font-size: 11px; font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  margin-bottom: 6px;
+  position: relative;
+}
+.dash-cover-title    { font-size: 20px; font-weight: 700; color: white; line-height: 1.35; margin-bottom: 8px; position: relative; }
+.dash-cover-category { font-size: 13px; color: rgba(255, 255, 255, 0.55); position: relative; }
+.dash-cover-meta     { font-size: 11px; color: rgba(255, 255, 255, 0.35); margin-top: 12px; position: relative; }
+
+/* ===== Dashboard Tabs ===== */
+.dash-tabs {
+  position: sticky; top: 0; z-index: 60;
+  margin: 0 calc(-1 * var(--spacing-2xl)) var(--spacing-lg);
+  padding: 0 var(--spacing-2xl);
+  background: var(--gray-100);
+  border-bottom: var(--border-thin) solid var(--gray-200);
+  box-shadow: 0 1px 0 rgba(16,24,40,0.04);
+}
+.dash-tabs__inner { display: flex; gap: 2px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.dash-tabs__inner::-webkit-scrollbar { display: none; }
+.dash-tab {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: var(--spacing-xs);
+  padding: var(--spacing-md); border: none;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  background: transparent; cursor: pointer;
+  font-family: var(--font-family); font-size: var(--font-size-b3);
+  font-weight: var(--font-weight-semibold); color: var(--gray-600);
+  transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+}
+.dash-tab:hover  { color: var(--gray-900); }
+.dash-tab.active { color: var(--gray-800); border-bottom-color: var(--gray-800); }
+.dash-tab-panel        { display: none; animation: mrTabIn 0.22s ease; }
+.dash-tab-panel.active { display: flex; flex-direction: column; gap: var(--spacing-lg); }
+@keyframes mrTabIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ===== Dashboard Card ===== */
+.dash-card {
+  background: var(--white);
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs); overflow: hidden;
+  margin-bottom: var(--spacing-lg);
+}
+.dash-card__head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-bottom: var(--border-thin) solid var(--gray-100);
+}
+.dash-card__title    { font-size: var(--font-size-b2); font-weight: var(--font-weight-bold); color: var(--gray-900); }
+.dash-card__subtitle { font-size: var(--font-size-b4); font-weight: var(--font-weight-medium); color: var(--gray-500); margin-left: var(--spacing-sm); }
+.dash-card__badge    { font-size: var(--font-size-b4); color: var(--gray-500); background: var(--gray-100); padding: 2px 8px; border-radius: var(--radius-full); font-weight: var(--font-weight-medium); }
+.dash-card__body     { padding: var(--spacing-lg) var(--spacing-xl); display: flex; flex-direction: column; gap: var(--spacing-md); }
+
+/* Dashboard readability overrides */
+.view-dash .dash-scroll      { font-size: var(--font-size-b2); line-height: var(--line-height-normal); }
+.view-dash .dash-card__title { font-size: var(--font-size-b1); }
+
+/* ===== Loading / Error Overlay ===== */
+@keyframes pipeline-spin { to { transform: rotate(360deg); } }
+.pipeline-loading {
+  position: absolute; inset: 0; z-index: 100;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; font-family: inherit;
+}
+.pipeline-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--gray-200); border-top-color: var(--gray-800);
+  border-radius: 50%; animation: pipeline-spin .8s linear infinite;
+}
+.pipeline-msg       { font-size: 14px; color: var(--gray-600); text-align: center; }
+.pipeline-error-msg { font-size: 14px; color: var(--error-main); text-align: center; max-width: 400px; }
+.pipeline-error-title {
+  font-size: var(--font-size-b1);
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-900);
+  text-align: center;
+  margin: 0 0 8px;
+}
+.pipeline-error-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 480px;
+  padding: 0 16px;
+}
+.pipeline-loading--error { gap: 8px; }
+.pipeline-retry-btn {
+  margin-top: 12px; padding: 8px 20px;
+  border: var(--border-thin) solid var(--gray-300); border-radius: var(--radius-md);
+  background: var(--white); cursor: pointer; font-size: 13px; font-family: inherit;
+}
+.pipeline-retry-btn:hover { background: var(--gray-100); }
+
+/* ===== A4 View ===== */
+.view-a4  { flex: 1; overflow-y: auto; background: var(--gray-200); min-height: 0; }
+.a4-scroll { padding: var(--spacing-4xl) var(--spacing-2xl) var(--spacing-7xl); }
+.rpt-page {
+  width: 794px; height: 1123px; background: var(--white);
+  box-shadow: 0 2px 16px rgba(16,24,40,0.10), 0 0 0 1px rgba(16,24,40,0.04);
+  margin: 0 auto var(--spacing-4xl); position: relative;
+  display: flex; flex-direction: column;
+}
+.rpt-page > .page-body { flex: 1; }
+.page-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 40px 12px;
+  border-bottom: var(--border-thin) solid var(--gray-200);
+}
+.page-hd__brand  { font-size: 10px; font-weight: var(--font-weight-black); color: var(--gray-800); letter-spacing: 0.08em; text-transform: uppercase; }
+.page-hd__report { font-size: 10px; color: var(--gray-400); }
+.page-hd__num    { font-size: 10px; color: var(--gray-400); }
+.page-body       { padding: 32px 40px 36px; display: flex; flex-direction: column; gap: var(--spacing-lg); }
+
+/* ===== Section Header ===== */
+.sec-hd { margin-bottom: 20px; }
+.view-a4 .sec-hd { margin-top: 48px; }
+.view-a4 .page-body > .sec-hd:first-child { margin-top: 0; }
+.sec-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.sec-eyebrow__line { width: 20px; height: 2px; background: var(--gray-800); flex-shrink: 0; }
+.sec-eyebrow__text { font-size: 10px; font-weight: var(--font-weight-bold); color: var(--gray-800); text-transform: uppercase; letter-spacing: 0.12em; }
+.sec-title { font-size: 22px; font-weight: var(--font-weight-black); color: var(--gray-900); line-height: var(--line-height-snug); margin-bottom: 6px; }
+.sec-desc  { font-size: var(--font-size-b3); color: var(--gray-500); line-height: var(--line-height-normal); }
+
+/* ===== Cover ===== */
+.rpt-page--cover { height: 1123px; display: flex; flex-direction: column; }
+.cover-body {
+  background: linear-gradient(135deg, #001233 0%, var(--gray-800) 55%, var(--gray-700) 100%);
+  padding: 52px 48px 44px; flex: 1;
+  display: flex; flex-direction: column; justify-content: space-between;
+  position: relative; overflow: hidden;
+}
+.cover-body::before {
+  content: ''; position: absolute;
+  top: -80px; right: -60px; width: 280px; height: 280px;
+  border-radius: 50%; background: rgba(122, 172, 246, 0.08);
+}
+.cover-lm { font-size: 11px; font-weight: var(--font-weight-black); color: var(--gray-300); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: var(--spacing-3xl); position: relative; z-index: 1; }
+.cover-type-label { font-size: var(--font-size-b3); font-weight: var(--font-weight-medium); color: rgba(255,255,255,0.5); margin-bottom: 8px; position: relative; z-index: 1; }
+.cover-title { font-size: 42px; font-weight: var(--font-weight-black); color: var(--white); line-height: 1.1; margin-bottom: 10px; position: relative; z-index: 1; }
+.cover-category { font-size: var(--font-size-b2); color: rgba(255,255,255,0.65); margin-bottom: var(--spacing-2xl); position: relative; z-index: 1; max-width: 500px; line-height: 1.7; }
+.cover-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 11px; color: rgba(255,255,255,0.45); position: relative; z-index: 1; }
+.cover-meta-sep { opacity: 0.4; }
+.cover-footer { background: rgba(16,24,40,0.35); padding: 12px 48px; display: flex; align-items: center; justify-content: space-between; }
+.cover-footer__text { font-size: 10px; color: rgba(255,255,255,0.35); }
+
+/* A4 view shell overrides */
+.view-a4 .sec-hd   { margin-bottom: var(--spacing-md); }
+.view-a4 .dash-card { margin-bottom: var(--spacing-md); }
+
+/* A4 Prose */
+.a4-prose { font-size: var(--font-size-b2); line-height: 1.8; color: var(--gray-700); }
+.a4-prose p + p { margin-top: var(--spacing-md); }
+
+/* 모바일 전용 헤더 (데스크톱에서 숨김) */
+.rpt-mobile-header {
+  display: none;
+}
+
+/* ===== Responsive: Mobile (<768px) ===== */
+@media (max-width: 767px) {
+  .rpt-main,
+  .sidebar--collapsed ~ .rpt-main {
+    margin-left: 0;
+  }
+
+  /* 모바일 헤더 표시 */
+  .rpt-mobile-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--white);
+    border-bottom: var(--border-thin) solid var(--gray-200);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .rpt-mobile-header__title {
+    font-size: var(--font-size-b1);
+    font-weight: var(--font-weight-semibold);
+    color: var(--gray-900);
+  }
+  
+  /* 기존 툴바 숨김 */
+  .rpt-toolbar {
+    display: none !important;
+  }
+}
+
+/* ===== Responsive: Small Mobile (≤480px) ===== */
+@media (max-width: 480px) {
+  .rpt-toolbar {
+    padding: 0 var(--spacing-sm);
+  }
+  
+  .view-toggle-btn span:not(.sr-only),
+  .rpt-print-btn span:not(.sr-only) {
+    display: none;
+  }
+  
+  .view-toggle-btn svg,
+  .rpt-print-btn svg {
+    margin: 0;
+  }
+  
+  .rpt-product-badge__text {
+    font-size: var(--font-size-b4);
+  }
+}
+
+/* ===== Print ===== */
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { display: block !important; height: auto !important; overflow: visible !important; background: white !important; }
+  .sidebar, .rpt-toolbar { display: none !important; }
+  .rpt-main  { display: block !important; margin-left: 0 !important; height: auto !important; overflow: visible !important; }
+  .view-dash { display: none !important; }
+  .view-a4   { display: block !important; flex: none !important; height: auto !important; overflow: visible !important; background: white !important; }
+  .a4-scroll { padding: 0 !important; }
+  .rpt-page  { width: 210mm !important; height: auto !important; overflow: visible !important; box-shadow: none !important; margin: 0 !important; break-after: page; page-break-after: always; }
+  .rpt-page--cover { height: 297mm !important; }
+  .rpt-page:last-child { break-after: auto !important; page-break-after: auto !important; }
+  .pp-card   { break-inside: avoid; page-break-inside: avoid; }
+  .type-card { break-inside: avoid; page-break-inside: avoid; }
+  .action-card { break-inside: avoid; page-break-inside: avoid; }
+}
+
+
+/* === audience-shared.css === */
+/* =====================================================================
+   audience-shared.css
+   ListeningMind.AI audience-analysis.css 에서 .mr-summary-box* 만 발췌.
+   ReportPurposeBox 가 사용하는 공통 스타일.
+   ===================================================================== */
+
+.mr-summary-box {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--gray-100);
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+.mr-summary-box--dash { padding: 20px 24px; margin: 0; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+.mr-summary-box--insight {
+  background: var(--gray-100);
+  border: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: 16px 20px;
+  margin: 0;
+}
+.mr-summary-box--insight .mr-summary-box__title { color: var(--gray-800); }
+.mr-summary-box__title {
+  font-size: var(--font-size-cap); font-weight: var(--font-weight-bold);
+  color: var(--gray-800);
+  letter-spacing: 0.08em; margin-bottom: var(--spacing-xs);
+}
+.mr-summary-box p    { font-size: var(--font-size-b3); line-height: 1.7; }
+.mr-summary-text     { font-size: 14px; line-height: 1.7; }
+.mr-summary-text--sm { font-size: 13px; line-height: 1.7; }
+
+/* A4 view 에서 mr-summary-box 의 radius 보강 (audience-analysis.css 의 .view-a4 override) */
+.view-a4 .mr-summary-box { border-radius: var(--radius-md); margin-bottom: var(--spacing-md); }
+
+
+/* === report-components.css === */
+/* =====================================================================
+   report-components.css
+   리포트 공용 컴포넌트 — 인사이트 박스 / 바 차트 / 액션 그리드
+   의존: design-system.css, report-shell.css
+   6개 에이전트 공용: audience-analysis, brand-context, market-synthesis,
+                      brand-share, decision-factors, trend-analysis
+   ===================================================================== */
+
+/* ===== Insight Box ===== */
+.insight-box { padding: var(--spacing-md) var(--spacing-lg); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg); }
+.insight-box--primary { background: var(--white); border: var(--border-thin) solid var(--gray-200); }
+.insight-box__title { font-size: var(--font-size-b4); font-weight: var(--font-weight-bold); color: var(--gray-800); margin-bottom: var(--spacing-sm); }
+
+/* ===== Bar Chart ===== */
+.bar-chart { display: flex; flex-direction: column; gap: 7px; }
+.bar-row   { display: flex; align-items: center; gap: var(--spacing-sm); }
+.bar-row__label { width: 240px; font-size: var(--font-size-cap); color: var(--gray-700); flex-shrink: 0; line-height: var(--line-height-snug); display: flex; align-items: center; gap: var(--spacing-sm); }
+.bar-row__track { flex: 1; height: 20px; background: var(--gray-100); border-radius: var(--radius-sm); overflow: hidden; }
+.bar-row__fill {
+  height: 100%; border-radius: var(--radius-sm);
+  background: var(--gray-800);
+  display: flex; align-items: center; justify-content: flex-end;
+  padding-right: var(--spacing-xs); min-width: var(--spacing-2xl);
+  font-size: var(--font-size-cap); font-weight: var(--font-weight-bold); color: var(--white);
+  transition: width 0.6s ease;
+}
+.bar-row__pct { font-size: var(--font-size-cap); color: var(--gray-500); width: 40px; text-align: right; flex-shrink: 0; }
+
+/* ===== Proportion Block (R2 시안 Z) ===== */
+.propblock { margin-bottom: var(--spacing-md); }
+.propblock__strip {
+  display: flex; height: 36px;
+  border-radius: var(--radius-md); overflow: hidden;
+  gap: 2px; margin-bottom: 14px;
+}
+.propblock__seg {
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--font-size-cap); font-weight: var(--font-weight-bold);
+  color: var(--white); overflow: hidden; white-space: nowrap; padding: 0 6px;
+}
+.propblock__legend {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px;
+}
+.propblock__item {
+  display: flex; align-items: flex-start; gap: 7px; min-height: 34px;
+}
+.propblock__dot {
+  width: 9px; height: 9px; border-radius: 2px;
+  flex-shrink: 0; margin-top: 3px;
+}
+.propblock__label {
+  flex: 1; font-size: var(--font-size-b4); color: var(--gray-700);
+  line-height: var(--line-height-snug);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.propblock__pct {
+  font-size: var(--font-size-b4); font-weight: var(--font-weight-bold);
+  color: var(--gray-700); white-space: nowrap; flex-shrink: 0; padding-top: 1px;
+}
+
+/* ===== Action Grid ===== */
+.action-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacing-md); }
+.action-card { background: var(--white); border: var(--border-thin) solid var(--gray-200); border-radius: var(--radius-lg); overflow: hidden; }
+.action-card__header { padding: var(--spacing-md) var(--spacing-xl); display: flex; align-items: center; gap: var(--spacing-sm); border-bottom: var(--border-thin) solid var(--gray-100); }
+.action-dot             { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.action-dot--now        { background: var(--gray-700); }
+.action-dot--future     { background: var(--brand-purple-main); }
+.action-card__title     { font-size: var(--font-size-b2); font-weight: var(--font-weight-bold); }
+.action-card__body      { padding: var(--spacing-lg) var(--spacing-xl); }
+.action-item            { margin-bottom: var(--spacing-md); }
+.action-item:last-child { margin-bottom: 0; }
+.action-item__title     { font-size: var(--font-size-b2); font-weight: var(--font-weight-medium); margin-bottom: var(--spacing-xs); }
+.action-item__desc      { font-size: var(--font-size-b3); line-height: 1.7; color: var(--gray-600); }
+.action-divider         { height: 1px; background: var(--gray-100); margin: var(--spacing-sm) 0; }
+
+/* Dashboard readability overrides */
+.view-dash .action-item__title { font-size: 14px; }
+.view-dash .action-item__desc  { font-size: 13px; }
+.view-dash .bar-row__label     { font-size: var(--font-size-b2); }
+
+/* A4 view overrides */
+.view-a4 .insight-box { margin-bottom: var(--spacing-md); }
+
+/* ===== Responsive: Mobile (≤767px) ===== */
+@media (max-width: 767px) {
+  .action-grid { grid-template-columns: 1fr; }
+  .change-grid { grid-template-columns: 1fr; }
+  .type-grid { grid-template-columns: 1fr; }
+  .br-card-grid { grid-template-columns: 1fr; }
+  .br-card__metrics { grid-template-columns: repeat(3, 1fr); }
+
+  /* bar-chart: 라벨 240px 고정 → grid 2열 (라벨+퍼센트 1행, 트랙 전체 2행) */
+  .bar-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    column-gap: var(--spacing-sm);
+    row-gap: var(--spacing-2xs);
+    align-items: center;
+  }
+  .bar-row__label { width: auto; grid-column: 1; grid-row: 1; }
+  .bar-row__pct   { width: auto; grid-column: 2; grid-row: 1; text-align: right; }
+  .bar-row__track { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+
+  /* tr-card 모바일 간소화 */
+  .tr-card { padding: var(--spacing-md) var(--spacing-lg); }
+  .tr-card__header { flex-direction: column-reverse; gap: var(--spacing-2xs); }
+  .tr-card__signal { flex-direction: row; align-items: center; align-self: flex-end; gap: 0; }
+  .tr-card__signal .sig { display: none; }
+  .sig-txt { display: inline; }
+
+  /* propblock 모바일: 1열, 블록 높이 증가 */
+  .propblock__strip { height: 44px; }
+  .propblock__legend { grid-template-columns: 1fr; }
+  .propblock__item { min-height: 28px; }
+}
+
+/* ===== 데이터 부족 안내 (Report 패밀리 DATA_INSUFFICIENT) ===== */
+.pipeline-nodata {
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--spacing-md); max-width: 460px; width: 100%;
+  padding: 0 var(--spacing-2xl); text-align: center;
+  margin: 0 auto var(--spacing-6xl);
+}
+.pipeline-nodata__icon {
+  width: var(--spacing-6xl); height: var(--spacing-6xl); border-radius: var(--radius-full);
+  background: var(--gray-100);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: var(--spacing-xs);
+}
+.pipeline-nodata__title {
+  font-size: var(--font-size-headline5); font-weight: var(--font-weight-bold); color: var(--gray-900);
+  margin: 0; line-height: var(--line-height-tight);
+}
+.pipeline-nodata__desc {
+  font-size: var(--font-size-b2); color: var(--gray-500); line-height: var(--line-height-normal); margin: 0;
+}
+.pipeline-nodata__desc strong { color: var(--gray-700); font-weight: var(--font-weight-semibold); }
+.pipeline-nodata__hint {
+  background: var(--gray-50); border: var(--border-thin) solid var(--gray-200);
+  border-radius: var(--radius-lg); padding: var(--spacing-md) var(--spacing-xl);
+  width: 100%; box-sizing: border-box; text-align: left;
+}
+.pipeline-nodata__hint-title {
+  font-size: var(--font-size-cap); font-weight: var(--font-weight-semibold); color: var(--gray-400);
+  letter-spacing: .04em; text-transform: uppercase; margin-bottom: var(--spacing-sm);
+}
+.pipeline-nodata__hint-row {
+  display: flex; align-items: center; gap: var(--spacing-sm);
+  font-size: var(--font-size-b3); margin-bottom: var(--spacing-sm);
+}
+.pipeline-nodata__hint-row:last-child { margin-bottom: 0; }
+.pipeline-nodata__badge--before {
+  padding: var(--spacing-2xs) var(--spacing-sm); border-radius: var(--radius-sm);
+  background: var(--gray-100); color: var(--gray-500);
+  font-size: var(--font-size-b4);
+}
+.pipeline-nodata__badge--after {
+  padding: var(--spacing-2xs) var(--spacing-sm); border-radius: var(--radius-sm);
+  background: var(--gray-100); color: var(--gray-800);
+  font-size: var(--font-size-b4); font-weight: var(--font-weight-semibold);
+}
+.pipeline-nodata__arrow { color: var(--gray-400); font-size: var(--font-size-b3); flex-shrink: 0; }
+.pipeline-nodata > .btn { margin-top: var(--spacing-lg); }
+
+
+/* === customer-analysis.css === */
+/*
+   customer-analysis.css
+   원본: listeningmind-ai-design/pages/agents/audience-analysis/run.html <style> 블록 (페르소나 카드)
+        + listeningmind-ai-design/styles/components/report-components.css:500-512 (.persona-card 컨테이너·번호)
+   의존: design-tokens.css (CSS 변수), audience-analysis.css (dash-* / rpt-* / cover-* 공통 레이아웃)
+
+   페르소나 카드 구조:
+     head (번호 · 이름 · 메타)
+     body × 3 (① WHO · ② KBF · ③ 종합결론 = 인사이트 + 근거 키워드)
+   세 묶음 모두 동일 클래스 .persona-card__body — 관리 일원화
+*/
+
+/* 페르소나 카드 컨테이너 — dash-card 베이스 위에 padding 분리 */
+.persona-card { padding: var(--spacing-xl); border-bottom: 1px solid var(--gray-100); }
+.persona-card:first-child { padding-top: var(--spacing-lg); }
+.persona-card:last-child { border-bottom: none; }
+
+.persona-card__head { padding: 0; border: none; }
+.persona-card__body { margin-top: var(--spacing-lg); margin-left: var(--spacing-5xl); padding-left: var(--spacing-sm); }
+/* 항목 간격은 페르소나 padding이 담당 → 컨테이너 gap 제거 */
+.persona-card .dash-card__body { gap: 0; }
+
+.persona-card__top { display: flex; gap: var(--spacing-lg); align-items: flex-start; }
+/* 카드 번호 (01, 02 ...) — 원본: report-components.css:506-508 */
+.persona-card__num { font-size: 28px; font-weight: 900; color: var(--gray-200); line-height: 1; flex-shrink: 0; min-width: 40px; text-align: right; letter-spacing: -0.02em; }
+/* 카드 헤더 메인 영역 (제목 + 메타) — 원본: report-components.css:510-512 */
+.persona-card__topmain { flex: 1; min-width: 0; }
+
+.persona-card__titlerow { display: flex; align-items: center; gap: var(--spacing-sm); flex-wrap: wrap; min-height: 28px; }
+.persona-card__name { font-size: var(--font-size-b1); font-weight: 700; color: var(--gray-900); line-height: 1.35; }
+.persona-relbadge { font-size: var(--font-size-cap); font-weight: 600; color: var(--brand-magenta-darker); background: var(--brand-magenta-lightest); border-radius: var(--radius-sm); padding: 2px 7px; }
+.persona-card__meta { margin-top: var(--spacing-xs); display: flex; flex-wrap: wrap; gap: var(--spacing-xs) var(--spacing-lg); font-size: var(--font-size-b4); color: var(--gray-600); }
+.persona-card__meta b { color: var(--gray-800); font-weight: 600; }
+
+/* A4 뷰: 카드 분해 후 head 간격으로 카드 구분 */
+.view-a4 .persona-card__top { margin-top: var(--spacing-6xl); }
+
+.persona-section-desc { font-size: var(--font-size-b4); color: var(--gray-500); line-height: 1.5; margin: 0; padding: var(--spacing-md) var(--spacing-xl) 0; }
+
+/* 소제목 — 세 묶음 동일. ③ 묶음 내부 두 번째 subhead만 추가 간격 */
+.persona-subhead { font-size: var(--font-size-b4); font-weight: 700; color: var(--gray-500); margin: 0 0 var(--spacing-sm); display: flex; align-items: center; gap: var(--spacing-sm); }
+.persona-subhead__badge { font-size: 10px; font-weight: 600; color: var(--gray-500); background: var(--gray-100); border-radius: var(--radius-sm); padding: 1px 6px; letter-spacing: 0.02em; }
+.persona-insight + .persona-subhead { margin-top: var(--spacing-lg); }
+
+/* ① WHO — 박스 안에 [설명 + fields(하위 근거)] */
+.persona-who { background: var(--gray-50); border-radius: var(--radius-md); padding: var(--spacing-md) 14px; }
+.persona-who__text { font-size: var(--font-size-b4); color: var(--gray-800); line-height: 1.6; }
+.persona-fields { margin-top: var(--spacing-md); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacing-sm); }
+.persona-field { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: var(--spacing-md); }
+.persona-field__label { font-size: var(--font-size-cap); font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: var(--spacing-xs); }
+.persona-field__val { font-size: var(--font-size-b4); color: var(--gray-800); line-height: 1.5; }
+
+/* ② KBF — factor 제목 + 키워드 chip 배열 */
+.persona-kbf { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.persona-kbf__row { background: var(--gray-50); border-radius: var(--radius-md); padding: var(--spacing-md) 13px; }
+.persona-kbf__factor { font-size: var(--font-size-b3); font-weight: 700; color: var(--gray-900); margin-bottom: var(--spacing-xs); }
+.persona-kbf__kws { display: flex; flex-wrap: wrap; gap: 5px; }
+.persona-kbf__kw { font-size: var(--font-size-cap); padding: 2px 7px; border-radius: var(--radius-sm); background: #fff; color: var(--gray-600); border: 1px solid var(--gray-200); }
+
+/* ③ 종합 결론 — insight 박스 (label + text) + 근거 키워드 chip */
+.persona-insight { border-left: 3px solid var(--brand-purple-main); background: var(--brand-purple-lightest); border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: var(--spacing-md) 14px; }
+.persona-insight__label { font-size: var(--font-size-cap); font-weight: 700; color: var(--brand-purple-darker); margin-bottom: var(--spacing-xs); }
+.persona-insight__text { font-size: var(--font-size-b3); color: var(--gray-800); line-height: 1.55; }
+.persona-ev-note { font-size: var(--font-size-cap); font-weight: 400; color: var(--gray-400); margin-left: auto; }
+.persona-ev { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+.persona-ev__item { font-size: var(--font-size-cap); padding: 3px 9px; border-radius: var(--radius-sm); background: var(--gray-50); color: var(--gray-700); border: 1px solid var(--gray-200); display: inline-flex; gap: var(--spacing-sm); align-items: baseline; }
+.persona-ev__vol { font-size: 10px; color: var(--brand-purple-main); font-weight: 700; }
+
+@media (max-width: 640px) {
+  .persona-fields { grid-template-columns: 1fr; }
+  .persona-card__top { gap: var(--spacing-md); }
+  .persona-card__num { font-size: 20px; min-width: 28px; }
+  .persona-card__body { margin-left: 0; padding-left: 0; }
+}
+
+/* ───────────────────────────────────────────────
+   실행 제안 패널 — 액션 카드 (rpt-act-card)
+   원본: listeningmind-ai-design/styles/components/report-components.css:155-171
+   ─────────────────────────────────────────────── */
+.rpt-act-list { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.rpt-act-card { border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 13px 15px; background: #fff; }
+.rpt-act-card__title { font-size: var(--font-size-b3); font-weight: 700; color: var(--gray-900); margin-bottom: var(--spacing-xs); display: flex; align-items: center; gap: var(--spacing-sm); }
+.rpt-act-card__body { font-size: var(--font-size-b3); color: var(--gray-700); line-height: 1.55; }
+.rpt-act-empty { color: var(--gray-400); font-size: 12px; padding: var(--spacing-md); }
+
+/* action-dot 디자인 원본 크기로 정렬 (8px) — ListeningMind.AI 기본 10px 보다 작음 */
+.rpt-act-card .action-dot { width: 8px; height: 8px; }
+/* future 도트 색상 — 디자인은 회색 (gray-400) 이지만 ListeningMind.AI 는 보라색 유지 가능
+   디자인 기준: .action-dot--future { background: var(--gray-400); } */
+.rpt-act-card .action-dot--future { background: var(--gray-400); }
+/* query-opportunity 확장: #1958 ④ 세부 인사이트 카드 (총평/실행과 구분되는 마젠타 점) */
+.rpt-act-card .action-dot--insight { background: var(--brand-magenta-main); }
+/* evidence 캡 밖 키워드 안내 칩 */
+.persona-ev__more { color: var(--gray-500); font-style: normal; }
+
+/* 그룹 검색량 뱃지 마우스오버 툴팁 — 전체 member 키워드+검색량.
+   본문은 10행 높이로 고정, 초과분은 스크롤. 우상단 X 로 닫기(JS). */
+.persona-card__volbadge { position: relative; cursor: pointer; }
+.persona-card__volbadge .volbadge-tip {
+  display: none; position: absolute; top: 100%; left: 0; z-index: 30;
+  margin-top: 6px; min-width: 240px; max-width: 360px;
+  background: #fff; border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm); box-shadow: 0 6px 20px rgba(0,0,0,.14);
+  text-align: left; cursor: default; overflow: hidden;
+}
+/* 목록은 클릭으로 연다(tip-open). 마우스오버 시엔 native title 힌트만 뜬다. */
+.persona-card__volbadge.tip-open .volbadge-tip { display: block; }
+.volbadge-tip__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; padding: 6px 8px 6px 12px; border-bottom: 1px solid var(--gray-100);
+  position: sticky; top: 0; background: #fff;
+}
+.volbadge-tip__title { font-size: 11px; font-weight: 700; color: var(--gray-900); }
+.volbadge-tip__close {
+  border: 0; background: transparent; color: var(--gray-500);
+  font-size: 16px; line-height: 1; cursor: pointer; padding: 0 2px; border-radius: 4px;
+}
+.volbadge-tip__close:hover { color: var(--gray-900); background: var(--gray-100); }
+/* 본문: 10행 높이(행 약 22px)로 고정, 초과분 스크롤.
+   span 은 기본 inline 이라 max-height 가 안 먹으므로 block 필수. */
+.volbadge-tip__body { display: block; max-height: 220px; overflow-y: auto; padding: 4px 0; }
+.volbadge-tip__row {
+  display: flex; justify-content: space-between; gap: 16px;
+  padding: 3px 12px; font-size: 11px; font-weight: 500; white-space: nowrap;
+}
+.volbadge-tip__kw { color: var(--gray-700); }
+.volbadge-tip__vol { color: var(--brand-purple-main); font-variant-numeric: tabular-nums; }
+/* 인쇄(A4)에서는 호버가 무의미하므로 툴팁 숨김 */
+@media print { .persona-card__volbadge .volbadge-tip { display: none !important; } }
+
+
+/* === path-opportunity.css === */
+/*
+   path-opportunity.css — 검색 여정 분석 리포트 전용 스타일
+   의존: design-tokens.css (변수), report-shell.css (dash-*/cover-*),
+        customer-analysis.css (persona-card / persona-field / persona-ev 재사용)
+
+   구성:
+     ① 커버 그라디언트 variant (여정 = 보라/블루 글로우)
+     ② 여정 흐름도 (flow tree — prefix-merge trie, 수평 분기 트리)
+     ③ 경로 카드 (path-chain 칩체인 + 흐름유형 뱃지)
+     ④ 허브 카드 (분기점)
+   의도 색상(i/n/c/t)은 components_query 도넛 팔레트와 동일 계열을 사용.
+*/
+
+/* ── ① 커버 그라디언트 — 여정용 글로우 톤 ── */
+.dash-cover-gradient--path::before {
+  background: radial-gradient(circle, rgba(127, 24, 255, 0.33) 0%, transparent 70%);
+}
+.dash-cover-gradient--path::after {
+  background: radial-gradient(circle, rgba(24, 140, 255, 0.18) 0%, transparent 70%);
+}
+
+/* ── ② 여정 흐름도 (flow tree) ── */
+.flow-legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-sm);
+  font-size: 10px; font-weight: 600; color: var(--gray-500);
+  padding: 0 var(--spacing-xl) var(--spacing-sm);
+}
+.flow-legend__item { display: inline-flex; align-items: center; gap: 5px; color: var(--gray-600); }
+.flow-legend__item::before {
+  content: ""; width: 9px; height: 9px; border-radius: 2px; display: inline-block;
+}
+.flow-legend__item--i::before { background: #8ecae6; }
+.flow-legend__item--n::before { background: var(--gray-400); }
+.flow-legend__item--c::before { background: #ffb703; }
+.flow-legend__item--t::before { background: #fb8500; }
+
+.flow-diagram {
+  overflow-x: auto; padding: 0 var(--spacing-xl) var(--spacing-lg);
+  --flow-node-w: 150px;
+  --flow-step: 180px;   /* 노드(150) + 간격(30) = 단계 컬럼 폭. 노드 고정폭이라 같은 단계가 세로 정렬됨 */
+}
+.flow-inner { width: max-content; }
+
+/* 단계(depth) 헤더 — 노드 컬럼과 폭이 같아 세로로 정렬된다 */
+.flow-tiers { display: flex; padding-bottom: var(--spacing-md); }
+.flow-tier { width: var(--flow-step); flex-shrink: 0; }
+.flow-tier span {
+  display: inline-block; font-size: 10px; font-weight: 700; color: var(--gray-600);
+  background: var(--gray-100); border-radius: var(--radius-full); padding: 3px 11px; letter-spacing: 0.02em;
+}
+
+.flow-tree { list-style: none; margin: 0; padding: 0; }
+.flow-tree--d0 { display: flex; flex-direction: column; gap: 16px; }
+
+.flow-branch { display: flex; align-items: center; }
+.flow-node {
+  flex-shrink: 0; width: var(--flow-node-w); box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 1px;
+  background: #fff; border: 1px solid var(--gray-200); border-left: 3px solid var(--gray-300);
+  border-radius: var(--radius-md); padding: 7px 11px; box-shadow: var(--shadow-xs);
+}
+.flow-node__kw {
+  font-size: var(--font-size-b4); font-weight: 600; color: var(--gray-800); line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.flow-node__vol { font-size: 10px; font-weight: 700; color: var(--brand-purple-main); font-variant-numeric: tabular-nums; }
+.flow-node--i { border-left-color: #8ecae6; }
+.flow-node--n { border-left-color: var(--gray-400); }
+.flow-node--c { border-left-color: #ffb703; }
+.flow-node--t { border-left-color: #fb8500; }
+/* 시드 노드 — 여정의 기점. 진입점이자 합류점으로 어디서든 강조 */
+.flow-node--seed {
+  border: 1.5px solid var(--brand-purple-main); border-left: 3px solid var(--brand-purple-main);
+  background: var(--brand-purple-lightest);
+}
+.flow-node--seed .flow-node__kw { color: var(--brand-purple-darker); font-weight: 700; }
+
+/* nested children column + elbow connectors — 30px 간격으로 컬럼 정렬 유지, 선 선명하게 */
+.flow-branch > .flow-tree {
+  display: flex; flex-direction: column; gap: 10px;
+  position: relative; margin-left: 30px;
+}
+.flow-branch > .flow-tree::before {   /* parent → group stub */
+  content: ""; position: absolute; left: -30px; top: 50%; width: 15px; border-top: 1px solid var(--gray-400);
+}
+.flow-branch > .flow-tree::after {    /* vertical spine */
+  content: ""; position: absolute; left: -15px; top: 0; bottom: 0; border-left: 1px solid var(--gray-400);
+}
+.flow-branch > .flow-tree > .flow-branch { position: relative; }
+.flow-branch > .flow-tree > .flow-branch::before {   /* spine → child stub */
+  content: ""; position: absolute; left: -15px; top: 50%; width: 15px; border-top: 1px solid var(--gray-400);
+}
+
+/* ── ③ 경로 카드 (path card) ── */
+.path-card--conversion { border-left: 3px solid var(--success-main); }
+.path-card--comparison { border-left: 3px solid var(--warning-main); }
+.path-card--risk       { border-left: 3px solid var(--brand-coral-main); }
+
+.path-card__flow {
+  font-size: var(--font-size-cap); font-weight: 700; border-radius: var(--radius-sm);
+  padding: 2px 9px; letter-spacing: 0.01em;
+}
+.path-card__flow--conversion { color: var(--success-dark); background: var(--success-light); }
+.path-card__flow--comparison { color: var(--warning-dark); background: var(--warning-lighter); }
+.path-card__flow--risk       { color: var(--brand-coral-darker); background: var(--brand-coral-lightest); }
+
+.path-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.path-chip {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius-full);
+  padding: 4px 12px;
+}
+.path-chip__kw { font-size: var(--font-size-b4); font-weight: 600; color: var(--gray-800); }
+.path-chip__vol { font-size: 10px; font-weight: 700; color: var(--brand-purple-main); font-variant-numeric: tabular-nums; }
+.path-arrow { color: var(--gray-400); font-weight: 700; font-size: var(--font-size-b3); }
+
+/* 경로/허브 요약 뱃지 — persona-subhead__badge 베이스에 톤만 추가 */
+.path-card__volbadge { color: var(--brand-purple-darker); background: var(--brand-purple-lighter); }
+.path-card__hopbadge,
+.hub-card__degbadge { color: var(--gray-600); }
+
+/* ── ④ 허브 카드 (hub card) ── */
+.hub-card__num { color: var(--brand-purple-lighter); }
+.hub-dilemmas { margin: 6px 0 0; padding-left: 18px; }
+.hub-dilemmas li { font-size: var(--font-size-b4); color: var(--gray-800); line-height: 1.5; margin-bottom: 3px; }
+.hub-actions { margin-top: 6px; }
+.hub-actions .rpt-act-card { background: var(--gray-50); }
+
+/* ── 인쇄(A4) ── */
+@media print {
+  .flow-diagram { overflow: visible; }
+  .path-card, .hub-card { break-inside: avoid; }
+  .flow-branch { break-inside: avoid; }
+}
+
+
+/* === overlay.css === */
+/* =====================================================================
+   overlay.css
+   스킬 전용 wrapper: 사이드바 없는 단독 HTML 환경에 맞춘 보정 +
+   뷰 토글(대시보드/A4) + 미니 툴바 + 인쇄 강제 A4 출력.
+   ===================================================================== */
+
+/* 단독 HTML — ListeningMind.AI 의 .rpt-main 사이드바 오프셋 제거.
+   페이지 전체를 채우도록 보정. */
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: var(--font-family);
+  background: var(--gray-100);
+  color: var(--gray-900);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 스크롤은 페이지 전체가 담당 (ListeningMind.AI 는 .rpt-main 내부 스크롤). */
+.view-dash, .view-a4 { min-height: 100vh; }
+
+/* ===== A4 page sizing (no JS paginate) =====
+   ListeningMind.AI 는 useA4Paginate 가 런타임에 .rpt-page 를 복제해 콘텐츠를 페이지
+   단위로 옮긴다. 단독 HTML 환경에선 그 훅이 없으므로 render_report.py 가
+   페르소나 카드마다 새 .rpt-page 를 emit 한다 (components.py:a4_body_page_html).
+   그래도 한 카드가 1013px 를 넘는 극단적 케이스에 대비해 본문 페이지의 고정
+   높이를 풀고 min-height 만 유지한다. cover 페이지는 1123px 고정. */
+.view-a4 .rpt-page:not(.rpt-page--cover) {
+  height: auto;
+  min-height: 1123px;
+}
+.view-a4 .page-body > * { break-inside: avoid; page-break-inside: avoid; }
+
+/* ===== View Toggle ===== */
+body.view-mode-dash .view-a4   { display: none; }
+body.view-mode-a4   .view-dash { display: none; }
+
+/* ===== Mini Toolbar (스킬 전용 - 화면에서만 보임) ===== */
+.mini-toolbar {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 8px;
+  background: var(--white);
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-family);
+}
+
+.mini-toolbar__view {
+  display: flex;
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.mini-toolbar__view button {
+  border: none;
+  background: var(--white);
+  padding: 5px 12px;
+  font-size: var(--font-size-b4);
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-600);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mini-toolbar__view button.active {
+  background: var(--gray-800);
+  color: var(--white);
+}
+
+.mini-toolbar__view button:not(.active):hover {
+  background: var(--gray-100);
+  color: var(--gray-800);
+}
+
+.mini-toolbar__print {
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  padding: 5px 12px;
+  font-size: var(--font-size-b4);
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-700);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.mini-toolbar__print:hover { background: var(--gray-100); }
+
+/* ===== Print Override =====
+   인쇄는 어떤 모드에 있건 A4 만 출력.
+   ListeningMind.AI 의 report-shell.css @media print 가 .view-dash 를 숨기지만
+   .view-mode-a4 일 때 .view-dash 는 이미 display:none, .view-mode-dash 일 때는
+   .view-a4 가 display:none 인 상태를 뒤집어야 한다. */
+@media print {
+  .mini-toolbar { display: none !important; }
+  body.view-mode-dash .view-dash,
+  body.view-mode-a4   .view-dash { display: none !important; }
+  body.view-mode-dash .view-a4,
+  body.view-mode-a4   .view-a4 { display: block !important; }
+
+  /* 인쇄 시에도 데스크톱 그리드 유지. 일부 브라우저는 인쇄 미리보기에서
+     뷰포트를 화면 폭으로 잡아 max-width:767px 모바일 규칙이 발동한다. */
+  .ticker-list { grid-template-columns: repeat(2, 1fr) !important; }
+  .ticker-row { flex-wrap: nowrap !important; }
+  .ticker-kw  { flex: 1 1 auto !important; font-size: var(--font-size-b3) !important; }
+  .ticker-vol { margin-left: 10px !important; }
+  .change-grid { grid-template-columns: 1fr 1fr !important; }
+  .ctx-grid    { grid-template-columns: repeat(3, 1fr) !important; }
+  .type-grid   { grid-template-columns: repeat(2, 1fr) !important; }
+  .action-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .br-card-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .persona-fields { grid-template-columns: repeat(3, 1fr) !important; }
+  .cmp-table   { min-width: auto !important; font-size: var(--font-size-b3) !important; }
+}
+
+/* ===== Force desktop layout in narrow viewports =====
+   ListeningMind.AI 의 모바일 미디어쿼리(@media max-width:767px)는 사이드바·툴바·
+   2열 그리드를 1열로 떨어뜨린다. Claude Desktop 의 내장 HTML 미리뷰는
+   뷰포트가 좁은 경우가 많아 그 규칙이 의도치 않게 작동한다. 우리 스킬은
+   "maistro 와 동일한 데스크톱 레이아웃" 을 목표로 하므로 좁은 뷰포트에서도
+   2열 그리드와 트렌드 ticker 2열을 유지하도록 강제한다. */
+@media (max-width: 767px) {
+  .ticker-list { grid-template-columns: repeat(2, 1fr) !important; }
+  .ticker-row { flex-wrap: nowrap !important; }
+  .ticker-kw  { flex: 1 1 auto !important; font-size: var(--font-size-b3) !important; }
+  .ticker-vol { margin-left: 10px !important; }
+  .change-grid { grid-template-columns: 1fr 1fr !important; }
+  .ctx-grid    { grid-template-columns: repeat(3, 1fr) !important; }
+  .type-grid   { grid-template-columns: repeat(2, 1fr) !important; }
+  .action-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .br-card-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .persona-fields { grid-template-columns: repeat(3, 1fr) !important; }
+  .cmp-table   { min-width: auto !important; font-size: var(--font-size-b3) !important; }
+}
+</style>
+</head>
+<body class="view-mode-dash">
+
+  <div class="mini-toolbar">
+    <div class="mini-toolbar__view">
+      <button type="button" data-view="dash" class="active">대시보드</button>
+      <button type="button" data-view="a4">A4</button>
+    </div>
+    <button type="button" class="mini-toolbar__print" onclick="window.print()">인쇄</button>
+  </div>
+
+  <div class="view-dash">
+    <div class="dash-scroll">
+      <div class="dash-cover-block"><div class="dash-card"><div class="dash-cover-gradient dash-cover-gradient--path"><div class="dash-cover-eyebrow">검색 여정 분석 · 한국</div><div class="dash-cover-title">검색 여정 분석</div><div class="dash-cover-category">마켓오</div><div class="dash-cover-meta">수집: 2026-09-14 · 경로 300 · 허브 20</div></div><div class="mr-summary-box mr-summary-box--dash"><div class="mr-summary-box__title">배경과 목적</div><p class="mr-summary-text">이 리포트는 &#x27;마켓오&#x27;에서 시작되는 소비자의 검색 여정(Search Journey)을 분석해, 한국 (네이버 + 구글) 시장에서 고객이 어떤 경로로 이동하고 어디서 분기·이탈·전환하는지 파악하기 위해 작성되었습니다. ListeningMind 패스파인더의 검색 여정 데이터로 키워드 간 이동 경로를 수집하고, 검색량에 근거해 주요 경로와 핵심 분기점(Hub)을 도출하였습니다.</p><p class="mr-summary-text mr-overview">마켓오 검색은 레스토랑·과자·도곡점·단종 같은 브랜드 탐색 입구에서 출발해 거의 모두 <strong>마켓오 브라우니</strong>로 합류하고, 그 뒤 칼로리·성분·가격 검증을 거쳐 <strong>황치즈·말차 같은 맛 변형</strong>이나 디시·편의점 브라우니 같은 대안 탐색으로 다시 갈라집니다.</p></div></div></div>
+      <nav class="dash-tabs" aria-label="tabs"><div class="dash-tabs__inner" role="tablist"><button type="button" class="dash-tab active" role="tab" id="dash-tab-0" aria-selected="true" data-panel="0">검색 여정</button><button type="button" class="dash-tab" role="tab" id="dash-tab-1" aria-selected="false" data-panel="1">인사이트·실행</button></div></nav>
+      <div class="dash-tab-panel active" role="tabpanel" aria-labelledby="dash-tab-0" data-panel="0"><div class="dash-card"><div class="dash-card__head"><span class="dash-card__title">검색 여정 흐름도</span></div><p class="persona-section-desc">'마켓오'를 기점으로 가장 많이 나타난 검색 여정을 상위 흐름부터 분기 트리로 나타냈습니다. 공유되는 앞부분은 합쳐지고, 갈라지는 지점이 분기(허브)입니다.</p><div class="flow-legend">검색 의도  <span class="flow-legend__item flow-legend__item--i">정보 탐색</span><span class="flow-legend__item flow-legend__item--n">길찾기</span><span class="flow-legend__item flow-legend__item--c">상업 조사</span><span class="flow-legend__item flow-legend__item--t">거래</span></div><div class="flow-diagram"><div class="flow-inner"><div class="flow-tiers"><div class="flow-tier"><span>진입 키워드</span></div><div class="flow-tier"><span>1차 분기</span></div><div class="flow-tier"><span>2차 분기</span></div><div class="flow-tier"><span>3차 분기</span></div></div><div class="flow-tree-wrap"><ul class="flow-tree flow-tree--d0"><li class="flow-branch"><div class="flow-node flow-node--seed"><span class="flow-node__kw">마켓오</span><span class="flow-node__vol">4,733</span></div><ul class="flow-tree flow-tree--d1"><li class="flow-branch"><div class="flow-node flow-node--i"><span class="flow-node__kw">마켓오 레스토랑</span><span class="flow-node__vol">286</span></div><ul class="flow-tree flow-tree--d2"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 다쿠아즈</span><span class="flow-node__vol">693</span></div><ul class="flow-tree flow-tree--d3"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 브라우니</span><span class="flow-node__vol">7,820</span></div></li></ul></li></ul></li><li class="flow-branch"><div class="flow-node flow-node--i"><span class="flow-node__kw">마켓오 도곡점</span><span class="flow-node__vol">130</span></div><ul class="flow-tree flow-tree--d2"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">닥터유 브라우니</span><span class="flow-node__vol">250</span></div><ul class="flow-tree flow-tree--d3"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 브라우니</span><span class="flow-node__vol">7,820</span></div></li><li class="flow-branch"><div class="flow-node flow-node--i"><span class="flow-node__kw">마켓오 브라우니 디시</span><span class="flow-node__vol">70</span></div></li></ul></li></ul></li><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 단종</span><span class="flow-node__vol">28</span></div><ul class="flow-tree flow-tree--d2"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓 오 치즈 브라우니</span><span class="flow-node__vol">656</span></div><ul class="flow-tree flow-tree--d3"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 브라우니</span><span class="flow-node__vol">7,820</span></div></li><li class="flow-branch"><div class="flow-node flow-node--i"><span class="flow-node__kw">마켓오 브라우니 디시</span><span class="flow-node__vol">70</span></div></li></ul></li><li class="flow-branch"><div class="flow-node flow-node--i"><span class="flow-node__kw">마켓오 압구정점</span><span class="flow-node__vol">340</span></div><ul class="flow-tree flow-tree--d3"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 브라우니</span><span class="flow-node__vol">7,820</span></div></li></ul></li></ul></li></ul></li></ul></div></div></div></div><div class="dash-card"><div class="dash-card__head"><span class="dash-card__title">'마켓오' 주요 검색 경로</span><span class="dash-card__badge">5개</span></div><p class="persona-section-desc">검색량이 큰 대표 여정을 흐름 유형(전환 수렴·비교 정체·리스크 이탈)별로 정리했습니다.</p><div class="dash-card__body"><div class="dash-card persona-card path-card path-card--conversion"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num">01</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="path-card__flow path-card__flow--conversion">전환 수렴</span><span class="persona-subhead__badge path-card__volbadge">합산 검색량 15,280</span><span class="persona-subhead__badge path-card__hopbadge">6단계</span></div></div></div></div><div class="persona-card__body"><div class="path-chain"><span class="path-chip"><span class="path-chip__kw">마켓오</span><span class="path-chip__vol">4,733</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 단종</span><span class="path-chip__vol">28</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓 오 치즈 브라우니</span><span class="path-chip__vol">656</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니</span><span class="path-chip__vol">7,820</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 쿠팡</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓 오 황치즈</span><span class="path-chip__vol">2,043</span></span></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">고객 의도</div><div class="persona-field__val">단종 소식을 듣고 치즈 브라우니가 아직 있는지 확인한 뒤 온라인몰에서 구매처를 찾는 고객</div></div><div class="persona-field"><div class="persona-field__label">이탈·합류 지점</div><div class="persona-field__val">단종 불안이 <strong>마켓오 브라우니 쿠팡</strong>에서 구매 채널 탐색으로 전환되고, 황치즈 제품으로 관심이 이어집니다.</div></div><div class="persona-field"><div class="persona-field__label">해결·강화 액션</div><div class="persona-field__val">단종 여부를 명확히 안내하는 공지와 함께 온라인몰 판매 페이지로 연결되는 경로를 만들어 불안을 구매로 돌리세요.</div></div></div><div class="persona-subhead">근거 키워드·허브<span class="persona-ev-note">월 검색량 기준</span></div><div class="persona-ev"><span class="persona-ev__item">마켓 오 치즈 브라우니<span class="persona-ev__vol">656</span></span><span class="persona-ev__item">마켓오 단종<span class="persona-ev__vol">28</span></span><span class="persona-ev__item">마켓오 브라우니 쿠팡</span></div></div></div><div class="dash-card persona-card path-card path-card--conversion"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num">02</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="path-card__flow path-card__flow--conversion">전환 수렴</span><span class="persona-subhead__badge path-card__volbadge">합산 검색량 14,189</span><span class="persona-subhead__badge path-card__hopbadge">7단계</span></div></div></div></div><div class="persona-card__body"><div class="path-chain"><span class="path-chip"><span class="path-chip__kw">마켓오</span><span class="path-chip__vol">4,733</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 과자</span><span class="path-chip__vol">173</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 다쿠아즈</span><span class="path-chip__vol">693</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니</span><span class="path-chip__vol">7,820</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 가격</span><span class="path-chip__vol">94</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 칼로리</span><span class="path-chip__vol">243</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 말차</span><span class="path-chip__vol">433</span></span></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">고객 의도</div><div class="persona-field__val">마켓오 과자 라인업을 훑다가 브라우니의 가격과 칼로리를 확인하고 말차 맛으로 구매 대상을 좁히는 고객</div></div><div class="persona-field"><div class="persona-field__label">이탈·합류 지점</div><div class="persona-field__val">과자·다쿠아즈 입구가 <strong>마켓오 브라우니</strong>에서 합류한 뒤 가격·칼로리 검증을 지나 <strong>말차</strong> 변형으로 수렴합니다.</div></div><div class="persona-field"><div class="persona-field__label">해결·강화 액션</div><div class="persona-field__val">브라우니 상세 콘텐츠에 가격과 칼로리를 한 화면에 묶어 제시하고, 말차 제품으로 바로 이어지는 구매 링크를 배치하세요.</div></div></div><div class="persona-subhead">근거 키워드·허브<span class="persona-ev-note">월 검색량 기준</span></div><div class="persona-ev"><span class="persona-ev__item">마켓오 브라우니<span class="persona-ev__vol">7,820</span></span><span class="persona-ev__item">마켓오 브라우니 말차<span class="persona-ev__vol">433</span></span><span class="persona-ev__item">마켓오 브라우니 가격<span class="persona-ev__vol">94</span></span></div></div></div><div class="dash-card persona-card path-card path-card--comparison"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num">03</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="path-card__flow path-card__flow--comparison">비교·검증 정체</span><span class="persona-subhead__badge path-card__volbadge">합산 검색량 173,791</span><span class="persona-subhead__badge path-card__hopbadge">8단계</span></div></div></div></div><div class="persona-card__body"><div class="path-chain"><span class="path-chip"><span class="path-chip__kw">마켓오</span><span class="path-chip__vol">4,733</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 도곡점</span><span class="path-chip__vol">130</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">닥터유 브라우니</span><span class="path-chip__vol">250</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 디시</span><span class="path-chip__vol">70</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">편의점 브라우니</span><span class="path-chip__vol">326</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니</span><span class="path-chip__vol">7,820</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 치즈</span><span class="path-chip__vol">676</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">촉촉한 황치즈칩</span><span class="path-chip__vol">159,786</span></span></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">고객 의도</div><div class="persona-field__val">닥터유·편의점 브라우니와 마켓오 브라우니를 오가며 어떤 브라우니가 나은지 비교하는 고객</div></div><div class="persona-field"><div class="persona-field__label">이탈·합류 지점</div><div class="persona-field__val"><strong>닥터유 브라우니</strong>와 <strong>편의점 브라우니</strong> 비교 구간에서 정체되다가 마켓오 브라우니로 돌아오지만, 끝에서는 황치즈 과자로 관심이 옮겨갑니다.</div></div><div class="persona-field"><div class="persona-field__label">해결·강화 액션</div><div class="persona-field__val">편의점 브라우니 대비 마켓오 브라우니의 차별점을 비교형 콘텐츠로 정리하고, 치즈 맛 제품 정보를 함께 노출하세요.</div></div></div><div class="persona-subhead">근거 키워드·허브<span class="persona-ev-note">월 검색량 기준</span></div><div class="persona-ev"><span class="persona-ev__item">마켓오 브라우니 치즈<span class="persona-ev__vol">676</span></span><span class="persona-ev__item">편의점 브라우니<span class="persona-ev__vol">326</span></span><span class="persona-ev__item">닥터유 브라우니<span class="persona-ev__vol">250</span></span></div></div></div><div class="dash-card persona-card path-card path-card--comparison"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num">04</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="path-card__flow path-card__flow--comparison">비교·검증 정체</span><span class="persona-subhead__badge path-card__volbadge">합산 검색량 14,233</span><span class="persona-subhead__badge path-card__hopbadge">8단계</span></div></div></div></div><div class="persona-card__body"><div class="path-chain"><span class="path-chip"><span class="path-chip__kw">마켓오</span><span class="path-chip__vol">4,733</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 과자</span><span class="path-chip__vol">173</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 다쿠아즈</span><span class="path-chip__vol">693</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니</span><span class="path-chip__vol">7,820</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 성분</span><span class="path-chip__vol">21</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 칼로리</span><span class="path-chip__vol">243</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 디시</span><span class="path-chip__vol">70</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">과자 추천 디시</span><span class="path-chip__vol">480</span></span></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">고객 의도</div><div class="persona-field__val">성분과 칼로리를 따져본 뒤 커뮤니티 평판으로 최종 판단을 미루는 신중한 간식 구매자</div></div><div class="persona-field"><div class="persona-field__label">이탈·합류 지점</div><div class="persona-field__val">성분·칼로리 검증 뒤 <strong>마켓오 브라우니 디시</strong>에서 커뮤니티 의견을 찾다가 일반 과자 추천 탐색으로 빠져나갑니다.</div></div><div class="persona-field"><div class="persona-field__label">해결·강화 액션</div><div class="persona-field__val">성분·칼로리 정보를 실제 섭취 후기와 함께 제공해 커뮤니티로 이동하기 전에 판단 근거를 채워 주세요.</div></div></div><div class="persona-subhead">근거 키워드·허브<span class="persona-ev-note">월 검색량 기준</span></div><div class="persona-ev"><span class="persona-ev__item">과자 추천 디시<span class="persona-ev__vol">480</span></span><span class="persona-ev__item">마켓오 브라우니 디시<span class="persona-ev__vol">70</span></span><span class="persona-ev__item">마켓오 브라우니 성분<span class="persona-ev__vol">21</span></span></div></div></div><div class="dash-card persona-card path-card path-card--risk"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num">05</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="path-card__flow path-card__flow--risk">리스크·이탈</span><span class="persona-subhead__badge path-card__volbadge">합산 검색량 174,095</span><span class="persona-subhead__badge path-card__hopbadge">8단계</span></div></div></div></div><div class="persona-card__body"><div class="path-chain"><span class="path-chip"><span class="path-chip__kw">마켓오</span><span class="path-chip__vol">4,733</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 단종</span><span class="path-chip__vol">28</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓 오 치즈 브라우니</span><span class="path-chip__vol">656</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 디시</span><span class="path-chip__vol">70</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">편의점 브라우니</span><span class="path-chip__vol">326</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니</span><span class="path-chip__vol">7,820</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 치즈</span><span class="path-chip__vol">676</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">촉촉한 황치즈칩</span><span class="path-chip__vol">159,786</span></span></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">고객 의도</div><div class="persona-field__val">좋아하던 치즈 브라우니가 단종됐다고 느끼고 대체할 간식을 찾아 나서는 고객</div></div><div class="persona-field"><div class="persona-field__label">이탈·합류 지점</div><div class="persona-field__val"><strong>마켓오 단종</strong>에서 시작된 불안이 커뮤니티와 편의점 브라우니 탐색을 거쳐 다른 황치즈 과자로 이탈합니다.</div></div><div class="persona-field"><div class="persona-field__label">해결·강화 액션</div><div class="persona-field__val">단종·리뉴얼 여부를 공식 채널에서 분명히 밝히고, 대체 추천을 마켓오 치즈 계열 제품으로 먼저 제시하세요.</div></div></div><div class="persona-subhead">근거 키워드·허브<span class="persona-ev-note">월 검색량 기준</span></div><div class="persona-ev"><span class="persona-ev__item">촉촉한 황치즈칩<span class="persona-ev__vol">159,786</span></span><span class="persona-ev__item">편의점 브라우니<span class="persona-ev__vol">326</span></span><span class="persona-ev__item">마켓오 단종<span class="persona-ev__vol">28</span></span></div></div></div></div></div><div class="dash-card"><div class="dash-card__head"><span class="dash-card__title">핵심 분기점 (Hub)</span><span class="dash-card__badge">3개</span></div><p class="persona-section-desc">여러 경로가 갈라지는 핵심 분기 키워드입니다. 여기서의 선택이 이후 여정을 좌우합니다.</p><div class="dash-card__body"><div class="dash-card persona-card hub-card"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num hub-card__num">01</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="persona-card__name">마켓오 브라우니</span><span class="persona-subhead__badge path-card__volbadge">월 검색량 7,820</span><span class="persona-subhead__badge hub-card__degbadge">분기 12개</span></div></div></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">이 분기의 의미</div><div class="persona-field__val">마켓오를 검색한 고객 대부분이 결국 확인하고 싶은 것은 대표 제품인 브라우니입니다.</div></div><div class="persona-field"><div class="persona-field__label">고객의 고민</div><ul class="hub-dilemmas"><li>칼로리와 성분이 부담스럽지 않을까</li><li>치즈·말차 중 어떤 맛을 고를까</li><li>편의점에서 살까 온라인에서 살까</li></ul></div><div class="persona-field"><div class="persona-field__label">실행 액션</div><div class="rpt-act-list hub-actions"><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">맛별 칼로리·성분·가격을 한눈에 비교하는 제품 허브 페이지를 운영</div></div><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">맛 변형 키워드에 맞춘 검색 광고와 구매 링크를 연결</div></div></div></div></div><div class="persona-subhead">이 허브에서 갈라지는 키워드</div><div class="persona-ev"><span class="persona-ev__item">마켓오 브라우니 치즈<span class="persona-ev__vol">676</span></span><span class="persona-ev__item">마켓오 브라우니 말차<span class="persona-ev__vol">433</span></span><span class="persona-ev__item">마켓오 브라우니 칼로리<span class="persona-ev__vol">243</span></span><span class="persona-ev__item">마켓오 브라우니 가격<span class="persona-ev__vol">94</span></span><span class="persona-ev__item">마켓오 브라우니 디시<span class="persona-ev__vol">70</span></span><span class="persona-ev__item">마켓오 브라우니 편의점<span class="persona-ev__vol">55</span></span></div></div></div><div class="dash-card persona-card hub-card"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num hub-card__num">02</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="persona-card__name">마켓 오 브라우니 만든 사람</span><span class="persona-subhead__badge hub-card__degbadge">분기 10개</span></div></div></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">이 분기의 의미</div><div class="persona-field__val">제품보다 브랜드를 만든 인물과 그 평판에 대한 호기심이 커지는 지점입니다.</div></div><div class="persona-field"><div class="persona-field__label">고객의 고민</div><ul class="hub-dilemmas"><li>브랜드를 만든 사람이 누구일까</li><li>그 인물에 대한 평판은 어떨까</li><li>다른 브랜드와는 어떤 관계일까</li></ul></div><div class="persona-field"><div class="persona-field__label">실행 액션</div><div class="rpt-act-list hub-actions"><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">브랜드 탄생 스토리를 제품 중심으로 정리한 공식 콘텐츠를 제공</div></div><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">인물 관련 부정 이슈 키워드를 모니터링하고 대응 메시지를 준비</div></div></div></div></div><div class="persona-subhead">이 허브에서 갈라지는 키워드</div><div class="persona-ev"><span class="persona-ev__item">노희영 식당<span class="persona-ev__vol">320</span></span><span class="persona-ev__item">노희영 집안<span class="persona-ev__vol">301</span></span><span class="persona-ev__item">노희영 올리브영<span class="persona-ev__vol">246</span></span><span class="persona-ev__item">노희영 비비고<span class="persona-ev__vol">186</span></span><span class="persona-ev__item">노희영 블라인드<span class="persona-ev__vol">100</span></span><span class="persona-ev__item">노희영 악명 디시<span class="persona-ev__vol">90</span></span></div></div></div><div class="dash-card persona-card hub-card"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num hub-card__num">03</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="persona-card__name">마켓 오 치즈 브라우니</span><span class="persona-subhead__badge path-card__volbadge">월 검색량 656</span><span class="persona-subhead__badge hub-card__degbadge">분기 5개</span></div></div></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">이 분기의 의미</div><div class="persona-field__val">단종 소문 속에서 치즈 브라우니를 계속 살 수 있는지 확인하려는 마음입니다.</div></div><div class="persona-field"><div class="persona-field__label">고객의 고민</div><ul class="hub-dilemmas"><li>정말 단종된 걸까</li><li>후기가 예전과 같을까</li><li>크림치즈 브라우니와 무엇이 다를까</li></ul></div><div class="persona-field"><div class="persona-field__label">실행 액션</div><div class="rpt-act-list hub-actions"><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">치즈 브라우니 판매 현황과 리뉴얼 정보를 공식 공지로 게시</div></div><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">커뮤니티 후기 채널에 최신 제품 정보를 제공</div></div></div></div></div><div class="persona-subhead">이 허브에서 갈라지는 키워드</div><div class="persona-ev"><span class="persona-ev__item">마켓오 브라우니<span class="persona-ev__vol">7,820</span></span><span class="persona-ev__item">마켓오 브라우니 디시<span class="persona-ev__vol">70</span></span><span class="persona-ev__item">마켓 오 치즈 브라우니 칼로리<span class="persona-ev__vol">36</span></span><span class="persona-ev__item">마켓오 크림치즈 브라우니 더쿠</span><span class="persona-ev__item">마켓 오 치즈 브라우니 후기</span></div></div></div></div></div></div>
+      <div class="dash-tab-panel" role="tabpanel" aria-labelledby="dash-tab-1" data-panel="1"><div class="dash-card"><div class="dash-card__head"><span class="dash-card__title">종합 시사점</span></div><div class="dash-card__body"><p class="mr-summary-text">마켓오 검색 여정은 여러 브랜드 입구에서 출발하지만 <strong>마켓오 브라우니</strong>라는 하나의 대표 제품으로 강하게 합류합니다. 합류 이후에는 칼로리·성분·가격 검증과 맛 변형 선택이 이어지고, 단종 불안과 커뮤니티 평판 확인 구간에서 편의점 브라우니나 다른 황치즈 과자로 관심이 새어 나갑니다.</p></div></div><div class="dash-card"><div class="dash-card__head"><span class="dash-card__title">핵심 인사이트</span><span class="dash-card__badge">3개</span></div><div class="dash-card__body"><div class="rpt-act-list"><div class="rpt-act-card rpt-act-card--insight"><div class="rpt-act-card__title"><span class="action-dot action-dot--insight"></span>브랜드 검색이 곧 브라우니 검색</div><div class="rpt-act-card__body">레스토랑·과자·매장 등 어떤 입구로 들어와도 고객은 결국 <strong>마켓오 브라우니</strong>를 확인하러 갑니다. 브랜드 커뮤니케이션의 중심을 브라우니에 두는 것이 여정과 맞습니다.</div></div><div class="rpt-act-card rpt-act-card--insight"><div class="rpt-act-card__title"><span class="action-dot action-dot--insight"></span>건강 검증이 구매 직전의 관문</div><div class="rpt-act-card__body">브라우니 이후 고객은 <strong>칼로리·성분</strong>을 반복해서 확인한 뒤에야 맛 선택이나 구매처로 넘어갑니다. 이 검증 단계에서 답을 주지 못하면 커뮤니티로 판단을 넘깁니다.</div></div><div class="rpt-act-card rpt-act-card--insight"><div class="rpt-act-card__title"><span class="action-dot action-dot--insight"></span>단종 불안이 이탈의 출발점</div><div class="rpt-act-card__body"><strong>마켓오 단종</strong>과 치즈 브라우니 검색은 대체재 탐색으로 이어지기 쉽습니다. 동시에 온라인몰 구매처 검색으로 전환되는 흐름도 있어, 명확한 안내가 이탈과 구매를 가릅니다.</div></div></div></div></div><div class="dash-card"><div class="dash-card__head"><span class="dash-card__title">지금 바로 써볼 수 있는 것</span><span class="dash-card__badge">3개</span></div><div class="dash-card__body"><div class="rpt-act-list"><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__title"><span class="action-dot action-dot--now"></span>단종·판매 현황 공식 안내</div><div class="rpt-act-card__body">치즈 브라우니의 판매·리뉴얼 여부를 공식 채널에 게시하고, 단종 관련 검색에 온라인몰 구매 링크를 함께 노출하세요.</div></div><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__title"><span class="action-dot action-dot--now"></span>칼로리·성분 비교 콘텐츠</div><div class="rpt-act-card__body">맛별 칼로리·성분·가격을 한 화면에서 비교하는 콘텐츠를 만들어 검증 단계에서 바로 판단할 수 있게 하세요.</div></div><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__title"><span class="action-dot action-dot--now"></span>편의점 브라우니 대비 차별점 정리</div><div class="rpt-act-card__body">닥터유·편의점 브라우니와 비교하는 고객을 위해 마켓오 브라우니만의 강점을 정리한 비교형 콘텐츠를 배포하세요.</div></div></div></div></div><div class="dash-card"><div class="dash-card__head"><span class="dash-card__title">앞으로 주목할 기회</span><span class="dash-card__badge">3개</span></div><div class="dash-card__body"><div class="rpt-act-list"><div class="rpt-act-card rpt-act-card--future"><div class="rpt-act-card__title"><span class="action-dot action-dot--future"></span>황치즈·말차 맛 변형 수요</div><div class="rpt-act-card__body">여정의 끝에서 황치즈와 말차 같은 맛 변형으로 관심이 모입니다. 맛 확장 제품이나 한정판 기획의 단서로 활용할 수 있습니다.</div></div><div class="rpt-act-card rpt-act-card--future"><div class="rpt-act-card__title"><span class="action-dot action-dot--future"></span>커뮤니티 평판 관리</div><div class="rpt-act-card__body">디시 등 커뮤니티 검색이 판단의 마지막 단계로 쓰이고 있어, 후기 채널에 최신 제품 정보를 꾸준히 공급하는 관리 체계가 필요합니다.</div></div><div class="rpt-act-card rpt-act-card--future"><div class="rpt-act-card__title"><span class="action-dot action-dot--future"></span>브랜드 창업 스토리 활용</div><div class="rpt-act-card__body">브랜드를 만든 인물에 대한 호기심이 별도 여정을 형성합니다. 제품 중심의 브랜드 스토리로 이 관심을 긍정적으로 흡수할 기회가 있습니다.</div></div></div></div></div></div>
+    </div>
+  </div>
+
+  <div class="view-a4">
+    <div class="a4-scroll">
+      <div class="rpt-page rpt-page--cover" id="page-0"><div class="cover-body"><div><div class="cover-lm">ListeningMind.AI</div><div class="cover-title">검색 여정 분석</div><div class="cover-category">마켓오</div><div class="cover-meta"><span>2026-09-14</span><span class="cover-meta-sep">|</span><span>경로 300 · 허브 20</span></div></div></div></div>
+      <div class="rpt-page" id="page-1"><div class="page-body"><div class="mr-summary-box"><div class="mr-summary-box__title">배경과 목적</div><p class="mr-summary-text--sm">이 리포트는 &#x27;마켓오&#x27;에서 시작되는 소비자의 검색 여정(Search Journey)을 분석해, 한국 (네이버 + 구글) 시장에서 고객이 어떤 경로로 이동하고 어디서 분기·이탈·전환하는지 파악하기 위해 작성되었습니다. ListeningMind 패스파인더의 검색 여정 데이터로 키워드 간 이동 경로를 수집하고, 검색량에 근거해 주요 경로와 핵심 분기점(Hub)을 도출하였습니다.</p><p class="mr-summary-text--sm mr-overview">마켓오 검색은 레스토랑·과자·도곡점·단종 같은 브랜드 탐색 입구에서 출발해 거의 모두 <strong>마켓오 브라우니</strong>로 합류하고, 그 뒤 칼로리·성분·가격 검증을 거쳐 <strong>황치즈·말차 같은 맛 변형</strong>이나 디시·편의점 브라우니 같은 대안 탐색으로 다시 갈라집니다.</p></div><div class="dash-card"><div class="dash-card__head"><span class="dash-card__title">검색 여정 흐름도</span></div><p class="persona-section-desc">'마켓오'를 기점으로 가장 많이 나타난 검색 여정을 상위 흐름부터 분기 트리로 나타냈습니다. 공유되는 앞부분은 합쳐지고, 갈라지는 지점이 분기(허브)입니다.</p><div class="flow-legend">검색 의도  <span class="flow-legend__item flow-legend__item--i">정보 탐색</span><span class="flow-legend__item flow-legend__item--n">길찾기</span><span class="flow-legend__item flow-legend__item--c">상업 조사</span><span class="flow-legend__item flow-legend__item--t">거래</span></div><div class="flow-diagram"><div class="flow-inner"><div class="flow-tiers"><div class="flow-tier"><span>진입 키워드</span></div><div class="flow-tier"><span>1차 분기</span></div><div class="flow-tier"><span>2차 분기</span></div><div class="flow-tier"><span>3차 분기</span></div></div><div class="flow-tree-wrap"><ul class="flow-tree flow-tree--d0"><li class="flow-branch"><div class="flow-node flow-node--seed"><span class="flow-node__kw">마켓오</span><span class="flow-node__vol">4,733</span></div><ul class="flow-tree flow-tree--d1"><li class="flow-branch"><div class="flow-node flow-node--i"><span class="flow-node__kw">마켓오 레스토랑</span><span class="flow-node__vol">286</span></div><ul class="flow-tree flow-tree--d2"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 다쿠아즈</span><span class="flow-node__vol">693</span></div><ul class="flow-tree flow-tree--d3"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 브라우니</span><span class="flow-node__vol">7,820</span></div></li></ul></li></ul></li><li class="flow-branch"><div class="flow-node flow-node--i"><span class="flow-node__kw">마켓오 도곡점</span><span class="flow-node__vol">130</span></div><ul class="flow-tree flow-tree--d2"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">닥터유 브라우니</span><span class="flow-node__vol">250</span></div><ul class="flow-tree flow-tree--d3"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 브라우니</span><span class="flow-node__vol">7,820</span></div></li><li class="flow-branch"><div class="flow-node flow-node--i"><span class="flow-node__kw">마켓오 브라우니 디시</span><span class="flow-node__vol">70</span></div></li></ul></li></ul></li><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 단종</span><span class="flow-node__vol">28</span></div><ul class="flow-tree flow-tree--d2"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓 오 치즈 브라우니</span><span class="flow-node__vol">656</span></div><ul class="flow-tree flow-tree--d3"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 브라우니</span><span class="flow-node__vol">7,820</span></div></li><li class="flow-branch"><div class="flow-node flow-node--i"><span class="flow-node__kw">마켓오 브라우니 디시</span><span class="flow-node__vol">70</span></div></li></ul></li><li class="flow-branch"><div class="flow-node flow-node--i"><span class="flow-node__kw">마켓오 압구정점</span><span class="flow-node__vol">340</span></div><ul class="flow-tree flow-tree--d3"><li class="flow-branch"><div class="flow-node flow-node--t"><span class="flow-node__kw">마켓오 브라우니</span><span class="flow-node__vol">7,820</span></div></li></ul></li></ul></li></ul></li></ul></div></div></div></div><div class="persona-subhead">'마켓오' 주요 검색 경로</div><div class="dash-card persona-card path-card path-card--conversion"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num">01</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="path-card__flow path-card__flow--conversion">전환 수렴</span><span class="persona-subhead__badge path-card__volbadge">합산 검색량 15,280</span><span class="persona-subhead__badge path-card__hopbadge">6단계</span></div></div></div></div><div class="persona-card__body"><div class="path-chain"><span class="path-chip"><span class="path-chip__kw">마켓오</span><span class="path-chip__vol">4,733</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 단종</span><span class="path-chip__vol">28</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓 오 치즈 브라우니</span><span class="path-chip__vol">656</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니</span><span class="path-chip__vol">7,820</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 쿠팡</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓 오 황치즈</span><span class="path-chip__vol">2,043</span></span></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">고객 의도</div><div class="persona-field__val">단종 소식을 듣고 치즈 브라우니가 아직 있는지 확인한 뒤 온라인몰에서 구매처를 찾는 고객</div></div><div class="persona-field"><div class="persona-field__label">이탈·합류 지점</div><div class="persona-field__val">단종 불안이 <strong>마켓오 브라우니 쿠팡</strong>에서 구매 채널 탐색으로 전환되고, 황치즈 제품으로 관심이 이어집니다.</div></div><div class="persona-field"><div class="persona-field__label">해결·강화 액션</div><div class="persona-field__val">단종 여부를 명확히 안내하는 공지와 함께 온라인몰 판매 페이지로 연결되는 경로를 만들어 불안을 구매로 돌리세요.</div></div></div><div class="persona-subhead">근거 키워드·허브<span class="persona-ev-note">월 검색량 기준</span></div><div class="persona-ev"><span class="persona-ev__item">마켓 오 치즈 브라우니<span class="persona-ev__vol">656</span></span><span class="persona-ev__item">마켓오 단종<span class="persona-ev__vol">28</span></span><span class="persona-ev__item">마켓오 브라우니 쿠팡</span></div></div></div><div class="dash-card persona-card path-card path-card--conversion"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num">02</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="path-card__flow path-card__flow--conversion">전환 수렴</span><span class="persona-subhead__badge path-card__volbadge">합산 검색량 14,189</span><span class="persona-subhead__badge path-card__hopbadge">7단계</span></div></div></div></div><div class="persona-card__body"><div class="path-chain"><span class="path-chip"><span class="path-chip__kw">마켓오</span><span class="path-chip__vol">4,733</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 과자</span><span class="path-chip__vol">173</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 다쿠아즈</span><span class="path-chip__vol">693</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니</span><span class="path-chip__vol">7,820</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 가격</span><span class="path-chip__vol">94</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 칼로리</span><span class="path-chip__vol">243</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 말차</span><span class="path-chip__vol">433</span></span></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">고객 의도</div><div class="persona-field__val">마켓오 과자 라인업을 훑다가 브라우니의 가격과 칼로리를 확인하고 말차 맛으로 구매 대상을 좁히는 고객</div></div><div class="persona-field"><div class="persona-field__label">이탈·합류 지점</div><div class="persona-field__val">과자·다쿠아즈 입구가 <strong>마켓오 브라우니</strong>에서 합류한 뒤 가격·칼로리 검증을 지나 <strong>말차</strong> 변형으로 수렴합니다.</div></div><div class="persona-field"><div class="persona-field__label">해결·강화 액션</div><div class="persona-field__val">브라우니 상세 콘텐츠에 가격과 칼로리를 한 화면에 묶어 제시하고, 말차 제품으로 바로 이어지는 구매 링크를 배치하세요.</div></div></div><div class="persona-subhead">근거 키워드·허브<span class="persona-ev-note">월 검색량 기준</span></div><div class="persona-ev"><span class="persona-ev__item">마켓오 브라우니<span class="persona-ev__vol">7,820</span></span><span class="persona-ev__item">마켓오 브라우니 말차<span class="persona-ev__vol">433</span></span><span class="persona-ev__item">마켓오 브라우니 가격<span class="persona-ev__vol">94</span></span></div></div></div><div class="dash-card persona-card path-card path-card--comparison"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num">03</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="path-card__flow path-card__flow--comparison">비교·검증 정체</span><span class="persona-subhead__badge path-card__volbadge">합산 검색량 173,791</span><span class="persona-subhead__badge path-card__hopbadge">8단계</span></div></div></div></div><div class="persona-card__body"><div class="path-chain"><span class="path-chip"><span class="path-chip__kw">마켓오</span><span class="path-chip__vol">4,733</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 도곡점</span><span class="path-chip__vol">130</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">닥터유 브라우니</span><span class="path-chip__vol">250</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 디시</span><span class="path-chip__vol">70</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">편의점 브라우니</span><span class="path-chip__vol">326</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니</span><span class="path-chip__vol">7,820</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 치즈</span><span class="path-chip__vol">676</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">촉촉한 황치즈칩</span><span class="path-chip__vol">159,786</span></span></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">고객 의도</div><div class="persona-field__val">닥터유·편의점 브라우니와 마켓오 브라우니를 오가며 어떤 브라우니가 나은지 비교하는 고객</div></div><div class="persona-field"><div class="persona-field__label">이탈·합류 지점</div><div class="persona-field__val"><strong>닥터유 브라우니</strong>와 <strong>편의점 브라우니</strong> 비교 구간에서 정체되다가 마켓오 브라우니로 돌아오지만, 끝에서는 황치즈 과자로 관심이 옮겨갑니다.</div></div><div class="persona-field"><div class="persona-field__label">해결·강화 액션</div><div class="persona-field__val">편의점 브라우니 대비 마켓오 브라우니의 차별점을 비교형 콘텐츠로 정리하고, 치즈 맛 제품 정보를 함께 노출하세요.</div></div></div><div class="persona-subhead">근거 키워드·허브<span class="persona-ev-note">월 검색량 기준</span></div><div class="persona-ev"><span class="persona-ev__item">마켓오 브라우니 치즈<span class="persona-ev__vol">676</span></span><span class="persona-ev__item">편의점 브라우니<span class="persona-ev__vol">326</span></span><span class="persona-ev__item">닥터유 브라우니<span class="persona-ev__vol">250</span></span></div></div></div><div class="dash-card persona-card path-card path-card--comparison"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num">04</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="path-card__flow path-card__flow--comparison">비교·검증 정체</span><span class="persona-subhead__badge path-card__volbadge">합산 검색량 14,233</span><span class="persona-subhead__badge path-card__hopbadge">8단계</span></div></div></div></div><div class="persona-card__body"><div class="path-chain"><span class="path-chip"><span class="path-chip__kw">마켓오</span><span class="path-chip__vol">4,733</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 과자</span><span class="path-chip__vol">173</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 다쿠아즈</span><span class="path-chip__vol">693</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니</span><span class="path-chip__vol">7,820</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 성분</span><span class="path-chip__vol">21</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 칼로리</span><span class="path-chip__vol">243</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 디시</span><span class="path-chip__vol">70</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">과자 추천 디시</span><span class="path-chip__vol">480</span></span></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">고객 의도</div><div class="persona-field__val">성분과 칼로리를 따져본 뒤 커뮤니티 평판으로 최종 판단을 미루는 신중한 간식 구매자</div></div><div class="persona-field"><div class="persona-field__label">이탈·합류 지점</div><div class="persona-field__val">성분·칼로리 검증 뒤 <strong>마켓오 브라우니 디시</strong>에서 커뮤니티 의견을 찾다가 일반 과자 추천 탐색으로 빠져나갑니다.</div></div><div class="persona-field"><div class="persona-field__label">해결·강화 액션</div><div class="persona-field__val">성분·칼로리 정보를 실제 섭취 후기와 함께 제공해 커뮤니티로 이동하기 전에 판단 근거를 채워 주세요.</div></div></div><div class="persona-subhead">근거 키워드·허브<span class="persona-ev-note">월 검색량 기준</span></div><div class="persona-ev"><span class="persona-ev__item">과자 추천 디시<span class="persona-ev__vol">480</span></span><span class="persona-ev__item">마켓오 브라우니 디시<span class="persona-ev__vol">70</span></span><span class="persona-ev__item">마켓오 브라우니 성분<span class="persona-ev__vol">21</span></span></div></div></div><div class="dash-card persona-card path-card path-card--risk"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num">05</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="path-card__flow path-card__flow--risk">리스크·이탈</span><span class="persona-subhead__badge path-card__volbadge">합산 검색량 174,095</span><span class="persona-subhead__badge path-card__hopbadge">8단계</span></div></div></div></div><div class="persona-card__body"><div class="path-chain"><span class="path-chip"><span class="path-chip__kw">마켓오</span><span class="path-chip__vol">4,733</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 단종</span><span class="path-chip__vol">28</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓 오 치즈 브라우니</span><span class="path-chip__vol">656</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 디시</span><span class="path-chip__vol">70</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">편의점 브라우니</span><span class="path-chip__vol">326</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니</span><span class="path-chip__vol">7,820</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">마켓오 브라우니 치즈</span><span class="path-chip__vol">676</span></span><span class="path-arrow" aria-hidden="true">→</span><span class="path-chip"><span class="path-chip__kw">촉촉한 황치즈칩</span><span class="path-chip__vol">159,786</span></span></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">고객 의도</div><div class="persona-field__val">좋아하던 치즈 브라우니가 단종됐다고 느끼고 대체할 간식을 찾아 나서는 고객</div></div><div class="persona-field"><div class="persona-field__label">이탈·합류 지점</div><div class="persona-field__val"><strong>마켓오 단종</strong>에서 시작된 불안이 커뮤니티와 편의점 브라우니 탐색을 거쳐 다른 황치즈 과자로 이탈합니다.</div></div><div class="persona-field"><div class="persona-field__label">해결·강화 액션</div><div class="persona-field__val">단종·리뉴얼 여부를 공식 채널에서 분명히 밝히고, 대체 추천을 마켓오 치즈 계열 제품으로 먼저 제시하세요.</div></div></div><div class="persona-subhead">근거 키워드·허브<span class="persona-ev-note">월 검색량 기준</span></div><div class="persona-ev"><span class="persona-ev__item">촉촉한 황치즈칩<span class="persona-ev__vol">159,786</span></span><span class="persona-ev__item">편의점 브라우니<span class="persona-ev__vol">326</span></span><span class="persona-ev__item">마켓오 단종<span class="persona-ev__vol">28</span></span></div></div></div><div class="persona-subhead">핵심 분기점 (Hub)</div><div class="dash-card persona-card hub-card"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num hub-card__num">01</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="persona-card__name">마켓오 브라우니</span><span class="persona-subhead__badge path-card__volbadge">월 검색량 7,820</span><span class="persona-subhead__badge hub-card__degbadge">분기 12개</span></div></div></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">이 분기의 의미</div><div class="persona-field__val">마켓오를 검색한 고객 대부분이 결국 확인하고 싶은 것은 대표 제품인 브라우니입니다.</div></div><div class="persona-field"><div class="persona-field__label">고객의 고민</div><ul class="hub-dilemmas"><li>칼로리와 성분이 부담스럽지 않을까</li><li>치즈·말차 중 어떤 맛을 고를까</li><li>편의점에서 살까 온라인에서 살까</li></ul></div><div class="persona-field"><div class="persona-field__label">실행 액션</div><div class="rpt-act-list hub-actions"><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">맛별 칼로리·성분·가격을 한눈에 비교하는 제품 허브 페이지를 운영</div></div><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">맛 변형 키워드에 맞춘 검색 광고와 구매 링크를 연결</div></div></div></div></div><div class="persona-subhead">이 허브에서 갈라지는 키워드</div><div class="persona-ev"><span class="persona-ev__item">마켓오 브라우니 치즈<span class="persona-ev__vol">676</span></span><span class="persona-ev__item">마켓오 브라우니 말차<span class="persona-ev__vol">433</span></span><span class="persona-ev__item">마켓오 브라우니 칼로리<span class="persona-ev__vol">243</span></span><span class="persona-ev__item">마켓오 브라우니 가격<span class="persona-ev__vol">94</span></span><span class="persona-ev__item">마켓오 브라우니 디시<span class="persona-ev__vol">70</span></span><span class="persona-ev__item">마켓오 브라우니 편의점<span class="persona-ev__vol">55</span></span></div></div></div><div class="dash-card persona-card hub-card"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num hub-card__num">02</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="persona-card__name">마켓 오 브라우니 만든 사람</span><span class="persona-subhead__badge hub-card__degbadge">분기 10개</span></div></div></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">이 분기의 의미</div><div class="persona-field__val">제품보다 브랜드를 만든 인물과 그 평판에 대한 호기심이 커지는 지점입니다.</div></div><div class="persona-field"><div class="persona-field__label">고객의 고민</div><ul class="hub-dilemmas"><li>브랜드를 만든 사람이 누구일까</li><li>그 인물에 대한 평판은 어떨까</li><li>다른 브랜드와는 어떤 관계일까</li></ul></div><div class="persona-field"><div class="persona-field__label">실행 액션</div><div class="rpt-act-list hub-actions"><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">브랜드 탄생 스토리를 제품 중심으로 정리한 공식 콘텐츠를 제공</div></div><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">인물 관련 부정 이슈 키워드를 모니터링하고 대응 메시지를 준비</div></div></div></div></div><div class="persona-subhead">이 허브에서 갈라지는 키워드</div><div class="persona-ev"><span class="persona-ev__item">노희영 식당<span class="persona-ev__vol">320</span></span><span class="persona-ev__item">노희영 집안<span class="persona-ev__vol">301</span></span><span class="persona-ev__item">노희영 올리브영<span class="persona-ev__vol">246</span></span><span class="persona-ev__item">노희영 비비고<span class="persona-ev__vol">186</span></span><span class="persona-ev__item">노희영 블라인드<span class="persona-ev__vol">100</span></span><span class="persona-ev__item">노희영 악명 디시<span class="persona-ev__vol">90</span></span></div></div></div><div class="dash-card persona-card hub-card"><div class="persona-card__head"><div class="persona-card__top"><span class="persona-card__num hub-card__num">03</span><div class="persona-card__topmain"><div class="persona-card__titlerow"><span class="persona-card__name">마켓 오 치즈 브라우니</span><span class="persona-subhead__badge path-card__volbadge">월 검색량 656</span><span class="persona-subhead__badge hub-card__degbadge">분기 5개</span></div></div></div></div><div class="persona-card__body"><div class="persona-fields"><div class="persona-field"><div class="persona-field__label">이 분기의 의미</div><div class="persona-field__val">단종 소문 속에서 치즈 브라우니를 계속 살 수 있는지 확인하려는 마음입니다.</div></div><div class="persona-field"><div class="persona-field__label">고객의 고민</div><ul class="hub-dilemmas"><li>정말 단종된 걸까</li><li>후기가 예전과 같을까</li><li>크림치즈 브라우니와 무엇이 다를까</li></ul></div><div class="persona-field"><div class="persona-field__label">실행 액션</div><div class="rpt-act-list hub-actions"><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">치즈 브라우니 판매 현황과 리뉴얼 정보를 공식 공지로 게시</div></div><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__body">커뮤니티 후기 채널에 최신 제품 정보를 제공</div></div></div></div></div><div class="persona-subhead">이 허브에서 갈라지는 키워드</div><div class="persona-ev"><span class="persona-ev__item">마켓오 브라우니<span class="persona-ev__vol">7,820</span></span><span class="persona-ev__item">마켓오 브라우니 디시<span class="persona-ev__vol">70</span></span><span class="persona-ev__item">마켓 오 치즈 브라우니 칼로리<span class="persona-ev__vol">36</span></span><span class="persona-ev__item">마켓오 크림치즈 브라우니 더쿠</span><span class="persona-ev__item">마켓 오 치즈 브라우니 후기</span></div></div></div><div class="a4-prose">마켓오 검색 여정은 여러 브랜드 입구에서 출발하지만 <strong>마켓오 브라우니</strong>라는 하나의 대표 제품으로 강하게 합류합니다. 합류 이후에는 칼로리·성분·가격 검증과 맛 변형 선택이 이어지고, 단종 불안과 커뮤니티 평판 확인 구간에서 편의점 브라우니나 다른 황치즈 과자로 관심이 새어 나갑니다.</div><div class="persona-subhead">핵심 인사이트</div><div class="rpt-act-list"><div class="rpt-act-card rpt-act-card--insight"><div class="rpt-act-card__title"><span class="action-dot action-dot--insight"></span>브랜드 검색이 곧 브라우니 검색</div><div class="rpt-act-card__body">레스토랑·과자·매장 등 어떤 입구로 들어와도 고객은 결국 <strong>마켓오 브라우니</strong>를 확인하러 갑니다. 브랜드 커뮤니케이션의 중심을 브라우니에 두는 것이 여정과 맞습니다.</div></div><div class="rpt-act-card rpt-act-card--insight"><div class="rpt-act-card__title"><span class="action-dot action-dot--insight"></span>건강 검증이 구매 직전의 관문</div><div class="rpt-act-card__body">브라우니 이후 고객은 <strong>칼로리·성분</strong>을 반복해서 확인한 뒤에야 맛 선택이나 구매처로 넘어갑니다. 이 검증 단계에서 답을 주지 못하면 커뮤니티로 판단을 넘깁니다.</div></div><div class="rpt-act-card rpt-act-card--insight"><div class="rpt-act-card__title"><span class="action-dot action-dot--insight"></span>단종 불안이 이탈의 출발점</div><div class="rpt-act-card__body"><strong>마켓오 단종</strong>과 치즈 브라우니 검색은 대체재 탐색으로 이어지기 쉽습니다. 동시에 온라인몰 구매처 검색으로 전환되는 흐름도 있어, 명확한 안내가 이탈과 구매를 가릅니다.</div></div></div><div class="persona-subhead">지금 바로 써볼 수 있는 것</div><div class="rpt-act-list"><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__title"><span class="action-dot action-dot--now"></span>단종·판매 현황 공식 안내</div><div class="rpt-act-card__body">치즈 브라우니의 판매·리뉴얼 여부를 공식 채널에 게시하고, 단종 관련 검색에 온라인몰 구매 링크를 함께 노출하세요.</div></div><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__title"><span class="action-dot action-dot--now"></span>칼로리·성분 비교 콘텐츠</div><div class="rpt-act-card__body">맛별 칼로리·성분·가격을 한 화면에서 비교하는 콘텐츠를 만들어 검증 단계에서 바로 판단할 수 있게 하세요.</div></div><div class="rpt-act-card rpt-act-card--now"><div class="rpt-act-card__title"><span class="action-dot action-dot--now"></span>편의점 브라우니 대비 차별점 정리</div><div class="rpt-act-card__body">닥터유·편의점 브라우니와 비교하는 고객을 위해 마켓오 브라우니만의 강점을 정리한 비교형 콘텐츠를 배포하세요.</div></div></div><div class="persona-subhead">앞으로 주목할 기회</div><div class="rpt-act-list"><div class="rpt-act-card rpt-act-card--future"><div class="rpt-act-card__title"><span class="action-dot action-dot--future"></span>황치즈·말차 맛 변형 수요</div><div class="rpt-act-card__body">여정의 끝에서 황치즈와 말차 같은 맛 변형으로 관심이 모입니다. 맛 확장 제품이나 한정판 기획의 단서로 활용할 수 있습니다.</div></div><div class="rpt-act-card rpt-act-card--future"><div class="rpt-act-card__title"><span class="action-dot action-dot--future"></span>커뮤니티 평판 관리</div><div class="rpt-act-card__body">디시 등 커뮤니티 검색이 판단의 마지막 단계로 쓰이고 있어, 후기 채널에 최신 제품 정보를 꾸준히 공급하는 관리 체계가 필요합니다.</div></div><div class="rpt-act-card rpt-act-card--future"><div class="rpt-act-card__title"><span class="action-dot action-dot--future"></span>브랜드 창업 스토리 활용</div><div class="rpt-act-card__body">브랜드를 만든 인물에 대한 호기심이 별도 여정을 형성합니다. 제품 중심의 브랜드 스토리로 이 관심을 긍정적으로 흡수할 기회가 있습니다.</div></div></div></div></div>
+    </div>
+  </div>
+
+  <script>
+(function(){
+  var tabs = document.querySelectorAll('.dash-tab');
+  var panels = document.querySelectorAll('.dash-tab-panel');
+  tabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      var idx = tab.getAttribute('data-panel');
+      tabs.forEach(function(t){
+        var on = t.getAttribute('data-panel') === idx;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      panels.forEach(function(p){
+        p.classList.toggle('active', p.getAttribute('data-panel') === idx);
+      });
+    });
+  });
+  var viewBtns = document.querySelectorAll('.mini-toolbar__view button');
+  viewBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var mode = btn.getAttribute('data-view');
+      document.body.classList.toggle('view-mode-dash', mode === 'dash');
+      document.body.classList.toggle('view-mode-a4',   mode === 'a4');
+      viewBtns.forEach(function(b){ b.classList.toggle('active', b === btn); });
+    });
+  });
+})();
+</script>
+</body>
+</html>
