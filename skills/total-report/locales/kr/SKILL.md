@@ -1,5 +1,5 @@
 ---
-name: lm-total-report
+name: lm-total-report-kr
 description: >-
   ListeningMind MCP 3파인더(intent_finder · path_finder · cluster_finder)를 통합해
   시드 키워드의 검색 의도·인텐트 경로·클러스터를 한 번에 분석하는 "통합 검색 인사이트"
@@ -15,7 +15,7 @@ metadata:
   tags: 보고서, 통합 인사이트
 ---
 
-# lm-total-report — 통합 검색 인사이트 리포트
+# lm-total-report-kr — 통합 검색 인사이트 리포트
 
 ## 사전 조건
 
@@ -72,7 +72,7 @@ ListeningMind MCP 커넥터 연결을 요청하고 중단합니다. **데이터�
 ```bash
 SKILL_DIR=$(find ~/.claude/skills ~/.claude/plugins /mnt/skills /mnt/user-data \
     ~/.codex/skills ~/.gemini/skills ~/.config/skills ./skills . \
-    -maxdepth 4 -type d -name lm-total-report 2>/dev/null \
+    -maxdepth 4 -type d -name lm-total-report-kr 2>/dev/null \
     | grep -v '\.trash' | head -1)
 [ -z "$SKILL_DIR" ] && echo "❌ 스킬 경로 못 찾음" >&2
 echo "SKILL_DIR=$SKILL_DIR"
