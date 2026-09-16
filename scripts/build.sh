@@ -27,10 +27,10 @@ OUT="$ROOT/dist"
 ONLY_SKILL="${1:-}"
 ONLY_LOCALE="${2:-}"
 
-# kr 은 접미사 없음 (기본 판) · 나머지는 -<locale>
+# 작명 규약 · lm-<스킬명>-<언어> · 모든 판이 언어 코드를 단다 (kr 포함)
 zip_name() {
   local name="$1" loc="$2"
-  if [[ "$loc" == "kr" ]]; then echo "lm-$name"; else echo "lm-$name-$loc"; fi
+  echo "lm-$name-$loc"
 }
 
 # skill.yaml 에서 값 하나 읽기 (외부 의존 없이)

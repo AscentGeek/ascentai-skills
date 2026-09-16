@@ -107,11 +107,11 @@ def parse_frontmatter(text: str) -> dict | None:
 
 def check_skill(skill_dir: Path, res: Result) -> None:
     # 로케일 구조면 skill_dir 은 skills/<skill>/locales/<loc> 다.
-    # 표시 이름과 frontmatter 기대값은 빌드가 만들 zip 이름(lm-<skill>[-<loc>])을 따른다.
+    # 표시 이름과 frontmatter 기대값은 빌드가 만들 zip 이름(lm-<skill>-<loc>)을 따른다.
     if skill_dir.parent.name == "locales":
         loc = skill_dir.name
         skill = skill_dir.parent.parent.name
-        expected_name = f"lm-{skill}" if loc == "kr" else f"lm-{skill}-{loc}"
+        expected_name = f"lm-{skill}-{loc}"
         name = f"{skill}/{loc}"
         license_dir = skill_dir.parent.parent          # LICENSE 는 스킬 루트에 1개
     else:

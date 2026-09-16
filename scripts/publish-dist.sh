@@ -76,7 +76,7 @@ for e in "${ENTRIES[@]}"; do
   # 산출물 예시 · 소스는 examples/<언어>/<슬러그>.html 로 국가별로 나눠 두고,
   #   배포 쪽은 admin sync 잡이 기대하는 평평한 examples/<슬러그>.html 로 편다.
   #   슬러그에 이미 언어(-jp)가 들어 있어 평평하게 펴도 이름이 겹치지 않는다.
-  case "$name" in *-jp) loc=jp ;; *-us) loc=us ;; *) loc=kr ;; esac
+  case "$name" in *-kr) loc=kr ;; *-jp) loc=jp ;; *-us) loc=us ;; *) loc=kr ;; esac
   if [[ -f "$REPO_ROOT/examples/$loc/$name.html" ]]; then
     mkdir -p "$WORK/examples"
     cp "$REPO_ROOT/examples/$loc/$name.html" "$WORK/examples/$name.html"

@@ -62,7 +62,7 @@ DaaS 판의 상한을 그대로 승계한다 — `intent_finder` 상위 1,000 ·
 - 스킬이 달라도 **같은 세션·같은 파라미터면 적중**한다
   단, 적중은 **파라미터가 같을 때만**이다:
   - 구조 조회(`intent_finder`·`path_finder`·`cluster_finder`) — 형제 스킬과 1a 파라미터가
-    같아 그대로 적중한다 (lm-pathfinder-report 뒤에 lm-total-report 를 돌리면
+    같아 그대로 적중한다 (lm-pathfinder-report-kr 뒤에 lm-total-report-kr 을 돌리면
     `path_finder` 재호출이 사라진다)
   - `keyword_info` — 스킬마다 넘기는 키워드 목록이 달라 적중하지 않는다. total 은 3파인더
     합집합으로 **한 번만** 부르므로, 형제 캐시를 못 쓰는 대신 자기 안의 중복 조회가 사라진다
@@ -128,14 +128,15 @@ MCP 도구가 `user_query` 파라미터를 받으므로, **사용자 발화 원�
 ## 3-1. 스킬 작명 규약
 
 ```
-lm-<스킬명>         ListeningMind MCP 를 쓰는 판 (SaaS · 이 리포)
+lm-<스킬명>-<언어>   ListeningMind MCP 를 쓰는 판 (SaaS · 이 리포) · kr · jp · us
 lm-<스킬명>-daas    DaaS API 를 직접 호출하는 판 (lima-skills 리포)
 ```
 
-이 리포의 스킬은 전부 `lm-` 으로 시작하고 접미사가 없다. 두 판을 한 호스트에 나란히
-설치해도 이름이 충돌하지 않고, admin 대시보드에서 `skill_name` 으로 사용량이 갈린다.
+언어 코드는 **모든 판이 단다** — 한국어판도 `-kr` 이다. 기본 판만 접미사를 빼면
+이름만 보고 언어를 알 수 없고, 언어가 늘 때 규칙이 두 갈래가 된다.
 
-일본어판은 `lm-<스킬명>-jp` 로 만든다.
+두 판을 한 호스트에 나란히 설치해도 이름이 충돌하지 않고, admin 대시보드에서
+`skill_name` 으로 사용량이 갈린다.
 
 ---
 
@@ -187,7 +188,7 @@ skills/<스킬명>/                 스킬 수만큼만
     ├── references/*.md
     └── labels/*.json
 
-dist/lm-<스킬명>[-<언어>].zip     빌드 산출 (kr 은 접미사 없음)
+dist/lm-<스킬명>-<언어>.zip       빌드 산출 (kr 판도 -kr 을 단다)
 ```
 
 ### 빌드

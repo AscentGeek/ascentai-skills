@@ -1,5 +1,5 @@
 ---
-name: lm-queryfinder-report
+name: lm-queryfinder-report-kr
 description: >-
   ListeningMind MCP(intent_finder · keyword_info)로 시드 키워드의 연관 쿼리를 분석해
   "쿼리 기회 분석" 리치 HTML 리포트(대시보드/A4)를 생성합니다. QueryFinder 에이전트
@@ -15,7 +15,7 @@ metadata:
   tags: 보고서, 연관 쿼리
 ---
 
-# lm-queryfinder-report — 쿼리 기회 분석 리포트
+# lm-queryfinder-report-kr — 쿼리 기회 분석 리포트
 
 ## 사전 조건
 
@@ -72,7 +72,7 @@ ListeningMind MCP 커넥터 연결을 요청하고 중단합니다. **데이터�
 ```bash
 SKILL_DIR=$(find ~/.claude/skills ~/.claude/plugins /mnt/skills /mnt/user-data \
     ~/.codex/skills ~/.gemini/skills ~/.config/skills ./skills . \
-    -maxdepth 4 -type d -name lm-queryfinder-report 2>/dev/null \
+    -maxdepth 4 -type d -name lm-queryfinder-report-kr 2>/dev/null \
     | grep -v '\.trash' | head -1)
 [ -z "$SKILL_DIR" ] && echo "❌ 스킬 경로 못 찾음" >&2
 echo "SKILL_DIR=$SKILL_DIR"

@@ -23,12 +23,12 @@ ListeningMind **SaaS 고객용** 리포트 스킬. 데이터는 **ListeningMind 
 
 | 스킬 | 리포트 | 쓰는 MCP 도구 |
 |---|---|---|
-| `lm-queryfinder-report` | 쿼리 기회 분석 | `intent_finder` + `keyword_info` |
-| `lm-clusterfinder-report` | 검색 클러스터 지형 | `cluster_finder` + `keyword_info` |
-| `lm-pathfinder-report` | 검색 여정 분석 | `path_finder` + `keyword_info` |
-| `lm-total-report` | 3파인더 통합 | 위 3종 + `keyword_info` 1회 |
+| `lm-queryfinder-report-kr` | 쿼리 기회 분석 | `intent_finder` + `keyword_info` |
+| `lm-clusterfinder-report-kr` | 검색 클러스터 지형 | `cluster_finder` + `keyword_info` |
+| `lm-pathfinder-report-kr` | 검색 여정 분석 | `path_finder` + `keyword_info` |
+| `lm-total-report-kr` | 3파인더 통합 | 위 3종 + `keyword_info` 1회 |
 
-일본어판(`lm-<스킬명>-jp` 4종)은 한국어판 확정 후 추가한다.
+스킬 이름은 `lm-<스킬명>-<언어>` 다 — 한국어판은 `-kr`, 일본어판은 `-jp` 를 단다.
 
 ## 개발
 

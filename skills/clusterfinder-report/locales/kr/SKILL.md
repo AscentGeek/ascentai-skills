@@ -1,5 +1,5 @@
 ---
-name: lm-clusterfinder-report
+name: lm-clusterfinder-report-kr
 description: >-
   ListeningMind MCP(cluster_finder · keyword_info)로 시드 키워드의 동시검색 클러스터를
   분석해 "검색 클러스터 지형 분석" 리치 HTML 리포트(대시보드/A4)를 생성합니다.
@@ -16,7 +16,7 @@ metadata:
   tags: 보고서, 검색 클러스터
 ---
 
-# lm-clusterfinder-report — 검색 클러스터 지형 분석 리포트
+# lm-clusterfinder-report-kr — 검색 클러스터 지형 분석 리포트
 
 ## 사전 조건
 
@@ -76,7 +76,7 @@ ListeningMind MCP 커넥터 연결을 요청하고 중단합니다. **데이터�
 ```bash
 SKILL_DIR=$(find ~/.claude/skills ~/.claude/plugins /mnt/skills /mnt/user-data \
     ~/.codex/skills ~/.gemini/skills ~/.config/skills ./skills . \
-    -maxdepth 4 -type d -name lm-clusterfinder-report 2>/dev/null \
+    -maxdepth 4 -type d -name lm-clusterfinder-report-kr 2>/dev/null \
     | grep -v '\.trash' | head -1)
 [ -z "$SKILL_DIR" ] && echo "❌ 스킬 경로 못 찾음" >&2
 echo "SKILL_DIR=$SKILL_DIR"
