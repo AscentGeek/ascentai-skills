@@ -49,6 +49,9 @@ FONT_HREF = {
 
 HTML_LANG = {"kr": "ko", "jp": "ja", "us": "en"}
 
+# 리포트를 쓸 수 있는 언어 · 시장(gl)과 독립이다 (미국 시장을 일본어로 쓸 수 있다)
+REPORT_LANGS = ("kr", "jp", "us")
+
 LOCALE_FONT_OVERRIDE = {
     "kr": "",
     "jp": "html { --font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, Sans-serif; }",
@@ -90,6 +93,15 @@ BASE_SCRIPT = r"""
     });
   });
 
+  // 검색어 번역 토글 — 원문 ↔ 리포트 언어. 번역이 없으면 버튼 자체가 없다.
+  var trBtn = document.querySelector('.mini-toolbar__tr');
+  if (trBtn) {
+    trBtn.addEventListener('click', function(){
+      var on = document.body.classList.toggle('kw-translated');
+      trBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
   // 검색량 뱃지 — 클릭하면 키워드 목록(툴팁)을 토글. 마우스오버 시엔
   // native title("클릭시 키워드 목록 확인")만 뜬다. X·바깥클릭으로 닫는다.
   document.querySelectorAll('.persona-card__volbadge').forEach(function(badge){
@@ -121,23 +133,31 @@ BASE_SCRIPT = r"""
 """
 
 
-def _load_labels(skill: str, gl: str) -> dict:
-    return json.loads((LABELS_DIR / f"{skill}.{gl}.json").read_text(encoding="utf-8"))
+def _load_labels(skill: str, lang: str) -> dict:
+    """Label file is chosen by REPORT LANGUAGE, not by market.
+
+    `--gl` (market) and `--lang` (report language) are independent: a US-market
+    report can be written in Japanese. Only the market *name* on the cover comes
+    from `--gl`, and that string is read out of the report-language label file
+    (`country.US` / `report.marketLabel.US`), which every language ships."""
+    return json.loads((LABELS_DIR / f"{skill}.{lang}.json").read_text(encoding="utf-8"))
 
 
-def _common_blocks(skill: str, gl: str, category: str, labels: dict, *, title_key: str, dash_tab_key: str) -> dict:
+def _common_blocks(skill: str, lang: str, category: str, labels: dict, *, title_key: str, dash_tab_key: str) -> dict:
+    """`lang` = report language. Font, <html lang> and toolbar follow the text
+    on screen, not the market being analysed."""
     inlined_css = inline_styles(STYLES_DIR, skill)
-    if LOCALE_FONT_OVERRIDE.get(gl):
-        inlined_css += "\n\n/* === locale font override === */\n" + LOCALE_FONT_OVERRIDE[gl]
+    if LOCALE_FONT_OVERRIDE.get(lang):
+        inlined_css += "\n\n/* === locale font override === */\n" + LOCALE_FONT_OVERRIDE[lang]
     return {
-        "{{LANG}}": HTML_LANG.get(gl, "en"),
-        "{{FONT_HREF}}": FONT_HREF.get(gl, FONT_HREF["us"]),
+        "{{LANG}}": HTML_LANG.get(lang, "en"),
+        "{{FONT_HREF}}": FONT_HREF.get(lang, FONT_HREF["us"]),
         "{{CATEGORY}}": category,
         "{{REPORT_TITLE}}": ca.t(labels, title_key),
         "{{TOOLBAR_DASH_LABEL}}": ca.t(labels, dash_tab_key),
         "{{TOOLBAR_A4_LABEL}}": "A4",
-        "{{TOOLBAR_DASH_BTN}}": TOOLBAR_DASH_BTN.get(gl, "Dashboard"),
-        "{{TOOLBAR_PRINT_BTN}}": TOOLBAR_PRINT_BTN.get(gl, "Print"),
+        "{{TOOLBAR_DASH_BTN}}": TOOLBAR_DASH_BTN.get(lang, "Dashboard"),
+        "{{TOOLBAR_PRINT_BTN}}": TOOLBAR_PRINT_BTN.get(lang, "Print"),
         "{{INLINED_CSS}}": inlined_css,
     }
 
@@ -165,8 +185,19 @@ def _apply(template: str, blocks: dict) -> str:
 # All ClusterFinder groups render as core 검색목적 클러스터 cards (no brand/
 # non-brand alt section — that split is QueryFinder-specific).
 
+
+def _report_lang(args) -> str:
+    """Report language. Defaults to the market so the single-language editions
+    keep working with `--gl` alone; the English-prompt edition passes `--lang`
+    explicitly and may pair any market with any report language."""
+    if getattr(args, "lang", None):
+        return args.lang.lower()
+    return args.gl.lower()   # 생략하면 시장 언어로 쓴다 (kr·jp·us 모두 라벨이 있다)
+
+
 def render_cluster(args) -> str:
-    gl = args.gl.lower()
+    gl = args.gl.lower()        # 분석 대상 시장
+    lang = _report_lang(args)   # 리포트에 쓰는 언어
     groups_doc = json.loads(Path(args.groups).read_text(encoding="utf-8"))
     groups = groups_doc.get("groups", [])
     hub_table = groups_doc.get("hubTable", [])
@@ -189,14 +220,22 @@ def render_cluster(args) -> str:
         "altCount": 0,
     }
 
-    labels = _load_labels("cluster-landscape", gl)
+    labels = _load_labels("cluster-landscape", lang)
+
+    # 검색어 번역 — 시장 언어와 리포트 언어가 다를 때만 넘어온다
+    translations = json.loads(Path(args.translations).read_text(encoding="utf-8")) if args.translations else {}
+    ca.set_translations(translations)
+    tr_btn = (
+        f'<button type="button" class="mini-toolbar__tr" aria-pressed="false">'
+        f'{html.escape(ca.t(labels, "customerAnalysis.dash.keywordTranslateBtn"))}</button>'
+    ) if translations else ""
     gl_label = ca.t(labels, f"country.{gl.upper()}")
     market_label = ca.t(labels, f"report.marketLabel.{gl.upper()}")
 
     # {{CATEGORY}} is injected raw into <title>, so escape it here. Other
     # args.category usages go through ca/cc builders that html-escape internally.
     blocks = _common_blocks(
-        "cluster-landscape", gl, html.escape(args.category), labels,
+        "cluster-landscape", lang, html.escape(args.category), labels,
         title_key="agent.customerAnalysis.name",
         dash_tab_key="customerAnalysis.dash.personaTab",
     )
@@ -210,6 +249,7 @@ def render_cluster(args) -> str:
         "{{A4_COVER_PAGE}}": ca.a4_cover_page_html(meta_view, args.category, labels),
         "{{A4_BODY_PAGE}}": cc.a4_body_page_html(groups, hub_table, flows, actions, args.category, market_label, labels, overview=overview),
         "{{INLINE_SCRIPT}}": BASE_SCRIPT,
+        "{{TOOLBAR_TR_BTN}}": tr_btn,
     })
     template = (TEMPLATES_DIR / "cluster-landscape.html").read_text(encoding="utf-8")
     return _apply(template, blocks)
@@ -225,7 +265,16 @@ def main() -> int:
     parser.add_argument("--category", required=True)
     # kr-only for now: label JSON (_shared/labels/<skill>.<gl>.json) only ships
     # for "kr" — add "jp"/"us" back once their label files land.
-    parser.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
+    # --gl = 분석 대상 시장 (MCP 조회와 표지의 시장명)
+    # --lang = 리포트 언어 (라벨·폰트·본문). 생략하면 시장을 따른다.
+    parser.add_argument("--gl", required=True, choices=["kr", "jp", "us"],
+                        help="target market to analyse")
+    parser.add_argument("--lang", choices=list(REPORT_LANGS),
+                        help="report language (default: same as --gl)")
+    parser.add_argument("--translations",
+                        help="keyword translation map {keyword: translation} — adds the "
+                             "keyword-translation toggle. Only when the market language "
+                             "differs from --lang.")
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument("--out", required=True, help="Output HTML path")
     parser.add_argument("--groups", help="cluster-landscape: lm_groups.json path")

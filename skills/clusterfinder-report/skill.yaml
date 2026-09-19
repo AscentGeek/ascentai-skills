@@ -1,6 +1,7 @@
 name: clusterfinder-report
-version: "1.0.0"
+version: "2.0.0"
 slug: cluster-landscape
 mcp_tools: [cluster_finder, keyword_info]
 vendor_chart: false
-locales: [kr, jp]
+# 리포트를 쓸 수 있는 언어 · 실행 시 --lang 으로 고른다
+report_langs: [kr, jp, us]

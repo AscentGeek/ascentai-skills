@@ -15,7 +15,7 @@ Both return dash-card blocks so they slot into the existing dashboard/A4 shell
 import html
 
 import components as ca  # shared card/cover/actions builders
-from components import t, escape_with_strong  # shared helpers
+from components import t, escape_with_strong, kw_html  # shared helpers
 
 
 def _esc(s):
@@ -42,7 +42,7 @@ def hub_table_html(hub_table, labels, *, variant="dash"):
     for r in hub_table:
         clusters = ", ".join(r.get("clusterIds") or [])
         hubs = "".join(
-            f'<span class="cl-hub-chip">{_esc(kw)}</span>'
+            f'<span class="cl-hub-chip">{kw_html(kw)}</span>'
             for kw in (r.get("hubKeywords") or [])
         )
         rows.append(
@@ -80,7 +80,7 @@ def _flow_path_html(path_detail):
     for step in path_detail:
         letter = _esc(step.get("cluster", ""))
         hub = step.get("hub")
-        label = f'{letter} · {_esc(hub)}' if hub else letter
+        label = f'{letter} · {kw_html(hub)}' if hub else letter
         steps.append(f'<span class="cl-flow__node">{label}</span>')
     return '<span class="cl-flow__arrow">→</span>'.join(steps)
 
@@ -114,7 +114,7 @@ def _flow_card_html(flow, labels):
     return (
         '<div class="cl-flow">'
         '<div class="cl-flow__head">'
-        f'<span class="cl-flow__hub">{_esc(hub)}</span>'
+        f'<span class="cl-flow__hub">{kw_html(hub)}</span>'
         f'{meta}'
         '</div>'
         f'<div class="cl-flow__path">{path_html}</div>'

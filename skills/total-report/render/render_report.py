@@ -69,6 +69,9 @@ FONT_HREF = {
     "us": "https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;900&display=swap",
 }
 HTML_LANG = {"kr": "ko", "jp": "ja", "us": "en"}
+
+# 리포트를 쓸 수 있는 언어 · 시장(gl)과 독립이다 (미국 시장을 일본어로 쓸 수 있다)
+REPORT_LANGS = ("kr", "jp", "us")
 LOCALE_FONT_OVERRIDE = {
     "kr": "",
     "jp": "html { --font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, Sans-serif; }",
@@ -110,6 +113,15 @@ BASE_SCRIPT = r"""
       viewBtns.forEach(function(b){ b.classList.toggle('active', b === btn); });
     });
   });
+
+  // 검색어 번역 토글 — 원문 ↔ 리포트 언어. 번역이 없으면 버튼 자체가 없다.
+  var trBtn = document.querySelector('.mini-toolbar__tr');
+  if (trBtn) {
+    trBtn.addEventListener('click', function(){
+      var on = document.body.classList.toggle('kw-translated');
+      trBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
 
   // 검색량 뱃지 툴팁 — 클릭 토글, X·바깥클릭으로 닫기.
   document.querySelectorAll('.persona-card__volbadge').forEach(function(badge){
@@ -196,6 +208,15 @@ TOTAL_SCRIPT = r"""
     });
   });
 
+  // 검색어 번역 토글 — 원문 ↔ 리포트 언어. 번역이 없으면 버튼 자체가 없다.
+  var trBtn = document.querySelector('.mini-toolbar__tr');
+  if (trBtn) {
+    trBtn.addEventListener('click', function(){
+      var on = document.body.classList.toggle('kw-translated');
+      trBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
   // ── 검색량 뱃지 툴팁 (per-badge toggle — global is fine) ──
   document.querySelectorAll('.persona-card__volbadge').forEach(function(badge){
     var tip = badge.querySelector('.volbadge-tip');
@@ -228,8 +249,14 @@ TOTAL_SCRIPT = r"""
 # Shared helpers
 # ─────────────────────────────────────────
 
-def _load_labels(skill: str, gl: str) -> dict:
-    return json.loads((LABELS_DIR / f"{skill}.{gl}.json").read_text(encoding="utf-8"))
+def _load_labels(skill: str, lang: str) -> dict:
+    """Label file is chosen by REPORT LANGUAGE, not by market.
+
+    `--gl` (market) and `--lang` (report language) are independent: a US-market
+    report can be written in Japanese. Only the market *name* on the cover comes
+    from `--gl`, and that string is read out of the report-language label file
+    (`country.US` / `report.marketLabel.US`), which every language ships."""
+    return json.loads((LABELS_DIR / f"{skill}.{lang}.json").read_text(encoding="utf-8"))
 
 
 def _read_json(path) -> dict:
@@ -238,19 +265,21 @@ def _read_json(path) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def _common_blocks(skill: str, gl: str, category: str, labels: dict, *, title_key: str, dash_tab_key: str) -> dict:
+def _common_blocks(skill: str, lang: str, category: str, labels: dict, *, title_key: str, dash_tab_key: str) -> dict:
+    """`lang` = report language. Font, <html lang> and toolbar follow the text
+    on screen, not the market being analysed."""
     inlined_css = inline_styles(STYLES_DIR, skill)
-    if LOCALE_FONT_OVERRIDE.get(gl):
-        inlined_css += "\n\n/* === locale font override === */\n" + LOCALE_FONT_OVERRIDE[gl]
+    if LOCALE_FONT_OVERRIDE.get(lang):
+        inlined_css += "\n\n/* === locale font override === */\n" + LOCALE_FONT_OVERRIDE[lang]
     return {
-        "{{LANG}}": HTML_LANG.get(gl, "en"),
-        "{{FONT_HREF}}": FONT_HREF.get(gl, FONT_HREF["us"]),
+        "{{LANG}}": HTML_LANG.get(lang, "en"),
+        "{{FONT_HREF}}": FONT_HREF.get(lang, FONT_HREF["us"]),
         "{{CATEGORY}}": category,
         "{{REPORT_TITLE}}": ca.t(labels, title_key),
         "{{TOOLBAR_DASH_LABEL}}": ca.t(labels, dash_tab_key),
         "{{TOOLBAR_A4_LABEL}}": "A4",
-        "{{TOOLBAR_DASH_BTN}}": TOOLBAR_DASH_BTN.get(gl, "Dashboard"),
-        "{{TOOLBAR_PRINT_BTN}}": TOOLBAR_PRINT_BTN.get(gl, "Print"),
+        "{{TOOLBAR_DASH_BTN}}": TOOLBAR_DASH_BTN.get(lang, "Dashboard"),
+        "{{TOOLBAR_PRINT_BTN}}": TOOLBAR_PRINT_BTN.get(lang, "Print"),
         "{{INLINED_CSS}}": inlined_css,
     }
 
@@ -272,7 +301,7 @@ def _apply(template: str, blocks: dict) -> str:
 # own <div class="view-dash"><div class="dash-scroll"> wraps.
 # ─────────────────────────────────────────
 
-def _query_pieces(gl: str, category: str, date: str, groups_path, actions_path, meta_path) -> dict:
+def _query_pieces(gl: str, lang: str, category: str, date: str, groups_path, actions_path, meta_path) -> dict:
     groups_doc = _read_json(groups_path)
     groups = groups_doc.get("groups", [])
     overview = groups_doc.get("overview") or ""
@@ -289,7 +318,7 @@ def _query_pieces(gl: str, category: str, date: str, groups_path, actions_path, 
         "personaCount": len(core),
         "altCount": len(alt),
     }
-    labels = _load_labels("query-opportunity", gl)
+    labels = _load_labels("query-opportunity", lang)
     gl_label = ca.t(labels, f"country.{gl.upper()}")
     market_label = ca.t(labels, f"report.marketLabel.{gl.upper()}")
 
@@ -310,7 +339,7 @@ def _query_pieces(gl: str, category: str, date: str, groups_path, actions_path, 
     }
 
 
-def _path_pieces(gl: str, category: str, date: str, paths_path, actions_path, meta_path) -> dict:
+def _path_pieces(gl: str, lang: str, category: str, date: str, paths_path, actions_path, meta_path) -> dict:
     paths_doc = _read_json(paths_path)
     paths = paths_doc.get("paths", [])
     hubs = paths_doc.get("hubs", [])
@@ -325,7 +354,7 @@ def _path_pieces(gl: str, category: str, date: str, paths_path, actions_path, me
         "hubCount": meta.get("hubCount", len(hubs)),
         "nodeCount": meta.get("nodeCount", 0),
     }
-    labels = _load_labels("path-opportunity", gl)
+    labels = _load_labels("path-opportunity", lang)
     gl_label = ca.t(labels, f"country.{gl.upper()}")
     market_label = ca.t(labels, f"report.marketLabel.{gl.upper()}")
 
@@ -345,7 +374,7 @@ def _path_pieces(gl: str, category: str, date: str, paths_path, actions_path, me
     }
 
 
-def _cluster_pieces(gl: str, category: str, date: str, groups_path, actions_path, meta_path) -> dict:
+def _cluster_pieces(gl: str, lang: str, category: str, date: str, groups_path, actions_path, meta_path) -> dict:
     groups_doc = _read_json(groups_path)
     groups = groups_doc.get("groups", [])
     hub_table = groups_doc.get("hubTable", [])
@@ -364,7 +393,7 @@ def _cluster_pieces(gl: str, category: str, date: str, groups_path, actions_path
         "personaCount": len(core),
         "altCount": 0,
     }
-    labels = _load_labels("cluster-landscape", gl)
+    labels = _load_labels("cluster-landscape", lang)
     gl_label = ca.t(labels, f"country.{gl.upper()}")
     market_label = ca.t(labels, f"report.marketLabel.{gl.upper()}")
 
@@ -391,11 +420,30 @@ def _cluster_pieces(gl: str, category: str, date: str, groups_path, actions_path
 # Standalone finder renderers (unchanged output vs. sibling skills)
 # ─────────────────────────────────────────
 
+
+def _report_lang(args) -> str:
+    """Report language. Defaults to the market so the single-language editions
+    keep working with `--gl` alone; the English-prompt edition passes `--lang`
+    explicitly and may pair any market with any report language."""
+    if getattr(args, "lang", None):
+        return args.lang.lower()
+    return args.gl.lower()   # 생략하면 시장 언어로 쓴다 (kr·jp·us 모두 라벨이 있다)
+
+
 def render_query(args) -> str:
-    gl = args.gl.lower()
-    p = _query_pieces(gl, args.category, args.date, args.groups, args.actions, args.meta)
+    gl = args.gl.lower()        # 분석 대상 시장
+    lang = _report_lang(args)   # 리포트에 쓰는 언어
+    p = _query_pieces(gl, lang, args.category, args.date, args.groups, args.actions, args.meta)
+
+    # 검색어 번역 — 시장 언어와 리포트 언어가 다를 때만 넘어온다
+    translations = json.loads(Path(args.translations).read_text(encoding="utf-8")) if args.translations else {}
+    ca.set_translations(translations)
+    tr_btn = (
+        f'<button type="button" class="mini-toolbar__tr" aria-pressed="false">'
+        f'{html.escape(ca.t(p["labels"], "customerAnalysis.dash.keywordTranslateBtn"))}</button>'
+    ) if translations else ""
     blocks = _common_blocks(
-        "query-opportunity", gl, html.escape(args.category), p["labels"],
+        "query-opportunity", lang, html.escape(args.category), p["labels"],
         title_key="agent.customerAnalysis.name",
         dash_tab_key="customerAnalysis.dash.personaTab",
     )
@@ -407,16 +455,26 @@ def render_query(args) -> str:
         "{{A4_COVER_PAGE}}": p["a4_cover"],
         "{{A4_BODY_PAGE}}": p["a4_body"],
         "{{INLINE_SCRIPT}}": BASE_SCRIPT,
+        "{{TOOLBAR_TR_BTN}}": tr_btn,
     })
     template = (TEMPLATES_DIR / "query-opportunity.html").read_text(encoding="utf-8")
     return _apply(template, blocks)
 
 
 def render_path(args) -> str:
-    gl = args.gl.lower()
-    p = _path_pieces(gl, args.category, args.date, args.paths, args.actions, args.meta)
+    gl = args.gl.lower()        # 분석 대상 시장
+    lang = _report_lang(args)   # 리포트에 쓰는 언어
+    p = _path_pieces(gl, lang, args.category, args.date, args.paths, args.actions, args.meta)
+
+    # 검색어 번역 — 시장 언어와 리포트 언어가 다를 때만 넘어온다
+    translations = json.loads(Path(args.translations).read_text(encoding="utf-8")) if args.translations else {}
+    ca.set_translations(translations)
+    tr_btn = (
+        f'<button type="button" class="mini-toolbar__tr" aria-pressed="false">'
+        f'{html.escape(ca.t(p["labels"], "customerAnalysis.dash.keywordTranslateBtn"))}</button>'
+    ) if translations else ""
     blocks = _common_blocks(
-        "path-opportunity", gl, html.escape(args.category), p["labels"],
+        "path-opportunity", lang, html.escape(args.category), p["labels"],
         title_key="agent.pathAnalysis.name",
         dash_tab_key="pathAnalysis.dash.journeyTab",
     )
@@ -428,16 +486,26 @@ def render_path(args) -> str:
         "{{A4_COVER_PAGE}}": p["a4_cover"],
         "{{A4_BODY_PAGE}}": p["a4_body"],
         "{{INLINE_SCRIPT}}": BASE_SCRIPT,
+        "{{TOOLBAR_TR_BTN}}": tr_btn,
     })
     template = (TEMPLATES_DIR / "path-opportunity.html").read_text(encoding="utf-8")
     return _apply(template, blocks)
 
 
 def render_cluster(args) -> str:
-    gl = args.gl.lower()
-    p = _cluster_pieces(gl, args.category, args.date, args.groups, args.actions, args.meta)
+    gl = args.gl.lower()        # 분석 대상 시장
+    lang = _report_lang(args)   # 리포트에 쓰는 언어
+    p = _cluster_pieces(gl, lang, args.category, args.date, args.groups, args.actions, args.meta)
+
+    # 검색어 번역 — 시장 언어와 리포트 언어가 다를 때만 넘어온다
+    translations = json.loads(Path(args.translations).read_text(encoding="utf-8")) if args.translations else {}
+    ca.set_translations(translations)
+    tr_btn = (
+        f'<button type="button" class="mini-toolbar__tr" aria-pressed="false">'
+        f'{html.escape(ca.t(p["labels"], "customerAnalysis.dash.keywordTranslateBtn"))}</button>'
+    ) if translations else ""
     blocks = _common_blocks(
-        "cluster-landscape", gl, html.escape(args.category), p["labels"],
+        "cluster-landscape", lang, html.escape(args.category), p["labels"],
         title_key="agent.customerAnalysis.name",
         dash_tab_key="customerAnalysis.dash.personaTab",
     )
@@ -451,6 +519,7 @@ def render_cluster(args) -> str:
         "{{A4_COVER_PAGE}}": p["a4_cover"],
         "{{A4_BODY_PAGE}}": p["a4_body"],
         "{{INLINE_SCRIPT}}": BASE_SCRIPT,
+        "{{TOOLBAR_TR_BTN}}": tr_btn,
     })
     template = (TEMPLATES_DIR / "cluster-landscape.html").read_text(encoding="utf-8")
     return _apply(template, blocks)
@@ -466,7 +535,8 @@ def render_cluster(args) -> str:
 # no-data tab so a partial run (e.g. no cluster API plan) still produces a report.
 
 def render_total(args) -> str:
-    gl = args.gl.lower()
+    gl = args.gl.lower()        # 분석 대상 시장
+    lang = _report_lang(args)   # 리포트에 쓰는 언어
     category = args.category
     date = args.date
 
@@ -475,14 +545,22 @@ def render_total(args) -> str:
     facts = _read_json(args.total_facts) if args.total_facts else {}
     overview = notes.get("overview") or ""
 
-    tlabels = _load_labels("total-insight", gl)
+    tlabels = _load_labels("total-insight", lang)
+
+    # 검색어 번역 — 시장 언어와 리포트 언어가 다를 때만 넘어온다
+    translations = json.loads(Path(args.translations).read_text(encoding="utf-8")) if args.translations else {}
+    ca.set_translations(translations)
+    tr_btn = (
+        f'<button type="button" class="mini-toolbar__tr" aria-pressed="false">'
+        f'{html.escape(ca.t(tlabels, "customerAnalysis.dash.keywordTranslateBtn"))}</button>'
+    ) if translations else ""
     gl_label = ca.t(tlabels, f"country.{gl.upper()}")
     market_label = ca.t(tlabels, f"report.marketLabel.{gl.upper()}")
 
     # finder pieces — each present only if its inputs were supplied
-    qp = _query_pieces(gl, category, date, args.query_groups, args.query_actions, args.query_meta) if args.query_groups else None
-    pp = _path_pieces(gl, category, date, args.path_paths, args.path_actions, args.path_meta) if args.path_paths else None
-    clp = _cluster_pieces(gl, category, date, args.cluster_groups, args.cluster_actions, args.cluster_meta) if args.cluster_groups else None
+    qp = _query_pieces(gl, lang, category, date, args.query_groups, args.query_actions, args.query_meta) if args.query_groups else None
+    pp = _path_pieces(gl, lang, category, date, args.path_paths, args.path_actions, args.path_meta) if args.path_paths else None
+    clp = _cluster_pieces(gl, lang, category, date, args.cluster_groups, args.cluster_actions, args.cluster_meta) if args.cluster_groups else None
 
     # cover meta counts drawn from finder metas (Python facts, never LLM)
     counts = {
@@ -516,7 +594,7 @@ def render_total(args) -> str:
         a4_parts.append(clp["a4_cover"] + clp["a4_body"])
 
     blocks = _common_blocks(
-        "total-insight", gl, html.escape(category), tlabels,
+        "total-insight", lang, html.escape(category), tlabels,
         title_key="totalInsight.reportTitle",
         dash_tab_key="totalInsight.tab.t.short",
     )
@@ -535,6 +613,7 @@ def render_total(args) -> str:
         "{{TAB_CLUSTER}}": tab_cluster,
         "{{A4_PAGES}}": "".join(a4_parts),
         "{{INLINE_SCRIPT}}": TOTAL_SCRIPT,
+        "{{TOOLBAR_TR_BTN}}": tr_btn,
     })
     template = (TEMPLATES_DIR / "total-insight.html").read_text(encoding="utf-8")
     return _apply(template, blocks)
@@ -550,7 +629,16 @@ def main() -> int:
                         choices=["query-opportunity", "path-opportunity", "cluster-landscape", "total-insight"])
     parser.add_argument("--category", required=True)
     # kr-only for now: label JSON only ships for "kr".
-    parser.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
+    # --gl = 분석 대상 시장 (MCP 조회와 표지의 시장명)
+    # --lang = 리포트 언어 (라벨·폰트·본문). 생략하면 시장을 따른다.
+    parser.add_argument("--gl", required=True, choices=["kr", "jp", "us"],
+                        help="target market to analyse")
+    parser.add_argument("--lang", choices=list(REPORT_LANGS),
+                        help="report language (default: same as --gl)")
+    parser.add_argument("--translations",
+                        help="keyword translation map {keyword: translation} — adds the "
+                             "keyword-translation toggle. Only when the market language "
+                             "differs from --lang.")
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument("--out", required=True, help="Output HTML path")
 

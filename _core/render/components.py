@@ -15,8 +15,14 @@ import re
 from typing import Any, Dict, List, Optional
 
 
-# Stage enum (백엔드가 한국어 enum 으로 저장) → label key
+# Stage enum → label key
+#   informational/…  : query_aggregate 가 데이터(i/n/c/t)로 계산한 의도 배지
+#   한국어 값        : DaaS 백엔드가 한국어 enum 으로 저장하던 값 (호환 유지)
 STAGE_LABEL_KEY = {
+    "informational": "customerAnalysis.stage.informational",
+    "navigational": "customerAnalysis.stage.navigational",
+    "commercial": "customerAnalysis.stage.commercial",
+    "transactional": "customerAnalysis.stage.transactional",
     "정보 탐색": "customerAnalysis.stage.explore",
     "비교 검토": "customerAnalysis.stage.compare",
     "구매 직전": "customerAnalysis.stage.purchase",
@@ -49,6 +55,27 @@ def escape_with_strong(text: Optional[str]) -> str:
     return _STRONG_RE.sub(r"<strong>\1</strong>", escaped)
 
 
+# 검색어 번역 · 시장 언어와 리포트 언어가 다를 때 렌더가 채워 넣는다.
+# 칩에 원문과 번역을 함께 심고, 툴바 버튼이 body 클래스로 무엇을 보일지 정한다
+# (JS 로 글자를 바꾸지 않으므로 인쇄·A4 에서도 상태가 그대로 유지된다).
+TRANSLATIONS: Dict[str, str] = {}
+
+
+def set_translations(mapping: Optional[Dict[str, str]]) -> None:
+    global TRANSLATIONS
+    TRANSLATIONS = {str(k): str(v) for k, v in (mapping or {}).items() if v}
+
+
+def kw_html(kw: str) -> str:
+    """키워드 한 개의 표시 HTML. 번역이 있으면 원문·번역을 둘 다 심는다."""
+    orig = html.escape(str(kw))
+    tr = TRANSLATIONS.get(str(kw))
+    if not tr:
+        return orig
+    return (f'<span class="kw-o">{orig}</span>'
+            f'<span class="kw-t">{html.escape(tr)}</span>')
+
+
 def t(labels: Dict[str, str], key: str) -> str:
     """i18n lookup; falls back to the key itself if missing."""
     return labels.get(key, key)
@@ -75,14 +102,24 @@ def persona_card_html(persona: Dict[str, Any], index: int, labels: Dict[str, str
     num = f"{index + 1:02d}"
     name = html.escape(str(persona.get("name", "")))
     stage = persona.get("stage")
-    stage_html = ""
+    chips = []
     if stage:
-        stage_html = (
-            f'<div class="persona-card__meta">'
+        chips.append(
             f'<span>{t(labels, "customerAnalysis.dash.personaMetaStage")} '
-            f'<b>{html.escape(_stage_label(stage, labels))}</b></span>'
-            f'</div>'
+            f'<b>{html.escape(_stage_label(stage, labels))}</b>'
+            # 비중은 코드가 센 사실값 · 쏠린 시장에서 배지끼리 구분이 된다
+            + (f' <b>{html.escape(str(persona.get("stageShare")))}</b>'
+               if persona.get("stageShare") else "")
+            + '</span>'
         )
+    # 브랜드/논브랜드는 의도가 아니라 검색어의 종류다 — 제 라벨을 달고 따로 선다.
+    kind = persona.get("kind")
+    if kind in ("brand", "nonbrand"):
+        chips.append(
+            f'<span>{t(labels, "customerAnalysis.dash.personaMetaKind")} '
+            f'<b>{t(labels, "customerAnalysis.stage." + kind)}</b></span>'
+        )
+    stage_html = f'<div class="persona-card__meta">{"".join(chips)}</div>' if chips else ""
 
     # 그룹 검색량 뱃지 — Python 이 합산한 사실값(volumeLabel)·키워드 수.
     # 필드가 없는 구버전 lm_groups.json 은 뱃지 없이 그대로 렌더된다.
@@ -114,7 +151,7 @@ def persona_card_html(persona: Dict[str, Any], index: int, labels: Dict[str, str
         if members:
             rows = "".join(
                 f'<span class="volbadge-tip__row">'
-                f'<span class="volbadge-tip__kw">{html.escape(str(m.get("kw", "")))}</span>'
+                f'<span class="volbadge-tip__kw">{kw_html(m.get("kw", ""))}</span>'
                 f'<span class="volbadge-tip__vol">{html.escape(str(m.get("volLabel", "")))}</span>'
                 f'</span>'
                 for m in members
@@ -176,7 +213,7 @@ def persona_card_html(persona: Dict[str, Any], index: int, labels: Dict[str, str
         kws_html = ""
         if ev_kws:
             chips = "".join(
-                f'<span class="persona-kbf__kw">{html.escape(str(kw))}</span>'
+                f'<span class="persona-kbf__kw">{kw_html(kw)}</span>'
                 for kw in ev_kws
             )
             kws_html = f'<div class="persona-kbf__kws">{chips}</div>'
@@ -205,7 +242,7 @@ def persona_card_html(persona: Dict[str, Any], index: int, labels: Dict[str, str
         chips = "".join(
             (
                 f'<span class="persona-ev__item">'
-                f'{html.escape(str(e.get("kw", "")))}'
+                f'{kw_html(e.get("kw", ""))}'
                 + (f'<span class="persona-ev__vol">{html.escape(str(e["volLabel"]))}</span>'
                    if e.get("volLabel") else "")
                 + f'</span>'
@@ -258,19 +295,23 @@ def persona_card_html(persona: Dict[str, Any], index: int, labels: Dict[str, str
         '</div>'
         '</div>'
 
-        # ② KBF
-        '<div class="persona-card__body">'
-        f'<div class="persona-subhead">{t(labels, "customerAnalysis.dash.personaKbfTitle")}</div>'
-        f'<div class="persona-kbf">{kbf_block_html}</div>'
-        '</div>'
+        # ② KBF — 내용이 없으면 통째로 생략한다.
+        #    브랜드/논브랜드 그룹은 kbf 가 아예 없어 제목만 남던 자리다 (카드마다 빈 제목).
+        + (
+            '<div class="persona-card__body">'
+            f'<div class="persona-subhead">{t(labels, "customerAnalysis.dash.personaKbfTitle")}</div>'
+            f'<div class="persona-kbf">{kbf_block_html}</div>'
+            '</div>'
+            if kbf_block_html.strip() else ""
+        )
 
         # ③ Insight + Evidence
-        '<div class="persona-card__body">'
-        f'<div class="persona-subhead">{t(labels, "customerAnalysis.dash.personaInsightTitle")}</div>'
-        f'{insight_html}'
-        f'{evidence_block}'
-        '</div>'
-        '</div>'
+        + '<div class="persona-card__body">'
+        + f'<div class="persona-subhead">{t(labels, "customerAnalysis.dash.personaInsightTitle")}</div>'
+        + f'{insight_html}'
+        + f'{evidence_block}'
+        + '</div>'
+        + '</div>'
     )
 
 
@@ -309,17 +350,12 @@ def purpose_box_html(
     variant: str,  # "dash" | "a4"
     overview: Optional[str] = None,
 ) -> str:
+    # 문구를 먼저 이스케이프한 뒤 자리표시자를 채운다. 검색어는 번역 토글용
+    # 이중 span 이라 이미 안전한 HTML 이고, 뒤늦게 넣어야 두 번 이스케이프되지 않는다.
+    key = "customerAnalysis.purpose.body" if market_label else "customerAnalysis.purpose.bodyNoMarket"
+    body_html = escape_with_strong(t(labels, key)).replace("{category}", kw_html(category))
     if market_label:
-        body = (
-            t(labels, "customerAnalysis.purpose.body")
-            .replace("{category}", category)
-            .replace("{market}", market_label)
-        )
-    else:
-        body = (
-            t(labels, "customerAnalysis.purpose.bodyNoMarket")
-            .replace("{category}", category)
-        )
+        body_html = body_html.replace("{market}", html.escape(market_label))
     box_class = "mr-summary-box mr-summary-box--dash" if variant == "dash" else "mr-summary-box"
     text_class = "mr-summary-text" if variant == "dash" else "mr-summary-text--sm"
     # LLM 분석 개요(#1958 ①)를 커버 요약문으로 — 고정 목적 문구 아래 데이터
@@ -331,7 +367,7 @@ def purpose_box_html(
     return (
         f'<div class="{box_class}">'
         f'<div class="mr-summary-box__title">{t(labels, "report.purpose.title")}</div>'
-        f'<p class="{text_class}">{escape_with_strong(body)}</p>'
+        f'<p class="{text_class}">{body_html}</p>'
         f'{overview_html}'
         f'</div>'
     )
@@ -371,7 +407,7 @@ def dash_cover_html(
         '<div class="dash-cover-gradient">'
         f'<div class="dash-cover-eyebrow">{html.escape(eyebrow)}</div>'
         f'<div class="dash-cover-title">{t(labels, "agent.customerAnalysis.name")}</div>'
-        f'<div class="dash-cover-category">{html.escape(category)}</div>'
+        f'<div class="dash-cover-category">{kw_html(category)}</div>'
         f'<div class="dash-cover-meta">{html.escape(cover_meta)}</div>'
         '</div>'
         + purpose_box_html(category, market_label, labels, "dash", overview=overview)
@@ -412,7 +448,7 @@ def dash_panel_personas_html(
             '<div class="dash-card">'
             '<div class="dash-card__head">'
             f'<span class="dash-card__title">'
-            + t(labels, "customerAnalysis.dash.coreSectionTitle").replace("{category}", html.escape(category))
+            + t(labels, "customerAnalysis.dash.coreSectionTitle").replace("{category}", kw_html(category))
             + '</span>'
             f'<span class="dash-card__badge">{format_count(labels, len(core))}</span>'
             '</div>'
@@ -421,7 +457,7 @@ def dash_panel_personas_html(
         )
     if alt:
         cards = "".join(persona_card_html(p, i, labels) for i, p in enumerate(alt))
-        desc = t(labels, "customerAnalysis.dash.altSectionDesc").replace("{category}", html.escape(category))
+        desc = t(labels, "customerAnalysis.dash.altSectionDesc").replace("{category}", kw_html(category))
         sections.append(
             '<div class="dash-card">'
             '<div class="dash-card__head">'
@@ -519,7 +555,7 @@ def a4_cover_page_html(meta: Dict[str, Any], category: str, labels: Dict[str, st
         '<div>'
         '<div class="cover-lm">ListeningMind.AI</div>'
         f'<div class="cover-title">{t(labels, "agent.customerAnalysis.name")}</div>'
-        f'<div class="cover-category">{html.escape(category)}</div>'
+        f'<div class="cover-category">{kw_html(category)}</div>'
         '<div class="cover-meta">'
         f'<span>{html.escape(str(meta.get("date", "")))}</span>'
         '<span class="cover-meta-sep">|</span>'

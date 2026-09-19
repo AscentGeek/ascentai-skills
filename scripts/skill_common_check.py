@@ -106,17 +106,11 @@ def parse_frontmatter(text: str) -> dict | None:
 
 
 def check_skill(skill_dir: Path, res: Result) -> None:
-    # 로케일 구조면 skill_dir 은 skills/<skill>/locales/<loc> 다.
-    # 표시 이름과 frontmatter 기대값은 빌드가 만들 zip 이름(lm-<skill>-<loc>)을 따른다.
-    if skill_dir.parent.name == "locales":
-        loc = skill_dir.name
-        skill = skill_dir.parent.parent.name
-        expected_name = f"lm-{skill}-{loc}"
-        name = f"{skill}/{loc}"
-        license_dir = skill_dir.parent.parent          # LICENSE 는 스킬 루트에 1개
-    else:
-        expected_name = name = skill_dir.name
-        license_dir = skill_dir
+    # frontmatter 기대값은 빌드가 만들 zip 이름(lm-<스킬명>)을 따른다.
+    # 스킬은 언어별로 갈리지 않는다 — 시장·리포트 언어는 실행할 때 정한다.
+    name = skill_dir.name
+    expected_name = f"lm-{name}"
+    license_dir = skill_dir
     skill_md = skill_dir / "SKILL.md"
 
     # 1) SKILL.md 존재
@@ -209,26 +203,12 @@ def main(argv: list[str]) -> int:
     else:
         targets = sorted(d for d in SKILLS_DIR.iterdir() if d.is_dir() and not d.name.startswith("."))
 
-    # 로케일 구조 · skills/<name>/locales/<loc>/ 가 실제 검사 대상이다.
-    # 스킬 폴더 자체에는 SKILL.md 가 없고, 언어별로 한 벌씩 있다.
-    # 로케일마다 검사해야 "jp 만 description 이 비어 있다" 같은 누락이 잡힌다.
-    units: list[Path] = []
-    for skill_dir in targets:
-        loc_root = skill_dir / "locales"
-        if loc_root.is_dir():
-            locs = sorted(d for d in loc_root.iterdir() if d.is_dir())
-            if not locs:
-                print(f"✗ [{skill_dir.name}] locales/ 가 비어 있음")
-                return 1
-            units += locs
-        else:
-            units.append(skill_dir)   # 옛 평평한 구조 (하위 호환)
-
+    # 스킬 폴더가 곧 검사 단위다 (skills/<name>/SKILL.md).
     res = Result()
-    for unit in units:
-        check_skill(unit, res)
+    for skill_dir in targets:
+        check_skill(skill_dir, res)
 
-    return res.summary(len(units))
+    return res.summary(len(targets))
 
 
 if __name__ == "__main__":

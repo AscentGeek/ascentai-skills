@@ -1,6 +1,11 @@
 name: total-report
-version: "1.0.0"
+version: "2.0.0"
 slug: total-insight
 mcp_tools: [intent_finder, keyword_info, cluster_finder, path_finder]
 vendor_chart: false
-locales: [kr, jp]
+# 이 스킬은 세 파인더 리포트를 그대로 품는다. 같은 코드를 복제해 두면 버그를
+# 세 번 고쳐야 하므로, 소스는 형제 스킬에만 두고 빌드가 가져온다.
+# (render_report.py · inline_styles.py 는 이 스킬 고유라 가져오지 않는다)
+borrows: [queryfinder-report, clusterfinder-report, pathfinder-report]
+# 리포트를 쓸 수 있는 언어 · 실행 시 --lang 으로 고른다
+report_langs: [kr, jp, us]
