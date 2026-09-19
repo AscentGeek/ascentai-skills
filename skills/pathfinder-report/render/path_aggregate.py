@@ -563,6 +563,48 @@ def _cmd_paths(args):
     return 0
 
 
+def _cmd_keywords(args):
+    """리포트 화면에 실제로 박히는 키워드만 모아 준다 — 검색어 번역 단계의 입력.
+    여정 노드·대표 검색어·허브와 그 하위 검색어까지 전부 포함한다. 여기 없는
+    키워드를 번역해봐야 화면에 나오지 않는다."""
+    doc = json.loads(Path(args.paths).read_text(encoding="utf-8"))
+    ordered, seen = [], set()
+
+    def add(kw):
+        if kw and kw not in seen:
+            seen.add(kw)
+            ordered.append(kw)
+
+    # 표지·목적 문구에 박히는 씨드 검색어도 화면에 보이므로 번역 대상이다.
+    add(args.category)
+
+    for p in doc.get("paths", []):
+        for n in (p.get("nodes") or []) + (p.get("evidence") or []):
+            add(n.get("kw"))
+    for h in doc.get("hubs", []):
+        add(h.get("keyword"))
+        for d in (h.get("downstream") or []):
+            add(d.get("kw"))
+
+    # 여정 흐름도는 lm_paths.json 이 아니라 컨텍스트의 flowTree 로 그려진다.
+    # 상위 5경로에 없는 노드도 화면에 뜨므로 여기서 같이 걷어야 빠짐이 없다.
+    if args.context:
+        ctx = json.loads(Path(args.context).read_text(encoding="utf-8"))
+
+        def walk(nodes):
+            for n in (nodes or []):
+                add(n.get("kw"))
+                walk(n.get("children"))
+
+        walk(ctx.get("flowTree"))
+
+    Path(args.out).write_text(
+        json.dumps({"keywords": ordered}, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8")
+    print(f"wrote {args.out} · {len(ordered)} keywords")
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Path Finder data pipeline: journey-graph context builder + path/hub postprocessing."
@@ -584,6 +626,15 @@ def main(argv=None):
     p_paths.add_argument("--context", required=True, help="lm_path_result.json 경로")
     p_paths.add_argument("--out", required=True)
     p_paths.set_defaults(func=_cmd_paths)
+
+    p_kw = sub.add_parser(
+        "keywords",
+        help="List the keywords that actually appear in the report (for translation)")
+    p_kw.add_argument("--paths", required=True, help="lm_paths.json 경로")
+    p_kw.add_argument("--context", help="lm_path_result.json 경로 — 여정 흐름도 노드까지 포함시킨다")
+    p_kw.add_argument("--category", required=True, help="씨드 검색어 — 표지에 박히므로 함께 번역한다")
+    p_kw.add_argument("--out", required=True)
+    p_kw.set_defaults(func=_cmd_keywords)
 
     args = parser.parse_args(argv)
     return args.func(args)
