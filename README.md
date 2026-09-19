@@ -23,12 +23,24 @@ ListeningMind **SaaS 고객용** 리포트 스킬. 데이터는 **ListeningMind 
 
 | 스킬 | 리포트 | 쓰는 MCP 도구 |
 |---|---|---|
-| `lm-queryfinder-report-kr` | 쿼리 기회 분석 | `intent_finder` + `keyword_info` |
-| `lm-clusterfinder-report-kr` | 검색 클러스터 지형 | `cluster_finder` + `keyword_info` |
-| `lm-pathfinder-report-kr` | 검색 여정 분석 | `path_finder` + `keyword_info` |
-| `lm-total-report-kr` | 3파인더 통합 | 위 3종 + `keyword_info` 1회 |
+| `lm-queryfinder-report` | 쿼리 기회 분석 | `intent_finder` + `keyword_info` |
+| `lm-clusterfinder-report` | 검색 클러스터 지형 | `cluster_finder` + `keyword_info` |
+| `lm-pathfinder-report` | 검색 여정 분석 | `path_finder` + `keyword_info` |
+| `lm-total-report` | 3파인더 통합 | 위 3종 + `keyword_info` 1회 |
 
-스킬 이름은 `lm-<스킬명>-<언어>` 다 — 한국어판은 `-kr`, 일본어판은 `-jp` 를 단다.
+스킬 이름은 `lm-<스킬명>` 이다 — 국가 코드는 붙지 않는다.
+
+### 시장과 리포트 언어는 실행할 때 정한다
+
+스킬은 국가별로 나뉘어 있지 않다. 프롬프트는 영어 한 벌이고, 실행할 때 **두 값을 따로**
+받는다:
+
+- **타겟 시장(`--gl`)** — 어느 검색 시장을 분석할지 · `kr` · `jp` · `us`
+- **리포트 언어(`--lang`)** — 리포트와 대화를 어느 언어로 쓸지 · `kr` · `jp` · `us`
+
+둘은 서로 독립이다. **미국 시장을 일본어로** 쓰는 조합(`--gl us --lang jp`)이 정상이며,
+한쪽에서 다른 쪽을 추론하지 않는다. 시장 언어와 리포트 언어가 다르면 리포트 상단에
+**검색어 번역 버튼**이 생겨, 화면의 검색어를 원문 ↔ 리포트 언어로 토글할 수 있다.
 
 ## 개발
 

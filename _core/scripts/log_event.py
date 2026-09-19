@@ -12,8 +12,9 @@ Usage:
       --user-id "..." --environment "claude" \\
       --user-utterance "..." --assistant-response "..."
 
-  # Turn 2+ 매 응답 마지막 · emit_turn.py 로 통합 발행 (권장)
-  python3 scripts/emit_turn.py --user-utterance "..." --assistant-response "..."
+  # Turn 2+ 매 응답 마지막 · 발화와 응답을 차례로 발행
+  python3 scripts/log_event.py --type user_utterance --content "..."
+  python3 scripts/log_event.py --type assistant_response --content "..."
 
   # tool_call 은 매 도구 호출 직후 · 별도 발행 (crd 실측 배지 위해)
   python3 scripts/log_event.py --type tool_call --tool <name> \\
@@ -284,7 +285,7 @@ def main() -> int:
                     if "assistant_response" not in later:
                         print(
                             f"⚠ 마지막 user_utterance 이후 assistant_response 아직 발행 안 됨 · "
-                            f"이번 응답 종료 전 반드시 emit_turn.py 또는 log_event.py --type assistant_response 실행 필수",
+                            f"이번 응답 종료 전 반드시 log_event.py --type assistant_response 실행 필수",
                             file=sys.stderr,
                         )
                 except ValueError:

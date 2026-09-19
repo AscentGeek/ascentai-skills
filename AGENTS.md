@@ -62,7 +62,7 @@ DaaS 판의 상한을 그대로 승계한다 — `intent_finder` 상위 1,000 ·
 - 스킬이 달라도 **같은 세션·같은 파라미터면 적중**한다
   단, 적중은 **파라미터가 같을 때만**이다:
   - 구조 조회(`intent_finder`·`path_finder`·`cluster_finder`) — 형제 스킬과 1a 파라미터가
-    같아 그대로 적중한다 (lm-pathfinder-report-kr 뒤에 lm-total-report-kr 을 돌리면
+    같아 그대로 적중한다 (lm-pathfinder-report 뒤에 lm-total-report 을 돌리면
     `path_finder` 재호출이 사라진다)
   - `keyword_info` — 스킬마다 넘기는 키워드 목록이 달라 적중하지 않는다. total 은 3파인더
     합집합으로 **한 번만** 부르므로, 형제 캐시를 못 쓰는 대신 자기 안의 중복 조회가 사라진다
@@ -178,28 +178,27 @@ _core/                          전 스킬·전 언어 공통 · 여기만 고�
      └ skill_name·version 은 __SKILL_NAME__ · __SKILL_VERSION__ 플레이스홀더
 
 skills/<스킬명>/                 스킬 수만큼만
-├── skill.yaml                  version · slug · mcp_tools · vendor_chart · locales
+├── skill.yaml                  version · slug · mcp_tools · vendor_chart · borrows
+├── SKILL.md                    name·description·문서 (영어)
+├── references/*.md             절차 문서 (영어)
+├── labels/*.<언어>.json         리포트 UI 라벨 · kr·jp·us 세 벌을 모두 싣는다
 ├── render/                     이 스킬 전용 렌더러 (스킬마다 실제로 다름)
 ├── styles/ templates/ vendor/  이 스킬 전용 자산
-├── prompts/                    원본 프롬프트 스냅샷 (언어 무관 · 번역 금지)
-├── LICENSE.txt
-└── locales/<언어>/              ← 언어가 늘어나는 자리
-    ├── SKILL.md                name·description·문서 (그 언어로)
-    ├── references/*.md
-    └── labels/*.json
+├── prompts/                    원본 프롬프트 스냅샷 (번역 금지 · zip 에는 안 실린다)
+└── LICENSE.txt
 
-dist/lm-<스킬명>-<언어>.zip       빌드 산출 (kr 판도 -kr 을 단다)
+dist/lm-<스킬명>.zip              빌드 산출 · 스킬당 하나 (국가 코드 없음)
 ```
 
 ### 빌드
 
 ```bash
-scripts/build.sh                        # 전 스킬 · skill.yaml 의 locales 전부
+scripts/build.sh                        # 전 스킬
 scripts/build.sh queryfinder-report     # 한 스킬만
-scripts/build.sh queryfinder-report jp  # 한 스킬 · 한 언어
 ```
 
-빌드가 하는 일 · `_core` + 스킬 전용 + 로케일 문서를 합쳐 **기존과 같은 zip 내부 구조**
+빌드가 하는 일 · `_core` + 스킬 전용 + (있으면) `borrows` 로 빌려온 형제 스킬 코드를 합쳐
+**기존과 같은 zip 내부 구조**
 (`_shared/` · `api/` · `scripts/` · `references/`)로 되돌리고, 플레이스홀더에 스킬명·버전을
 박아 넣는다. **플레이스홀더 주입을 빠뜨리면 admin 에 `__SKILL_NAME__` 으로 기록된다.**
 
@@ -208,28 +207,35 @@ scripts/build.sh queryfinder-report jp  # 한 스킬 · 한 언어
 
 ---
 
-## 5. i18n · 언어 추가
+## 5. i18n · 리포트 언어 추가
 
-언어 추가 = `skills/<n>/locales/<언어>/` 를 만들고 `skill.yaml` 의 `locales` 에 추가.
-**코드는 손대지 않는다.**
+스킬은 언어별로 나뉘지 않는다. 프롬프트(SKILL.md·references)는 영어 한 벌이고,
+**분석 대상 시장(`--gl`)과 리포트 언어(`--lang`)를 실행할 때 따로 받는다.**
+둘은 독립이라 미국 시장을 일본어로 쓰는 조합도 정상이다.
 
-번역 대상 (그 언어로 새로 씀):
-- `SKILL.md` · frontmatter `name`(`lm-<스킬명>-<언어>`) · `description`(**트리거 문구가
-  그 언어여야 스킬이 발동한다**) · 본문
-- `references/*.md` · LLM 이 읽고 그 언어로 사용자에게 말한다
-- `labels/*.<언어>.json` · 리포트 UI 라벨
+리포트 언어 추가 = `skills/<n>/labels/<슬러그>.<언어>.json` 을 한 벌 더 넣고,
+`render_report.py` 의 `REPORT_LANGS` · `HTML_LANG` · `FONT_HREF` ·
+`scripts/build.sh` 의 `REPORT_LANGS` 에 그 코드를 더한다.
+
+번역 대상:
+- `labels/*.<언어>.json` · 리포트 UI 라벨 (키는 기존 언어와 **완전히 동일**해야 한다)
+- `SKILL.md` 의 `description` · **트리거 문구가 그 언어로도 들어가야 그 언어 발화에 발동한다**
 
 번역하지 않는 것:
-- `prompts/*.md` · 운영 프롬프트와 diff 대조용이라 번역하면 대조가 깨진다
+- `prompts/*.md` · DaaS 운영 프롬프트를 무수정으로 뜬 사본이다. 실행에 쓰이지 않고
+  `type=<agent> locale=KR` 최신 행과 diff 해 이식본이 뒤처졌는지 보는 용도라,
+  번역하거나 이름을 바꾸면 대조가 깨진다. **파일명의 `.kr` 은 원본 DB 행의 locale**
+  이지 스킬 언어가 아니다 (스킬은 영어 한 벌이다).
 - 코드 주석·docstring · 유지보수자가 읽는 것
-- 리포트 **본문**은 번역 대상이 아니다 · `출력 언어 = 분석 시장(gl) 언어` 규칙이
-  이미 있어 `gl=jp` 면 LLM 이 일본어로 쓴다
+- 리포트 **본문**은 라벨이 아니라 LLM 이 쓴다 · `출력 언어 = 리포트 언어(--lang)`
+  규칙이 references 에 있어, `--lang jp` 면 시장이 어디든 LLM 이 일본어로 쓴다.
+  검색어만 시장 언어 원문으로 남고, 그건 번역 토글이 처리한다.
 
 `render_report.py` 에 `HTML_LANG`·`FONT_HREF`(Noto Sans KR/JP) · 툴바 라벨이 kr/jp/us
 로 이미 들어 있다. 라벨 JSON 만 추가하면 UI 가 그 언어로 렌더된다.
 
-`skill_common_check.py` 는 **로케일마다** 검사하므로, 한 언어만 `name` 이 틀리거나
-description 이 비면 그 자리에서 잡힌다.
+`skill_common_check.py` 는 스킬마다 `SKILL.md` 를 검사한다 — `name` 이 `lm-<스킬명>`
+과 다르거나 description 이 비면 그 자리에서 잡힌다.
 
 ---
 
