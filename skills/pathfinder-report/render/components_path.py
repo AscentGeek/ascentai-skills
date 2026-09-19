@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 
 from components import (  # shared, unchanged from the customer-analysis skill
     escape_with_strong,
+    kw_html,
     t,
     format_count,
     purpose_box_html,
@@ -36,7 +37,7 @@ def _flow_tree_html(roots: List[Dict[str, Any]], depth: int = 0, seed: Optional[
     items = []
     for n in roots:
         kw_raw = str(n.get("kw", ""))
-        kw = html.escape(kw_raw)
+        kw = kw_html(kw_raw)
         vol = n.get("volLabel", "")
         vol_html = f'<span class="flow-node__vol">{html.escape(str(vol))}</span>' if vol else ""
         is_seed = seed is not None and kw_raw == seed
@@ -70,7 +71,7 @@ def _flow_max_depth(roots: List[Dict[str, Any]], depth: int = 0) -> int:
 def flow_diagram_html(flow_tree: List[Dict[str, Any]], category: str, labels: Dict[str, str]) -> str:
     if not flow_tree:
         return ""
-    desc = t(labels, "pathAnalysis.dash.flowDesc").replace("{category}", html.escape(category))
+    desc = t(labels, "pathAnalysis.dash.flowDesc").replace("{category}", kw_html(category))
     legend = "".join(
         f'<span class="flow-legend__item flow-legend__item--{code}">'
         f'{t(labels, f"pathAnalysis.intent.{code}")}</span>'
@@ -108,7 +109,7 @@ def flow_diagram_html(flow_tree: List[Dict[str, Any]], category: str, labels: Di
 def _path_chain_html(nodes: List[Dict[str, Any]]) -> str:
     chips = []
     for i, n in enumerate(nodes):
-        kw = html.escape(str(n.get("kw", "")))
+        kw = kw_html(str(n.get("kw", "")))
         vol = n.get("volLabel", "")
         vol_html = f'<span class="path-chip__vol">{html.escape(str(vol))}</span>' if vol else ""
         chips.append(
@@ -166,7 +167,7 @@ def path_card_html(path: Dict[str, Any], index: int, labels: Dict[str, str]) -> 
     if evidence:
         chips = "".join(
             '<span class="persona-ev__item">'
-            f'{html.escape(str(e.get("kw", "")))}'
+            f'{kw_html(str(e.get("kw", "")))}'
             + (f'<span class="persona-ev__vol">{html.escape(str(e["volLabel"]))}</span>'
                if e.get("volLabel") else "")
             + '</span>'
@@ -212,7 +213,7 @@ def path_card_html(path: Dict[str, Any], index: int, labels: Dict[str, str]) -> 
 
 def hub_card_html(hub: Dict[str, Any], index: int, labels: Dict[str, str]) -> str:
     num = f"{index + 1:02d}"
-    name = html.escape(str(hub.get("keyword", "")))
+    name = kw_html(str(hub.get("keyword", "")))
 
     badges = []
     vol = hub.get("volumeLabel")
@@ -265,7 +266,7 @@ def hub_card_html(hub: Dict[str, Any], index: int, labels: Dict[str, str]) -> st
     if downstream:
         chips = "".join(
             '<span class="persona-ev__item">'
-            f'{html.escape(str(d.get("kw", "")))}'
+            f'{kw_html(str(d.get("kw", "")))}'
             + (f'<span class="persona-ev__vol">{html.escape(str(d["volLabel"]))}</span>'
                if d.get("volLabel") else "")
             + '</span>'
@@ -322,7 +323,7 @@ def dash_cover_html(meta: Dict[str, Any], category: str, gl_label: str,
         '<div class="dash-cover-gradient dash-cover-gradient--path">'
         f'<div class="dash-cover-eyebrow">{html.escape(eyebrow)}</div>'
         f'<div class="dash-cover-title">{t(labels, "agent.pathAnalysis.name")}</div>'
-        f'<div class="dash-cover-category">{html.escape(category)}</div>'
+        f'<div class="dash-cover-category">{kw_html(category)}</div>'
         f'<div class="dash-cover-meta">{html.escape(cover_meta)}</div>'
         '</div>'
         + purpose_box_html(category, market_label, labels, "dash", overview=overview)
@@ -357,7 +358,7 @@ def dash_panel_journey_html(paths: List[Dict[str, Any]], hubs: List[Dict[str, An
             '<div class="dash-card">'
             '<div class="dash-card__head">'
             '<span class="dash-card__title">'
-            + t(labels, "pathAnalysis.dash.pathSectionTitle").replace("{category}", html.escape(category))
+            + t(labels, "pathAnalysis.dash.pathSectionTitle").replace("{category}", kw_html(category))
             + '</span>'
             f'<span class="dash-card__badge">{format_count(labels, len(paths))}</span>'
             '</div>'
@@ -403,7 +404,7 @@ def a4_cover_page_html(meta: Dict[str, Any], category: str, labels: Dict[str, st
         '<div>'
         '<div class="cover-lm">ListeningMind.AI</div>'
         f'<div class="cover-title">{t(labels, "agent.pathAnalysis.name")}</div>'
-        f'<div class="cover-category">{html.escape(category)}</div>'
+        f'<div class="cover-category">{kw_html(category)}</div>'
         '<div class="cover-meta">'
         f'<span>{html.escape(str(meta.get("date", "")))}</span>'
         '<span class="cover-meta-sep">|</span>'
@@ -426,7 +427,7 @@ def a4_body_page_html(paths: List[Dict[str, Any]], hubs: List[Dict[str, Any]],
         flow_diagram_html(flow_tree, category, labels),
     ]
     if paths:
-        parts.append(f'<div class="persona-subhead">{t(labels, "pathAnalysis.a4.pathSection").replace("{category}", html.escape(category))}</div>')
+        parts.append(f'<div class="persona-subhead">{t(labels, "pathAnalysis.a4.pathSection").replace("{category}", kw_html(category))}</div>')
         parts.append("".join(path_card_html(p, i, labels) for i, p in enumerate(paths)))
     if hubs:
         parts.append(f'<div class="persona-subhead">{t(labels, "pathAnalysis.dash.hubSectionTitle")}</div>')

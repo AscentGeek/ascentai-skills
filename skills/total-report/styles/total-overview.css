@@ -296,7 +296,10 @@
 .ti-mxgrid { display: grid; gap: var(--spacing-xs); min-width: 560px; font-size: var(--font-size-b3); }
 .ti-mxh { font-weight: var(--font-weight-bold); color: var(--gray-500); font-size: var(--font-size-b4); text-transform: uppercase; padding: var(--spacing-xs) var(--spacing-sm); text-align: center; }
 .ti-mxh--p { text-align: left; }
-.ti-mxr { font-weight: var(--font-weight-semibold); color: var(--gray-900); padding: var(--spacing-sm); background: var(--gray-100); border-radius: var(--radius-sm); display: flex; align-items: center; gap: var(--spacing-xs); flex-wrap: wrap; }
+.ti-mxr { font-weight: var(--font-weight-semibold); color: var(--gray-900); padding: var(--spacing-sm); background: var(--gray-100); border-radius: var(--radius-sm); display: flex; align-items: center; gap: var(--spacing-xs); flex-wrap: wrap; min-width: 0; }
+/* 행 라벨 안의 이탈 배지는 셀 폭 안에서 줄바꿈한다 — .ti-badge 기본값이 nowrap 이라
+   라벨이 긴 언어(영어)에서 배지가 옆 칸을 덮었다. */
+.ti-mxr .ti-badge { white-space: normal; max-width: 100%; text-align: left; }
 .ti-cell { border-radius: var(--radius-sm); padding: var(--spacing-sm); text-align: center; font-variant-numeric: tabular-nums; color: var(--gray-900); border: var(--border-thin) solid transparent; min-width: 0; }
 .ti-cell__vol { font-weight: var(--font-weight-semibold); }
 .ti-cell__kw { font-size: var(--font-size-cap); color: var(--gray-600); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

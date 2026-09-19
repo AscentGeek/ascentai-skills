@@ -26,7 +26,7 @@ HTML-escape 하고 <strong> 만 허용(형제 규율 계승).
 import html
 from typing import Any, Dict, List, Optional
 
-from components import t, escape_with_strong
+from components import t, escape_with_strong, kw_html
 
 
 # key → color/label family used across the umbrella chrome
@@ -188,7 +188,7 @@ def total_cover_html(counts: Dict[str, Any], category: str, gl_label: str,
         '<div class="tot-cover">'
         f'<div class="tot-cover__eyebrow">{html.escape(eyebrow)}</div>'
         f'<h1 class="tot-cover__title">{t(labels, "totalInsight.reportTitle")}</h1>'
-        f'<div class="tot-cover__cat">{html.escape(category)}</div>'
+        f'<div class="tot-cover__cat">{kw_html(category)}</div>'
         f'<div class="tot-cover__meta">{meta_html}</div>'
         f'{summary_html}'
         '</div>'
@@ -351,7 +351,7 @@ def _upset_row(sets: List[str], count: int, vol: int, maxvol: int,
 
 
 def _gap_chip(item: Dict[str, Any], bucket_lb: str) -> str:
-    kw = html.escape(str(item.get("kw", "")))
+    kw = kw_html(str(item.get("kw", "")))
     vol = _fmt(item.get("volume"))
     trend = item.get("trend")
     trend_html = (
@@ -453,7 +453,7 @@ def module_hub(facts: Dict[str, Any], notes: Dict[str, Any], labels: Dict[str, s
 
     rows: List[str] = []
     for h in ordered:
-        kw = html.escape(str(h.get("kw", "")))
+        kw = kw_html(str(h.get("kw", "")))
         kind, lbkey = _HUB_TYPE.get(h.get("type"), ("muted", "ti.hubType.MIXED"))
         badge = _badge(t(labels, lbkey), kind)
         missing = h.get("missingAxis")
@@ -566,7 +566,8 @@ def module_matrix(facts: Dict[str, Any], notes: Dict[str, Any], labels: Dict[str
             except (TypeError, ValueError):
                 mix = 8.0
             top = (c.get("topKw") or [])
-            top_kw = html.escape(str(top[0].get("kw"))) if top else ""
+            top_kw = kw_html(str(top[0].get("kw"))) if top else ""
+            # title 속성이라 이중 span 을 넣을 수 없다 — 원문만 이스케이프해 둔다.
             title_kw = " · ".join(html.escape(str(k.get("kw"))) for k in top[:3])
             top_line = f'<div class="ti-cell__kw">{top_kw}</div>' if top_kw else ""
             row.append(
@@ -653,13 +654,13 @@ def module_leak(facts: Dict[str, Any], labels: Dict[str, str], *,
         kw = str(lk.get("kw", ""))
         score = lk.get("leak_score") or 0
         if score >= 0.5:
-            rows.append(bar_badge(html.escape(kw), score, sub_html=_sub(lk), tone="bad",
+            rows.append(bar_badge(kw_html(kw), score, sub_html=_sub(lk), tone="bad",
                                   badge=(t(labels, "ti.badge.urgent"), "bad")))
         elif score >= 0.12:
-            rows.append(bar_badge(html.escape(kw), score, sub_html=_sub(lk), tone="how",
+            rows.append(bar_badge(kw_html(kw), score, sub_html=_sub(lk), tone="how",
                                   val=t(labels, "ti.badge.mid")))
         else:
-            rows.append(bar_badge(html.escape(kw), score, sub_html=_sub(lk), tone="how",
+            rows.append(bar_badge(kw_html(kw), score, sub_html=_sub(lk), tone="how",
                                   val=t(labels, "ti.badge.low")))
         seen.add(kw)
 
@@ -669,7 +670,7 @@ def module_leak(facts: Dict[str, Any], labels: Dict[str, str], *,
         kw = str(lk.get("kw", ""))
         if kw in seen:
             continue
-        rows.append(bar_badge(html.escape(kw), lk.get("opp"), sub_html=_sub(lk), tone="warn",
+        rows.append(bar_badge(kw_html(kw), lk.get("opp"), sub_html=_sub(lk), tone="warn",
                               badge=(t(labels, "ti.badge.deadend"), "warn")))
         seen.add(kw)
 
@@ -680,7 +681,7 @@ def module_leak(facts: Dict[str, Any], labels: Dict[str, str], *,
             continue
         persona = sp.get("persona") or ""
         sub = html.escape(persona) if persona else ""
-        rows.append(bar_badge(html.escape(kw), sp.get("opp"), sub_html=sub, tone="good",
+        rows.append(bar_badge(kw_html(kw), sp.get("opp"), sub_html=sub, tone="good",
                               badge=(t(labels, "ti.badge.safe"), "good")))
         seen.add(kw)
 
@@ -720,8 +721,8 @@ def module_corridor(facts: Dict[str, Any], notes: Dict[str, Any], labels: Dict[s
     )
     body_rows: List[str] = []
     for b in bridges:
-        frm = html.escape(str(b.get("fromHub", b.get("from", ""))))
-        to = html.escape(str(b.get("toHub", b.get("to", ""))))
+        frm = kw_html(str(b.get("fromHub", b.get("from", ""))))
+        to = kw_html(str(b.get("toHub", b.get("to", ""))))
         fwd = b.get("fwd", 0) or 0
         rev = b.get("rev", 0) or 0
         if fwd > rev:
@@ -795,7 +796,7 @@ def _task_card(item: Dict[str, Any], note: Optional[Dict[str, Any]], labels: Dic
         for k, cls in _STACK_SEG
     )
     chips = "".join(
-        f'<span class="ti-kc">{html.escape(str(kw))}</span>' for kw in (item.get("evidenceKw") or [])
+        f'<span class="ti-kc">{kw_html(str(kw))}</span>' for kw in (item.get("evidenceKw") or [])
     )
     srcs = " · ".join(
         t(labels, _SRCMOD_LB[m]) for m in (item.get("sourceModules") or []) if m in _SRCMOD_LB
@@ -906,7 +907,7 @@ def total_a4_pages_html(counts: Dict[str, Any], facts: Dict[str, Any], notes: Di
         '<div>'
         '<div class="cover-lm">ListeningMind.AI</div>'
         f'<div class="cover-title">{t(labels, "totalInsight.reportTitle")}</div>'
-        f'<div class="cover-category">{html.escape(category)}</div>'
+        f'<div class="cover-category">{kw_html(category)}</div>'
         '<div class="cover-meta">'
         f'<span>{html.escape(str(counts.get("date", "")))}</span>'
         '<span class="cover-meta-sep">|</span>'

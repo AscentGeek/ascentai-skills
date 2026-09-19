@@ -385,6 +385,34 @@ def _evidence_for(member_keywords, keyword_map, top_n=EVIDENCE_TOP_N):
     ]
 
 
+# 데이터의 의도 코드 → 렌더러 라벨이 아는 값 (components.STAGE_LABEL_KEY)
+INTENT_STAGE = {
+    "i": "informational",
+    "n": "navigational",
+    "c": "commercial",
+    "t": "transactional",
+}
+
+
+def _group_intent(member_keywords, keyword_map):
+    """그룹의 대표 의도와 그 비중. 멤버 키워드의 의도 비율을 검색량으로 가중
+    합산해 가장 큰 축을 고른다. 시장 전체가 한 축으로 쏠린 카테고리에서는
+    그룹마다 같은 축이 나오므로, 비중을 함께 넘겨 배지가 변별력을 갖게 한다.
+    의도 정보가 하나도 없으면 빈 값(배지 생략)."""
+    totals = {k: 0.0 for k in INTENT_KEYS}
+    for kw in (member_keywords or []):
+        entry = keyword_map.get(kw) or {}
+        intents = entry.get("intents") or {}
+        vol = _num(entry.get("volume_avg")) or 1.0   # 검색량 0 인 키워드도 한 표는 준다
+        for k in INTENT_KEYS:
+            totals[k] += _num(intents.get(k)) * vol
+    if not any(totals.values()):
+        return "", ""
+    top = max(INTENT_KEYS, key=lambda k: totals[k])
+    share = totals[top] / sum(totals.values())
+    return INTENT_STAGE[top], f"{round(share * 100)}%"
+
+
 def _sum_member_volume(member_keywords, keyword_map):
     return sum(_num((keyword_map.get(kw) or {}).get("volume_avg")) for kw in (member_keywords or []))
 
@@ -408,10 +436,15 @@ def postprocess_groups(groups_raw, keyword_map):
         if not members:
             continue
         vol = _sum_member_volume(members, keyword_map)
+        stage, stage_share = _group_intent(members, keyword_map)
         groups.append({
             "name": ig.get("title", ""),
             "relation": "core",
-            "stage": ig.get("intentType", ""),
+            # 의도 배지는 데이터가 정한다 — LLM 이 쓴 intentType 은 쓰지 않는다.
+            # 키워드마다 붙어 오는 의도 비율(i/n/c/t)을 검색량으로 가중 합산해
+            # 그룹의 대표 의도를 뽑는다. 렌더러가 라벨로 번역하므로 언어에 무관하다.
+            "stage": stage,
+            "stageShare": stage_share,
             "who": ig.get("who") or "",
             "kbf": _filter_kbf(ig.get("kbf"), keyword_map),
             "insight": ig.get("insight") or "",
@@ -426,10 +459,14 @@ def postprocess_groups(groups_raw, keyword_map):
         if not members:
             continue
         vol = _sum_member_volume(members, keyword_map)
+        stage, stage_share = _group_intent(members, keyword_map)
         groups.append({
             "name": bg.get("name", ""),
             "relation": "alternative",
-            "stage": "브랜드" if bg.get("kind") == "brand" else "논브랜드",
+            # 브랜드/논브랜드는 검색어의 종류지 의도가 아니다 — 의도 배지와 따로 쓴다.
+            "kind": "brand" if bg.get("kind") == "brand" else "nonbrand",
+            "stage": stage,
+            "stageShare": stage_share,
             "who": bg.get("label") or "",
             "kbf": [],
             "insight": bg.get("analysis") or "",
@@ -479,6 +516,35 @@ def _cmd_groups(args):
     return 0
 
 
+def _cmd_keywords(args):
+    """리포트 화면에 실제로 박히는 키워드만 모아 준다 — 검색어 번역 단계의 입력.
+    대표 칩·판단 요인 칩·검색량 뱃지 목록까지 전부 포함하고, 검색량 내림차순으로
+    정렬해 중복을 없앤다. 여기 없는 키워드를 번역해봐야 화면에 나오지 않는다."""
+    doc = json.loads(Path(args.groups).read_text(encoding="utf-8"))
+    ordered, seen = [], set()
+
+    def add(kw):
+        if kw and kw not in seen:
+            seen.add(kw)
+            ordered.append(kw)
+
+    # 표지·목적 문구에 박히는 씨드 검색어도 화면에 보이므로 번역 대상이다.
+    add(args.category)
+
+    for group in doc.get("groups", []):
+        for row in (group.get("members") or []) + (group.get("evidence") or []):
+            add(row.get("kw"))
+        for kbf in (group.get("kbf") or []):
+            for kw in (kbf.get("evidence_keywords") or []):
+                add(kw)
+
+    Path(args.out).write_text(
+        json.dumps({"keywords": ordered}, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8")
+    print(f"wrote {args.out} · {len(ordered)} keywords")
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Query Finder data pipeline: keyword context builder + persona group postprocessing."
@@ -488,8 +554,7 @@ def main(argv=None):
     p_context = sub.add_parser("context", help="Aggregate an intent_finder response into lm_query_result.json")
     p_context.add_argument("--raw", required=True, help="intent_finder 응답 JSON 경로")
     p_context.add_argument("--seed", required=True)
-    # kr-only for now: label JSON (_shared/labels/query-opportunity.<gl>.json)
-    # only exists for "kr" — add "jp"/"us" back once their label files land.
+    # --gl 은 분석 대상 시장이다. 리포트 언어(--lang)와는 별개로 움직인다.
     p_context.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
     p_context.add_argument("--date", required=True, help="YYYY-MM-DD")
     p_context.add_argument("--out", required=True)
@@ -500,6 +565,14 @@ def main(argv=None):
     p_groups.add_argument("--context", required=True, help="lm_query_result.json 경로")
     p_groups.add_argument("--out", required=True)
     p_groups.set_defaults(func=_cmd_groups)
+
+    p_kw = sub.add_parser(
+        "keywords",
+        help="List the keywords that actually appear in the report (for translation)")
+    p_kw.add_argument("--groups", required=True, help="lm_groups.json 경로")
+    p_kw.add_argument("--category", required=True, help="씨드 검색어 — 표지에 박히므로 함께 번역한다")
+    p_kw.add_argument("--out", required=True)
+    p_kw.set_defaults(func=_cmd_keywords)
 
     args = parser.parse_args(argv)
     return args.func(args)

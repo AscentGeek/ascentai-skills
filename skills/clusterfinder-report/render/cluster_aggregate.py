@@ -462,6 +462,42 @@ def _cmd_groups(args):
     return 0
 
 
+def _cmd_keywords(args):
+    """리포트 화면에 실제로 박히는 키워드만 모아 준다 — 검색어 번역 단계의 입력.
+    그룹 대표 검색어·허브 키워드·흐름도 노드까지 전부 포함한다. 여기 없는
+    키워드를 번역해봐야 화면에 나오지 않는다."""
+    doc = json.loads(Path(args.groups).read_text(encoding="utf-8"))
+    ordered, seen = [], set()
+
+    def add(kw):
+        if kw and kw not in seen:
+            seen.add(kw)
+            ordered.append(kw)
+
+    # 표지·목적 문구에 박히는 씨드 검색어도 화면에 보이므로 번역 대상이다.
+    add(args.category)
+
+    for group in doc.get("groups", []):
+        for row in (group.get("members") or []) + (group.get("evidence") or []):
+            add(row.get("kw"))
+        for kbf in (group.get("kbf") or []):
+            for kw in (kbf.get("evidence_keywords") or []):
+                add(kw)
+    for row in doc.get("hubTable", []):
+        for kw in (row.get("hubKeywords") or []):
+            add(kw)
+    for flow in doc.get("flows", []):
+        add(flow.get("hub"))
+        for step in (flow.get("pathDetail") or []):
+            add(step.get("hub"))
+
+    Path(args.out).write_text(
+        json.dumps({"keywords": ordered}, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8")
+    print(f"wrote {args.out} · {len(ordered)} keywords")
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Cluster Finder data pipeline: graph+enrichment context builder + LLM group postprocessing."
@@ -482,6 +518,14 @@ def main(argv=None):
     p_groups.add_argument("--context", required=True, help="lm_cluster_result.json 경로")
     p_groups.add_argument("--out", required=True)
     p_groups.set_defaults(func=_cmd_groups)
+
+    p_kw = sub.add_parser(
+        "keywords",
+        help="List the keywords that actually appear in the report (for translation)")
+    p_kw.add_argument("--groups", required=True, help="lm_groups.json 경로")
+    p_kw.add_argument("--category", required=True, help="씨드 검색어 — 표지에 박히므로 함께 번역한다")
+    p_kw.add_argument("--out", required=True)
+    p_kw.set_defaults(func=_cmd_keywords)
 
     args = parser.parse_args(argv)
     return args.func(args)

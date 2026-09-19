@@ -94,6 +94,27 @@ body.view-mode-a4   .view-dash { display: none; }
 
 .mini-toolbar__print:hover { background: var(--gray-100); }
 
+/* ===== 검색어 번역 토글 =====
+   칩에는 원문(.kw-o)과 번역(.kw-t)이 함께 들어 있고, body 클래스로 하나만 보인다.
+   글자를 JS 로 갈아끼우지 않으므로 인쇄·A4 전환에서도 상태가 유지된다. */
+.kw-t { display: none; }
+body.kw-translated .kw-o { display: none; }
+body.kw-translated .kw-t { display: inline; }
+.mini-toolbar__tr {
+  border: var(--border-thin) solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  padding: 5px 12px;
+  font-size: var(--font-size-b4);
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-700);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+.mini-toolbar__tr:hover { background: var(--gray-100); }
+body.kw-translated .mini-toolbar__tr { background: var(--gray-800); color: var(--white); }
+
 /* ===== Print Override =====
    인쇄는 어떤 모드에 있건 A4 만 출력.
    ListeningMind.AI 의 report-shell.css @media print 가 .view-dash 를 숨기지만
