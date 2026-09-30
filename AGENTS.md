@@ -166,8 +166,9 @@ env 를 못 찾으면 `~/.lima-agents/current-session` 파일로 떨어지는데
 
 ## 4. 스킬 구조 · 빌드
 
-**소스는 스킬당 1벌 · zip 은 (스킬 × 언어) 만큼** 나온다. 언어를 늘려도 `skills/` 의
-폴더 수는 안 늘어난다 (8종 × 3언어여도 폴더는 8개).
+**스킬당 소스 1벌 · zip 1개.** 스킬은 언어로 나뉘지 않는다 — 프롬프트는 영어 한 벌이고
+분석 시장(`--gl`)과 리포트 언어(`--lang`)는 실행할 때 정한다. 리포트 언어를 늘려도
+`skills/` 폴더 수도 zip 수도 안 늘어난다 (라벨 JSON 만 한 벌 더 들어간다).
 
 ```
 _core/                          전 스킬·전 언어 공통 · 여기만 고치면 전부 반영
@@ -252,7 +253,126 @@ scripts/publish-dist.sh --dry-run              # 무엇이 나갈지 확인
 `dist/PUBLISHED.json` 에 적힌 스킬만 · 적힌 버전으로만 공개된다.
 **검증이 끝난 스킬만 올린다.**
 
-### 버전 갱신은 세 곳
+### 버전의 출처는 `skill.yaml` 하나
 
-`SKILL.md` frontmatter · `dist/PUBLISHED.json` · 스크립트 안 하드코딩된 버전 문자열.
-하나라도 놓치면 admin 이 옛 버전을 기록한다.
+값을 적는 곳은 `skills/<n>/skill.yaml` 의 `version` **한 줄뿐**이다. 빌드가 두 곳에 박는다 —
+zip 안 `SKILL.md` frontmatter 의 `metadata.version`(admin 이 카탈로그에 기록하는 값)과
+`scripts/log_event.py`·`api/logging.py` 의 `__SKILL_VERSION__`(이벤트에 실리는 값).
+
+**소스 `SKILL.md` 에는 version 을 적지 않는다.** 적어도 빌드가 버리지만, 적어 둔 사람은
+그 값이 쓰인다고 믿게 된다. 검사기가 이 경우를 실패로 잡는다.
+
+> 과거에 `skill.yaml` 만 2.0.0 으로 올리고 `SKILL.md` 를 놓쳐, admin 카탈로그에는 1.0.0 ·
+> 이벤트 로그에는 2.0.0 이 기록될 뻔했다. 사람이 두 곳을 맞추는 구조를 없앤 이유다.
+
+공개할 때는 `dist/PUBLISHED.json` 에 적은 버전이 zip 안 값과 같아야 한다. 다르면
+`publish-dist.sh` 가 배포를 중단한다 — 검증이 덜 끝난 빌드가 나가는 걸 막는 장치다.
+
+---
+
+## 7. 새 스킬 추가 체크리스트
+
+앞 절들이 규칙의 정본이고, 여기는 **순서**다. 처음 오는 사람이 §1~§6 을 조립하지 않아도
+되게 훑어 가며 체크한다. `[검사]` 표시는 pre-commit 이 자동으로 막아 주는 항목이다.
+
+### 1) 폴더와 이름
+
+```
+skills/<스킬명>/                 kebab-case · 국가 코드 붙이지 않는다
+├── skill.yaml                  version · slug · mcp_tools · vendor_chart
+├── SKILL.md                    영어 · frontmatter + 로깅 프로토콜
+├── references/<슬러그>.md        영어 · 실행 절차
+├── labels/<슬러그>.{kr,jp,us}.json
+├── render/                     렌더러 · 집계기 · style_order.py
+├── styles/ templates/
+└── prompts/                    (있으면) 원본 프롬프트 스냅샷
+```
+
+- `[검사]` `SKILL.md` frontmatter 의 `name` 은 **`lm-<폴더명>`** 과 정확히 같아야 한다
+- `[검사]` `description` 은 필수 · `<` `>` 금지 · **트리거 문구를 세 언어로** 넣는다
+  (그 언어 발화에 스킬이 발동하려면 그 언어 문구가 description 에 있어야 한다)
+- `[검사]` `SKILL.md` 에 `version` 을 적지 않는다 — 출처는 `skill.yaml` (§6)
+- `[검사]` `SKILL.md` 가 가리킨 문서가 또 다른 문서를 가리키면 안 된다 (참조 깊이 1단계)
+- `category`·`tags` 를 적는다. 없으면 admin 카탈로그가 기본값으로 떨어지고 화면에서 못 고친다
+
+### 2) 라벨은 세 언어 전부
+
+`labels/<슬러그>.kr.json` · `.jp.json` · `.us.json` 세 벌을 만들고 **키를 완전히 동일**하게
+맞춘다. 한 언어라도 빠지면 그 `--lang` 으로 렌더할 때 파일을 못 찾아 죽는다 —
+빌드가 이건 잡아 준다.
+
+### 3) MCP 호출은 반드시 3단계 (§1·§2)
+
+```
+① mcp_cache.py lookup  →  ② (미적중) MCP 호출 + 응답 확보 + store  →  ③ log_event.py --type tool_call
+```
+
+`references/` 에 "MCP 도구를 부르세요" 라고만 쓰면 **캐시도 로깅도 빠진다.** DaaS 판은
+`daas_call.py` 가 자동으로 했지만, MCP 는 호출 주체가 코드가 아니라 LLM 이라
+자동화가 안 된다. 세 단계를 문서에 명시적으로 적어 둘 것.
+
+### 4) 로깅 프로토콜을 SKILL.md 에 담는다 (§3)
+
+`api/logging.py` 와 `scripts/log_event.py` 는 `_core` 에 있어 빌드가 넣어 준다.
+문서에 적어야 하는 것은 **절차**다 — SKILL_DIR 동적 탐색 → 호스트 앱 판별 →
+사용자 식별자 확보 → `--session-init` 후 **SID 고정** → 도구 호출마다 `tool_call` →
+응답 확정 직후 `assistant_response` → HTML 저장 성공 시 `artifact_created`.
+
+`--session-id` 를 명시하지 않으면 머신 전역 파일로 폴백해 **다른 대화창의 세션에
+로그가 섞인다** (§3-2). 기존 스킬의 Step 0~6 을 그대로 가져다 쓰는 게 가장 안전하다.
+
+크레딧은 봉투 실측만 싣는다. 호출 수로 계산하거나 잔량을 표기하지 않고, 봉투에 값이
+없으면 인자를 아예 생략한다.
+
+### 5) 코드를 어디에 둘지 정한다
+
+| 놓을 곳 | 무엇 |
+|---|---|
+| `_core/` | 네 스킬이 **똑같이** 쓰는 것. 고치면 전부 반영된다 |
+| `skills/<n>/render/` | 이 스킬에서만 다른 것 |
+| `skill.yaml` 의 `borrows` | 형제 스킬 코드를 통째로 쓸 때. **복제하지 않는다** |
+
+`_core` 에 올릴지 애매하면 일단 스킬에 두고, 두 번째 스킬이 같은 걸 필요로 할 때 올린다.
+복제본을 두면 버그를 두 번 고쳐야 하고 한쪽만 고쳐진다 (실제로 그랬다).
+
+> zip 안이나 `dist/` 산출물을 직접 고치지 않는다. 다음 빌드에 덮어써진다.
+
+### 6) 빌드하고 검사한다
+
+```bash
+scripts/build.sh <스킬명>
+python3 scripts/skill_common_check.py
+```
+
+pre-commit 이 같은 검사를 돌리므로, 통과하지 못하면 커밋이 막힌다.
+훅은 클론 후 한 번 설치한다 · `ln -sf ../../scripts/hooks/pre-commit .git/hooks/pre-commit`
+
+### 7) 실데이터로 한 번 돌려 본다
+
+zip 을 **형제 스킬이 없는 빈 디렉터리**에 풀고, 수집부터 렌더까지 `references/` 의 단계를
+그대로 밟아 본다. 사용자는 zip 하나만 받아서 쓰므로, 격리 상태에서 도는지가 유일한 기준이다.
+
+`--gl` × `--lang` 조합도 확인한다 (시장 3 × 리포트 언어 3 = 9가지).
+
+### 8) 공개할 때만 매니페스트에 올린다
+
+```bash
+scripts/publish-dist.sh --dry-run   # 무엇이 나갈지 확인
+```
+
+`dist/PUBLISHED.json` 에 적힌 스킬만 · 적힌 버전으로만 나간다. **검증이 끝난 것만 올린다.**
+
+> 공개 전 zip 안을 직접 열어 볼 것. 과거 다른 저장소에서 개인 이메일이 예시로 박힌
+> 문서가 걸린 적이 있다.
+
+### 요약 체크리스트
+
+- [ ] 폴더 `skills/<스킬명>/` · kebab-case · 국가 코드 없음
+- [ ] `SKILL.md` — `name` = `lm-<폴더명>` · `description` 3언어 트리거 · `category`/`tags`
+- [ ] `SKILL.md` 에 `version` 없음 · `skill.yaml` 에 semver
+- [ ] `references/` 1단계 · MCP 3단계 호출 명시 · 로깅 Step 0~6
+- [ ] `labels/` kr·jp·us 세 벌 · 키 동일
+- [ ] 공통 코드는 `_core` · 형제 코드는 `borrows` (복제 금지)
+- [ ] `scripts/build.sh` 통과 · `skill_common_check.py` 통과
+- [ ] 격리 zip 에서 실데이터 실행 · `--gl` × `--lang` 조합 확인
+- [ ] (공개할 경우) `dist/PUBLISHED.json` 등록 후 `publish-dist.sh`

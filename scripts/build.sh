@@ -97,18 +97,29 @@ build_one() {
     sed -i '' -e "s/__SKILL_NAME__/$skill_name/g" -e "s/__SKILL_VERSION__/$version/g" "$py"
   done
 
-  # ── frontmatter 에 service_type · locale 선언 ──
-  #   admin 이 스킬 목록을 갈라 보기 위해 읽는 값이다. 이름에서 추론하게 두면
-  #   작명 규칙이 바뀔 때 admin 파싱도 같이 깨지므로, 빌드가 여기서 박는다.
+  # ── frontmatter 주입 · version · service_type · locale ──
+  #   admin 은 SKILL.md 의 metadata.version 을 읽어 카탈로그에 기록하고,
+  #   log_event 는 위에서 주입한 값을 이벤트에 싣는다. 두 곳을 사람이 맞추면
+  #   반드시 어긋나므로(실제로 어긋났다) 버전의 출처는 skill.yaml 하나로 두고
+  #   빌드가 양쪽에 박는다. 소스 SKILL.md 에는 version 을 적지 않는다.
+  #
+  #   service_type · locale 도 admin 이 목록을 갈라 보는 값이다. 이름에서 추론하게
+  #   두면 작명 규칙이 바뀔 때 admin 파싱도 같이 깨지므로 여기서 박는다.
   #   이 리포는 SaaS 판 전용이라 service_type 은 항상 saas.
   #   locale 은 "스킬 자체가 쓰인 언어" 다 — 프롬프트가 영어이므로 us 로 고정이며,
   #   리포트 언어와는 무관하다 (그건 실행 시 --lang 으로 정한다).
-  if ! grep -q '^  service_type:' "$d/SKILL.md"; then
-    awk '
-      { print }
-      /^  author:/ && !done { print "  service_type: saas"; print "  locale: us"; done=1 }
-    ' "$d/SKILL.md" > "$d/SKILL.md.tmp" && mv "$d/SKILL.md.tmp" "$d/SKILL.md"
-  fi
+  awk -v ver="$version" '
+    /^metadata:/ { inmeta = 1 }
+    /^---$/ && inmeta { inmeta = 0 }
+    inmeta && /^  version:/ { next }          # 소스에 남아 있으면 버린다
+    { print }
+    /^metadata:/ && !done {
+      print "  version: \"" ver "\""
+      print "  service_type: saas"
+      print "  locale: us"
+      done = 1
+    }
+  ' "$d/SKILL.md" > "$d/SKILL.md.tmp" && mv "$d/SKILL.md.tmp" "$d/SKILL.md"
 
   # ── zip ──
   mkdir -p "$OUT"
