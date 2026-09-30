@@ -23,7 +23,7 @@ ListeningMind **SaaS 고객용** 리포트 스킬. 데이터는 **ListeningMind 
 
 | 스킬 | 리포트 | 쓰는 MCP 도구 |
 |---|---|---|
-| `lm-queryfinder-report` | 쿼리 기회 분석 | `intent_finder` + `keyword_info` |
+| `lm-queryfinder-report` | 쿼리 기회 분석 | `query_finder` + `keyword_info` |
 | `lm-clusterfinder-report` | 검색 클러스터 지형 | `cluster_finder` + `keyword_info` |
 | `lm-pathfinder-report` | 검색 여정 분석 | `path_finder` + `keyword_info` |
 | `lm-total-report` | 3파인더 통합 | 위 3종 + `keyword_info` 1회 |

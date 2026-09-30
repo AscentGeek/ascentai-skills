@@ -12,7 +12,7 @@ SaaS 고객이 이 스킬을 쓸 때 **DaaS 계정에 크레딧이 나가면 안
 - `scripts/daas_call.py` · `listeningmind-data-api.ascentlab.io` · `LM-API-KEY` ·
   `LIMA_DAAS_*` 는 **이 리포에 존재할 수 없다.** pre-commit 훅이 파일명·문자열 양쪽으로 막는다.
 - 데이터는 **ListeningMind MCP 4도구**로만 받는다 ·
-  `intent_finder` · `keyword_info` · `cluster_finder` · `path_finder`
+  `query_finder` · `keyword_info` · `cluster_finder` · `path_finder`
 - 사용자에게 **API 키를 묻지 않는다.** MCP 커넥터 연결이 전제다.
 
 > 훅을 `--no-verify` 로 우회하지 말 것. 우회하면 과금 주체가 조용히 바뀐다.
@@ -42,7 +42,7 @@ MCP 응답을 **가공 없이 원문 그대로** 덤프해야 한다. 요약·�
 
 ### 규모 정책
 
-DaaS 판의 상한을 그대로 승계한다 — `intent_finder` 상위 1,000 · `keyword_info` 최대 1,000.
+DaaS 판의 상한을 그대로 승계한다 — `query_finder` 상위 1,000 · `keyword_info` 최대 1,000.
 **임의로 줄이지 말 것.** 200개 등으로 자르면 총검색량·그룹 합산이 과소집계되어
 프로덕션과 어긋난다.
 
@@ -61,7 +61,7 @@ DaaS 판의 상한을 그대로 승계한다 — `intent_finder` 상위 1,000 ·
 - `user_query` 는 키에서 제외 — 질의 문구가 달라져도 같은 데이터를 가리킨다
 - 스킬이 달라도 **같은 세션·같은 파라미터면 적중**한다
   단, 적중은 **파라미터가 같을 때만**이다:
-  - 구조 조회(`intent_finder`·`path_finder`·`cluster_finder`) — 형제 스킬과 1a 파라미터가
+  - 구조 조회(`query_finder`·`path_finder`·`cluster_finder`) — 형제 스킬과 1a 파라미터가
     같아 그대로 적중한다 (lm-pathfinder-report 뒤에 lm-total-report 을 돌리면
     `path_finder` 재호출이 사라진다)
   - `keyword_info` — 스킬마다 넘기는 키워드 목록이 달라 적중하지 않는다. total 은 3파인더
@@ -115,7 +115,7 @@ python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call \
 - `--source` 는 기본값이 `mcp` 라 생략한다
 - **호출 수로 크레딧을 계산하지 말 것.** 봉투에 값이 없으면 `--used-credits-delta` 를
   아예 생략한다 (지어낸 값보다 낫다)
-- `intent_finder`·`cluster_finder` 를 `1` 로 발행 중이면 100% 위반 (기본 최소 90)
+- `query_finder`·`cluster_finder` 를 `1` 로 발행 중이면 100% 위반 (기본 최소 90)
 
 ### user_query
 

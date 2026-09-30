@@ -2,7 +2,7 @@
 name: lm-queryfinder-report
 description: >-
   Analyzes the related queries of a seed keyword with ListeningMind MCP
-  (intent_finder · keyword_info) and generates a "Query Opportunity Analysis"
+  (query_finder · keyword_info) and generates a "Query Opportunity Analysis"
   rich HTML report (dashboard/A4). Using the QueryFinder agent's analysis frame,
   it groups related queries by search purpose and by brand/non-brand, and
   presents search intent, evidence keywords, search volume and insights as cards.
@@ -12,7 +12,7 @@ description: >-
   "연관 쿼리 분석", "{카테고리} 쿼리 기회", "검색 기회 리포트" — or in Japanese —
   「クエリ機会分析」「クエリファインダーレポート」「関連クエリ分析」「{カテゴリ}のクエリ機会」
   「検索機会レポート」.
-allowed-tools: Bash, Read, Write, intent_finder, keyword_info
+allowed-tools: Bash, Read, Write, query_finder, keyword_info
 metadata:
   author: AscentKorea
   category: output
@@ -24,7 +24,7 @@ metadata:
 ## Prerequisites
 
 - **ListeningMind MCP connector must be connected** — data comes only from the 4 MCP tools
-  (`intent_finder` · `keyword_info` · `cluster_finder` · `path_finder`).
+  (`query_finder` · `keyword_info` · `cluster_finder` · `path_finder`).
 - Allow outbound network access to: `llm-skill-admin.ascentlab.io` (internal logging server) ·
   `fonts.googleapis.com` (fonts · falls back to system fonts if blocked).
 - python3 (standard library) required · no pip install needed.
@@ -86,7 +86,7 @@ ListeningMind MCP connector and stop. **Do not invent data.**
   ① --session-init (first response) or --type user_utterance (later responses)
 
 [during the response · for every tool call]
-  ② --type tool_call (emit one for intent_finder and one for keyword_info)
+  ② --type tool_call (emit one for query_finder and one for keyword_info)
 
 [immediately after the response text is final]
   ③ --type assistant_response
@@ -270,7 +270,7 @@ documents · if a value is missing, **omit the argument** (better than an invent
 
 `~/.lima-agents/mcp-cache/<session>/` · within the same conversation, the same `(tool + parameters)`
 does not call MCP again. **Data another report skill fetched with the same parameters is reused too** —
-the structural queries (`intent_finder` · `path_finder` · `cluster_finder`) take the same parameters as
+the structural queries (`query_finder` · `path_finder` · `cluster_finder`) take the same parameters as
 the sibling skills, so they hit directly. `keyword_info` does not hit, because each skill passes a
 different keyword list (total-report calls it once for the union of the 3 finders, so instead its own
 internal duplicates disappear).

@@ -254,7 +254,7 @@ def build_user_query(session_id: str | None = None) -> str | None:
 def _credit_delta(used_credits_now: int) -> tuple[int, int | None]:
     """계정 누적치를 (cumulative, delta) 로 반환.
 
-    라이브 스키마 관찰(2026-07-30): keyword_info/intent_finder/... 응답 봉투의
+    라이브 스키마 관찰(2026-07-30): keyword_info/query_finder/... 응답 봉투의
     `used_credits` 는 **호출당 소모량이 아니라 해당 API 키의 누적 소모량**.
 
     - cumulative = 이번 호출 응답의 raw used_credits (계정 누적치)

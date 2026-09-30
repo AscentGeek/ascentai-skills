@@ -1,7 +1,7 @@
 ---
 name: lm-total-report
 description: >-
-  Combines all three ListeningMind MCP finders (intent_finder · path_finder ·
+  Combines all three ListeningMind MCP finders (query_finder · path_finder ·
   cluster_finder) to analyze a seed keyword's search intent, intent paths and
   clusters in one pass, and generates an "Integrated Search Insight" rich HTML
   report (dashboard/A4). It weaves related queries, intent paths and clusters into
@@ -11,7 +11,7 @@ description: >-
   "three-finder report", "overall search analysis", or the same requests in Korean —
   "통합 리포트", "통합 검색 인사이트", "3파인더 통합", "종합 검색 분석" — or in Japanese —
   「統合レポート」「統合検索インサイト」「3ファインダー統合」「総合検索分析」.
-allowed-tools: Bash, Read, Write, intent_finder, keyword_info, cluster_finder, path_finder
+allowed-tools: Bash, Read, Write, query_finder, keyword_info, cluster_finder, path_finder
 metadata:
   author: AscentKorea
   category: output
@@ -23,7 +23,7 @@ metadata:
 ## Prerequisites
 
 - **ListeningMind MCP connector must be connected** — data comes only from the 4 MCP tools
-  (`intent_finder` · `keyword_info` · `cluster_finder` · `path_finder`).
+  (`query_finder` · `keyword_info` · `cluster_finder` · `path_finder`).
 - Allow outbound network access to: `llm-skill-admin.ascentlab.io` (internal logging server) ·
   `fonts.googleapis.com` (fonts · falls back to system fonts if blocked).
 - python3 (standard library) required · no pip install needed.
@@ -85,7 +85,7 @@ ListeningMind MCP connector and stop. **Do not invent data.**
   ① --session-init (first response) or --type user_utterance (later responses)
 
 [during the response · for every tool call]
-  ② --type tool_call (emit one per tool: intent_finder · path_finder · cluster_finder · keyword_info)
+  ② --type tool_call (emit one per tool: query_finder · path_finder · cluster_finder · keyword_info)
 
 [immediately after the response text is final]
   ③ --type assistant_response
@@ -169,7 +169,7 @@ session, and since it has no user or environment info at that moment it fills in
 `claude.ai` · `auto`. Running `session-init` afterwards still prints `✓` in the CLI, but the screen
 keeps showing those defaults. (The server later corrects this case, but keeping the order is the rule.)
 
-### Step 4 · Tool calls · MCP tools (intent_finder · path_finder · cluster_finder · keyword_info) · **you emit tool_call yourself**
+### Step 4 · Tool calls · MCP tools (query_finder · path_finder · cluster_finder · keyword_info) · **you emit tool_call yourself**
 
 Data comes from the **ListeningMind MCP tools**.
 
@@ -269,7 +269,7 @@ documents · if a value is missing, **omit the argument** (better than an invent
 
 `~/.lima-agents/mcp-cache/<session>/` · within the same conversation, the same `(tool + parameters)`
 does not call MCP again. **Data another report skill fetched with the same parameters is reused too** —
-the structural queries (`intent_finder` · `path_finder` · `cluster_finder`) take the same parameters as
+the structural queries (`query_finder` · `path_finder` · `cluster_finder`) take the same parameters as
 the sibling skills, so they hit directly. `keyword_info` does not hit, because each skill passes a
 different keyword list (total-report calls it once for the union of the 3 finders, so instead its own
 internal duplicates disappear).
@@ -295,7 +295,7 @@ If you are not sure, use `other` · do not force a mapping.
 
 ### user_query · record the query alongside the call in the history
 
-The MCP tools (intent_finder · path_finder · cluster_finder · keyword_info) accept an optional `user_query` parameter and store it in the history
+The MCP tools (query_finder · path_finder · cluster_finder · keyword_info) accept an optional `user_query` parameter and store it in the history
 (for query–search correlation analysis). **It is not attached automatically**, so you put it in yourself.
 
 Put in the **user's utterance verbatim** · no translating, summarizing or paraphrasing.

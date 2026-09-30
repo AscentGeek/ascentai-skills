@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Aggregate ListeningMind intent_finder (Query Finder) responses into the
+"""Aggregate ListeningMind query_finder (QueryFinder) responses into the
 report data JSON consumed by render_report.py --skill query-opportunity.
 
 Standard library only. Envelope-tolerant: accepts both the public data-API
@@ -18,7 +18,7 @@ from pathlib import Path
 def _num(v, default=0):
     """Coerce int/float/numeric-string to a number; anything else -> default.
 
-    The public /intent_finder data types are unverified (spec §4.2): a
+    The public /query_finder data types are unverified (spec §4.2): a
     metric that should be numeric may arrive as a JSON string (e.g.
     volume_avg: "74000"). Without coercion this crashes _max_log (TypeError
     comparing str > int) or produces strings that blow up ":.2f"/",:"
@@ -86,7 +86,7 @@ def normalize_records(raw):
         keyword = src.get("keyword")
         if not keyword:
             continue
-        # The public /intent_finder data types are unverified (spec §4.2):
+        # The public /query_finder data types are unverified (spec §4.2):
         # ads_metrics/intents may arrive as a non-dict placeholder (e.g.
         # "n/a") and monthly_volume as a non-list placeholder (e.g. "none").
         # `src.get(...) or {}` doesn't catch this since a truthy string
@@ -495,7 +495,7 @@ def _cmd_context(args):
     raw = json.loads(Path(args.raw).read_text(encoding="utf-8"))
     records = normalize_records(raw)
     if not records:
-        print("ERROR: intent_finder 응답에서 레코드를 찾지 못했습니다.", file=sys.stderr)
+        print("ERROR: query_finder 응답에서 레코드를 찾지 못했습니다.", file=sys.stderr)
         return 1
     result = build_keyword_context(records, seed=args.seed, gl=args.gl, date=args.date)
     Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -551,8 +551,8 @@ def main(argv=None):
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_context = sub.add_parser("context", help="Aggregate an intent_finder response into lm_query_result.json")
-    p_context.add_argument("--raw", required=True, help="intent_finder 응답 JSON 경로")
+    p_context = sub.add_parser("context", help="Aggregate a query_finder response into lm_query_result.json")
+    p_context.add_argument("--raw", required=True, help="query_finder 응답 JSON 경로")
     p_context.add_argument("--seed", required=True)
     # --gl 은 분석 대상 시장이다. 리포트 언어(--lang)와는 별개로 움직인다.
     p_context.add_argument("--gl", required=True, choices=["kr", "jp", "us"])

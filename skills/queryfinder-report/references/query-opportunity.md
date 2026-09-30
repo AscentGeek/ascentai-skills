@@ -68,7 +68,7 @@ From here on, substitute the absolute path above for `{WORKDIR}`.
 ### Step 1 — Collect the data (2 MCP calls)
 
 The **list** of related keywords and the keyword **details** come from two different tools.
-Get the list of related keyword strings with `intent_finder`, pass that list to `keyword_info` to get
+Get the list of related keyword strings with `query_finder`, pass that list to `keyword_info` to get
 the details containing search volume, intent and monthly trend, and save it as `lm_query.json`.
 
 > **Every call takes 3 steps, without exception** (SKILL.md §Step 4):
@@ -77,16 +77,16 @@ the details containing search volume, intent and monthly trend, and save it as `
 > If ① returns **exit 0**, the file is already filled, so **do not call MCP** — go to ③
 > (`--cached --used-credits-delta 0`). On **exit 2**, proceed to ②.
 
-**1a. List of related keywords** — `intent_finder`
+**1a. List of related keywords** — `query_finder`
 
 ```bash
 # ① check the cache
-python3 {SKILL_DIR}/scripts/mcp_cache.py lookup intent_finder \
+python3 {SKILL_DIR}/scripts/mcp_cache.py lookup query_finder \
   --params '{"keywords":["<SEED>"],"gl":"<MARKET>","limit":1000,"sort":"volume_avg","order":"desc","volume_threshold":0}' \
   --out "{WORKDIR}/lm_keyword_list.json"
 ```
 
-On a miss, call the **`intent_finder` MCP tool** with these parameters:
+On a miss, call the **`query_finder` MCP tool** with these parameters:
 
 ```json
 {"keywords": ["<SEED>"], "gl": "<MARKET>", "limit": 1000,
@@ -107,17 +107,17 @@ sorted by search volume):
 
 ```bash
 cat > "{WORKDIR}/lm_keyword_list.json" <<'DUMP_EOF'
-<the entire raw intent_finder response JSON>
+<the entire raw query_finder response JSON>
 DUMP_EOF
 
 # ② store in the cache · pass the length of the envelope's data array to --expect for verification
-python3 {SKILL_DIR}/scripts/mcp_cache.py store intent_finder \
+python3 {SKILL_DIR}/scripts/mcp_cache.py store query_finder \
   --params '{"keywords":["<SEED>"],"gl":"<MARKET>","limit":1000,"sort":"volume_avg","order":"desc","volume_threshold":0}' \
   --file "{WORKDIR}/lm_keyword_list.json" --expect <length of the data array>
 
 # ③ emit tool_call
 python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
-  --tool intent_finder \
+  --tool query_finder \
   --request-body '{"keywords":["<SEED>"],"gl":"<MARKET>","limit":1000,"volume_threshold":0}' \
   --used-credits-delta <cost_detail.total_cost> \
   --used-credits-cumulative <used_credits> \
@@ -229,7 +229,7 @@ python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
 > Comparison with production: the Hubble chat QueryFinder (`ascentkorea-hubble-ai-api`) makes
 > **a single call** to the internal API `ai-context-intent` and gets the top 1,000 with full metrics.
 > That internal endpoint is not public, so with the public tools we reproduce the same top-1,000
-> dataset with **2 calls**: `intent_finder` (top 1,000) + `keyword_info` (details for those 1,000).
+> dataset with **2 calls**: `query_finder` (top 1,000) + `keyword_info` (details for those 1,000).
 > (Both are capped at the top 1,000, so the totals may differ from the all-keyword totals in the
 > ListeningMind web UI.)
 

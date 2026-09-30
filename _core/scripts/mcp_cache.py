@@ -64,7 +64,7 @@ _KEY_EXCLUDE = ("user_query",)
 # 조용히 캐시에 눌러앉아 이후 실행까지 오염시킨다.
 _MIN_RECORDS = {
     "keyword_info": 1,
-    "intent_finder": 1,
+    "query_finder": 1,
     "cluster_finder": 1,
     "path_finder": 1,
 }
@@ -278,7 +278,7 @@ def main() -> int:
     for name in ("lookup", "store"):
         sp = sub.add_parser(name)
         sp.add_argument("tool",
-                        choices=["intent_finder", "keyword_info",
+                        choices=["query_finder", "keyword_info",
                                  "cluster_finder", "path_finder"],
                         help="MCP 도구 이름 (bare)")
         g = sp.add_mutually_exclusive_group(required=True)

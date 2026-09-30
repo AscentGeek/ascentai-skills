@@ -10,7 +10,7 @@ bodies **verbatim**, and tab 1 is the **integrated summary** that only this skil
 (coverage gaps · hub roles · persona × journey · revenue leaks · conversion corridors ·
 prioritised backlog).
 
-This report runs the ListeningMind **three finders** — QueryFinder (intent_finder) ·
+This report runs the ListeningMind **three finders** — QueryFinder (query_finder) ·
 PathFinder (path_finder) · ClusterFinder (cluster_finder) — **each with its own original analysis
 frame**, then synthesises the results across them into a single consumer search journey
 (audience → intent → journey).
@@ -110,7 +110,7 @@ are, changing only the save path.
 
 | Finder | Requirement | MCP tool | Reference (1a verbatim) | Save to |
 |---|---|---|---|---|
-| Query | **Required** | `intent_finder` | `references/query-opportunity.md` §1a | `{WORKDIR}/q/lm_keyword_list.json` |
+| Query | **Required** | `query_finder` | `references/query-opportunity.md` §1a | `{WORKDIR}/q/lm_keyword_list.json` |
 | Journey | Recommended | `path_finder` | `references/path-opportunity.md` §1a | `{WORKDIR}/p/lm_path.json` |
 | Cluster | Optional (plan) | `cluster_finder` | `references/cluster-landscape.md` §1a | `{WORKDIR}/c/lm_cluster.json` |
 
