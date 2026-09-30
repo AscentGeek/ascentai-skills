@@ -15,7 +15,6 @@ description: >-
   「{カテゴリ}の検索経路」「検索経路レポート」.
 allowed-tools: Bash, Read, Write, path_finder, keyword_info
 metadata:
-  version: "1.0.0"
   author: AscentKorea
   category: output
   tags: report, search journey

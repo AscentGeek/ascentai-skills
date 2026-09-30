@@ -162,6 +162,21 @@ def check_skill(skill_dir: Path, res: Result) -> None:
                 f"예: {tags[0]!r}",
             )
 
+    # 3-1) version — 출처는 skill.yaml 하나다. 빌드가 SKILL.md frontmatter 와
+    #      log_event.py 양쪽에 박는다. 소스 SKILL.md 에 적어 두면 빌드가 버리지만,
+    #      적어 둔 사람은 그 값이 쓰인다고 믿게 되므로 여기서 막는다.
+    #      (실제로 skill.yaml 만 올리고 SKILL.md 를 놓쳐 admin 이 옛 버전을 기록했다)
+    res.tick()
+    if re.search(r"^  version:", skill_md.read_text(encoding="utf-8"), re.M):
+        res.fail(name, "SKILL.md 에 version 이 있다 — 출처는 skill.yaml 하나, 빌드가 주입한다")
+    yaml_path = skill_dir / "skill.yaml"
+    ver = ""
+    if yaml_path.exists():
+        m = re.search(r'^version: *"?([^"\n]+)"?', yaml_path.read_text(encoding="utf-8"), re.M)
+        ver = (m.group(1).strip() if m else "")
+    if not re.fullmatch(r"\d+\.\d+\.\d+", ver):
+        res.fail(name, f"skill.yaml 의 version 이 semver 가 아니다: {ver!r}")
+
     # 4) LICENSE.txt — 네 스킬이 같은 내용을 쓰므로 _core 에 한 벌만 둔다.
     #    빌드가 여기서 복사해 zip 마다 넣는다 (scripts/build.sh).
     res.tick()

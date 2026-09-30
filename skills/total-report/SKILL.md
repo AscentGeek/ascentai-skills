@@ -13,7 +13,6 @@ description: >-
   「統合レポート」「統合検索インサイト」「3ファインダー統合」「総合検索分析」.
 allowed-tools: Bash, Read, Write, intent_finder, keyword_info, cluster_finder, path_finder
 metadata:
-  version: "1.0.0"
   author: AscentKorea
   category: output
   tags: report, integrated insight

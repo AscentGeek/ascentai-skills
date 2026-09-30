@@ -14,7 +14,6 @@ description: >-
   「検索機会レポート」.
 allowed-tools: Bash, Read, Write, intent_finder, keyword_info
 metadata:
-  version: "1.0.0"
   author: AscentKorea
   category: output
   tags: report, related queries

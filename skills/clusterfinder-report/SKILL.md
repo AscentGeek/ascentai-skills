@@ -15,7 +15,6 @@ description: >-
   「{カテゴリ}のクラスタ」「検索クラスタレポート」.
 allowed-tools: Bash, Read, Write, cluster_finder, keyword_info
 metadata:
-  version: "1.0.0"
   author: AscentKorea
   category: output
   tags: report, search clusters
