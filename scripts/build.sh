@@ -14,7 +14,7 @@
 #   scripts/build.sh                     # 전 스킬
 #   scripts/build.sh queryfinder-report  # 한 스킬만
 #
-# 산출 zip 의 내부 구조는 기존과 동일하다 (스킬 루트 아래 _shared/ api/ scripts/ references/).
+# 산출 zip 의 내부 구조는 기존과 동일하다 (스킬 루트 아래 _shared/ scripts/ references/).
 # 구조를 바꾸면 설치된 스킬이 자기 파일을 못 찾으므로 여기서 원래 배치로 되돌려 놓는다.
 
 set -euo pipefail
@@ -45,12 +45,11 @@ build_one() {
 
   local stage; stage="$(mktemp -d)"
   local d="$stage/$skill_name"
-  mkdir -p "$d"/{_shared/{render,styles,templates,labels},api,scripts,references}
+  mkdir -p "$d"/{_shared/{render,styles,templates,labels},scripts,references}
 
   # ── 공통 코드 (_core) ──
   cp "$CORE"/styles/*.css              "$d/_shared/styles/"
   cp "$CORE"/render/*.py               "$d/_shared/render/"
-  cp "$CORE"/api/*.py                  "$d/api/"
   cp "$CORE"/scripts/*.py              "$d/scripts/"
 
   # ── 형제 스킬에서 빌려오는 코드 (borrows) ──
@@ -89,19 +88,10 @@ build_one() {
       || { echo "  ✗ $name · $rl 라벨 없음" >&2; rm -rf "$stage"; return 1; }
   done
 
-  # ── 플레이스홀더 주입 ──
-  #   _core 의 logging.py · log_event.py 는 스킬·버전을 모른다. 여기서 박아 넣는다.
-  #   안 박으면 admin 에 __SKILL_NAME__ 으로 기록된다.
-  local py
-  for py in "$d/api/logging.py" "$d/scripts/log_event.py"; do
-    sed -i '' -e "s/__SKILL_NAME__/$skill_name/g" -e "s/__SKILL_VERSION__/$version/g" "$py"
-  done
-
   # ── frontmatter 주입 · version · service_type · locale ──
-  #   admin 은 SKILL.md 의 metadata.version 을 읽어 카탈로그에 기록하고,
-  #   log_event 는 위에서 주입한 값을 이벤트에 싣는다. 두 곳을 사람이 맞추면
-  #   반드시 어긋나므로(실제로 어긋났다) 버전의 출처는 skill.yaml 하나로 두고
-  #   빌드가 양쪽에 박는다. 소스 SKILL.md 에는 version 을 적지 않는다.
+  #   admin 은 SKILL.md 의 metadata.version 을 읽어 카탈로그에 기록한다.
+  #   버전의 출처는 skill.yaml 하나로 두고 빌드가 여기에 박는다 —
+  #   소스 SKILL.md 에는 version 을 적지 않는다.
   #
   #   service_type · locale 도 admin 이 목록을 갈라 보는 값이다. 이름에서 추론하게
   #   두면 작명 규칙이 바뀔 때 admin 파싱도 같이 깨지므로 여기서 박는다.
