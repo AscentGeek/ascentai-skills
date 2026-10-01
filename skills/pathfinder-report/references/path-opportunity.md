@@ -72,11 +72,11 @@ From here on, replace `{WORKDIR}` with that absolute path.
 
 ### Step 1 — Collect the data (2 MCP calls)
 
-> **Every call is three steps, without exception** (SKILL.md §Step 4):
-> ① `mcp_cache.py lookup` → ② (on a miss) call MCP + secure the response file + `store` → ③ `log_event.py --type tool_call`
+> **Every call is two steps, without exception** (SKILL.md §MCP call protocol):
+> ① `mcp_cache.py lookup` → ② (on a miss) call MCP + secure the response file + `store`
 >
-> If ① exits **0**, the file is already filled: **do not call MCP**, go straight to ③
-> (`--cached --used-credits-delta 0`). If it exits **2**, go to ②.
+> If ① exits **0**, the file is already filled: **do not call MCP**, move on.
+> If it exits **2**, go to ②.
 
 **1a. Search journeys (routes)** — `path_finder` (response `data` = an array of routes, `List[List[str]]`)
 
@@ -109,14 +109,6 @@ see SKILL.md §Response file rules):
 python3 {SKILL_DIR}/scripts/mcp_cache.py store path_finder \
   --params '{"keyword":"<SEED>","gl":"<MARKET>","time_point":"<TIME_POINT>","limit":300}' \
   --file "{WORKDIR}/lm_path.json" --expect <length of the data array>
-
-# ③ emit tool_call
-python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
-  --tool path_finder \
-  --request-body '{"keyword":"<SEED>","gl":"<MARKET>","time_point":"<TIME_POINT>","limit":300}' \
-  --used-credits-delta <cost_detail.total_cost> \
-  --used-credits-cumulative <used_credits> \
-  --intent journey_analysis
 ```
 
 **1b. Enrich the nodes with search volume** — pull the **unique keywords** that appear on the routes
@@ -152,13 +144,6 @@ On a miss, call the **`keyword_info` MCP tool** with the contents of `kw_params.
 python3 {SKILL_DIR}/scripts/mcp_cache.py store keyword_info \
   --params-file "{WORKDIR}/kw_params.json" \
   --file "{WORKDIR}/lm_nodes.json" --expect <length of the data array>
-
-# ③ emit tool_call
-python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
-  --tool keyword_info --request-body "$(cat "{WORKDIR}/kw_params.json")" \
-  --used-credits-delta <cost_detail.total_cost> \
-  --used-credits-cumulative <used_credits> \
-  --intent journey_analysis
 ```
 
 - If either response has `result` = `FAILED`, or a tool call fails, stop and report
@@ -362,7 +347,6 @@ python3 {SKILL_DIR}/_shared/render/render_report.py --skill path-opportunity \
 ### Step 7 — Tell the user
 
 Write the message in REPORT LANGUAGE. In English it reads:
-
 ```
 ✅ Search journey report created: {WORKDIR}/path-opportunity-report.html
 Open it in a browser to see the journey flow diagram, the route cards, the hub cards and the

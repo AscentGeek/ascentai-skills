@@ -114,9 +114,8 @@ are, changing only the save path.
 | Journey | Recommended | `path_finder` | `references/path-opportunity.md` §1a | `{WORKDIR}/p/lm_path.json` |
 | Cluster | Optional (plan) | `cluster_finder` | `references/cluster-landscape.md` §1a | `{WORKDIR}/c/lm_cluster.json` |
 
-Each call goes through the same **three steps** as in the sibling documents (`mcp_cache.py lookup`
-→ call MCP + secure the response file + `store` → `log_event.py --type tool_call`). Only the save
-path changes, per the table above.
+Each call goes through the same **two steps** as in the sibling documents (`mcp_cache.py lookup`
+→ call MCP + secure the response file + `store`). Only the save path changes, per the table above.
 
 **1-B. Union of keywords → one `keyword_info` call** — gather the keywords from whichever finders
 succeeded.
@@ -178,13 +177,6 @@ python3 {SKILL_DIR}/scripts/mcp_cache.py lookup keyword_info \
 python3 {SKILL_DIR}/scripts/mcp_cache.py store keyword_info \
   --params-file "{WORKDIR}/kw_params.json" \
   --file "{WORKDIR}/lm_keyword_info.json" --expect <length of the data array>
-
-# ③ emit tool_call
-python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
-  --tool keyword_info --request-body "$(cat "{WORKDIR}/kw_params.json")" \
-  --used-credits-delta <cost_detail.total_cost> \
-  --used-credits-cumulative <used_credits> \
-  --intent market_scan
 ```
 
 > When the cap (1,000) is reached, **the query keywords go in first** (descending by volume),
@@ -524,7 +516,6 @@ python3 {SKILL_DIR}/_shared/render/render_report.py --skill total-insight \
 
 Report what was produced. If the run was degraded (a finder was skipped), say which tabs have no data.
 Write the message in REPORT LANGUAGE. In English it reads:
-
 ```
 ✅ Integrated search insight report created: {WORKDIR}/total-insight-report.html
 Open it in a browser and use the four tabs at the top (Integrated Summary · Query Opportunity ·

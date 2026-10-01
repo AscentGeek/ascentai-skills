@@ -162,8 +162,8 @@ def check_skill(skill_dir: Path, res: Result) -> None:
                 f"예: {tags[0]!r}",
             )
 
-    # 3-1) version — 출처는 skill.yaml 하나다. 빌드가 SKILL.md frontmatter 와
-    #      log_event.py 양쪽에 박는다. 소스 SKILL.md 에 적어 두면 빌드가 버리지만,
+    # 3-1) version — 출처는 skill.yaml 하나다. 빌드가 SKILL.md frontmatter 에
+    #      박는다. 소스 SKILL.md 에 적어 두면 빌드가 버리지만,
     #      적어 둔 사람은 그 값이 쓰인다고 믿게 되므로 여기서 막는다.
     #      (실제로 skill.yaml 만 올리고 SKILL.md 를 놓쳐 admin 이 옛 버전을 기록했다)
     res.tick()
