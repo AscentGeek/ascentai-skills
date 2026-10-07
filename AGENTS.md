@@ -229,6 +229,35 @@ scripts/publish-dist.sh --dry-run              # 무엇이 나갈지 확인
 
 ---
 
+## 7-b. `brand-competition` 은 이식본이다 — 정본은 다른 리포에 있다
+
+`skills/brand-competition/` 은 **빌드 산출**이다. 정본은 `lm-brand-competition` 이고,
+판정 규칙·수집 절차·렌더 로직의 변경은 **거기서 먼저 일어난다.**
+
+| | 정본 (`lm-brand-competition`) | 이식본 (여기) |
+| :-- | :-- | :-- |
+| 문서 | 한국어 · `SKILL.md` 한 벌에 절차까지 | 영어 · 규약/절차 분리 |
+| 화면 문자열 | 렌더러에 직접 | `labels/*.{kr,jp,us}.json` (222키) |
+| 코드 위치 | `scripts/` | `render/` (zip 에서 `_shared/render/`) |
+
+**같아야 하는 것과 옮겨야 하는 것이 나뉜다.**
+
+- **바이트 동일** — `judge.py` · `cep_deep.py` · `check_run.py` · `brandkw.py` ·
+  `modifiers.py` · `pathcand.py` · `mcp_cache.py`(`_core`). 한쪽만 고치면 조회 목록(분모)과
+  판정이 서로 다른 집합을 보게 된다.
+- **손으로 옮긴다** — 렌더러 · 스킬 CSS · 문서 4종. 문자열이 라벨로 빠져 있어 기계로 못 맞춘다.
+
+```bash
+python3 scripts/check_upstream.py            # 갈라졌는지 검사 (pre-commit 이 자동으로 돈다)
+python3 scripts/check_upstream.py --record   # 이식을 끝낸 뒤 맞춘 시점을 갱신
+```
+
+맞춘 시점은 `skills/brand-competition/upstream.json` 에 정본 버전과 파일 해시로 적힌다.
+정본 경로는 `$LM_BRAND_COMPETITION_SRC` 로 바꾼다 — 없는 머신에서는 검사를 건너뛴다.
+
+> **여기서 먼저 고치지 마라.** 이식본에서 고치면 정본이 모르는 채로 갈라지고, 다음 이식 때
+> 덮어써진다. 급하면 정본에 먼저 넣고 그대로 가져온다.
+
 ## 8. 새 스킬 추가 체크리스트
 
 앞 절들이 규칙의 정본이고, 여기는 **순서**다. 처음 오는 사람이 §1~§7 을 조립하지 않아도
