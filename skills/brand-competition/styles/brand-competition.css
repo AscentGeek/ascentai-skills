@@ -1,0 +1,301 @@
+/* v2 화면 클래스에 쓰는 의미 토큰 — 값은 LM 디자인 시스템(design-tokens.css)에서 받는다.
+   여기서는 「이 화면의 무엇에 쓰는 색인가」만 정하고, 색 자체는 정하지 않는다. */
+:root{
+  --bg:var(--white); --fg:var(--gray-900); --ink:var(--gray-900);
+  --muted:var(--gray-500); --line:var(--gray-200); --soft:var(--gray-100);
+  --chipbg:var(--gray-100); --own:var(--gray-900); --warn:var(--warning-dark);
+  /* 액센트 · violet 을 쓴다 — coral·magenta 는 --error-main 과 같은 색이라
+     액센트로 쓰면 「경고」와 구분되지 않는다 */
+  --accent:var(--brand-violet-main); --fill:127,24,255;   /* --fill 은 --accent 의 rgb · rgba()용 */
+  /* 판정 4색 */
+  --j-own:var(--success-main); --j-cmp:var(--warning-main);
+  --j-low:var(--error-main);   --j-emp:var(--gray-400);
+  --j-own-t:var(--success-dark); --j-cmp-t:var(--warning-dark);
+  --j-low-t:var(--error-darker); --j-emp-t:var(--gray-700);
+  /* 세부 수요 막대 · 판정이 아니라 「무엇을 쟀나」다 — 판정 팔레트와 계열을 분리한다 */
+  /* 어두움 → 중간 → 밝음 3단계로 둔다. violet-lightest 를 중간에 쓰면 gray-200 과
+     밝기가 겹쳐 「경로로 잡힘」과 「안 잡힘」이 같은 색으로 보인다. */
+  --m-name:var(--brand-violet-darker);
+  --m-path:color-mix(in srgb,var(--brand-violet-main) 45%,var(--white));
+  --m-none:var(--gray-200);
+}
+/* 카드 머리 아래 설명문 — 형제 리포트의 .sec-desc 와 같은 자리다 */
+.sub{margin:0 0 10px;font-size:var(--font-size-b3);color:var(--muted);line-height:var(--line-height-normal)}
+.dash-card__body>.sub:first-child{margin-top:0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font-family:var(--font-family);
+  font-size:15px;line-height:1.6;word-break:keep-all}
+code{font-size:.9em;background:var(--soft);padding:.05em .35em;border-radius:4px}
+b{font-weight:600}
+.na{color:var(--muted)}
+
+/* 칩 버튼 (보기 전환) */
+.chip-f{border:1px solid var(--line);background:var(--chipbg);color:var(--fg);border-radius:999px;
+  padding:6px 13px;font-size:13px;cursor:pointer;font-family:inherit}
+.chip-f small{color:var(--muted);margin-left:4px;font-size:11.5px}
+.chip-f.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip-f.on small{color:rgba(255,255,255,.8)}
+.chip-f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* 섹션 */
+section{margin:34px 0 0;padding-top:20px;border-top:1px solid var(--line)}
+
+/* 표 */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
+caption{caption-side:bottom;text-align:left;font-size:12.5px;color:var(--muted);padding:12px 0 0;line-height:1.55}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;vertical-align:middle}
+thead th{font-weight:600;color:var(--muted);font-size:12px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+td.kw small{display:block;font-size:11px;color:var(--muted)}
+tbody tr.top td{background:var(--soft);font-weight:600}
+tr.catband td{background:var(--soft);font-weight:600}
+tr.catband span{font-weight:400;color:var(--muted);font-size:12.5px;margin-left:10px}
+tr.catband i{float:right;font-style:normal;font-weight:400;color:var(--muted);font-size:12px}
+
+/* 태그 */
+
+/* 매트릭스 */
+table.mxt th[scope=row]{position:sticky;left:0;background:var(--bg);font-weight:600;z-index:1}
+table.mxt thead th{white-space:normal;max-width:64px;line-height:1.3;vertical-align:bottom;text-align:right}
+table.mxt td.fill{background:rgba(var(--fill),var(--a));text-align:right}
+table.mxt td.empty{color:var(--muted);text-align:right}
+table.mxt .own{font-weight:600}
+table.mxt thead th.own{color:var(--fg)}
+
+/* 막대 */
+.bar{display:flex;align-items:center;gap:10px;min-width:150px}
+
+/* 해석 카드 */
+.card{border:1px solid var(--line);border-radius:7px;background:var(--bg)}
+.card[hidden]{display:none}
+.note{font-size:12.5px;color:var(--muted);margin:12px 0 0}
+
+/* 출처 */
+details.src{margin:18px 0 0;border:1px solid var(--line);border-radius:7px;padding:9px 12px;background:var(--soft)}
+details.src summary{cursor:pointer;font-size:13px;font-weight:600}
+
+/* 페이저 */
+.pager{display:flex;gap:7px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:10px 0 0;font-size:12.5px;color:var(--muted)}
+.pg-b{display:flex;gap:4px}
+.pg-btn{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:5px;padding:3px 9px;cursor:pointer;font-family:inherit;font-size:12.5px}
+.pg-btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.pg-btn:disabled{opacity:.4;cursor:default}
+.pg-n i{font-style:normal}
+
+html.printing .scroll{overflow:visible}
+html.printing .pager{display:none}
+.t-map tr.xr{cursor:pointer}.t-map tr.xr:hover td{background:var(--soft,rgba(0,0,0,.03))}
+.t-map .xc{width:22px;padding-right:0}.car{display:inline-block;color:var(--muted);transition:transform .15s}
+.t-map tr.xr[aria-expanded="true"] .car{transform:rotate(90deg)}
+.t-map tr.xr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.t-map tr.xd td{background:var(--soft,rgba(0,0,0,.025));padding-top:12px;padding-bottom:14px}
+.xg{display:grid;grid-template-columns:minmax(260px,1fr) minmax(260px,1.2fr);gap:18px}
+@media (max-width:720px){.xg{grid-template-columns:1fr}}
+.xb{display:grid;grid-template-columns:96px 1fr 104px;align-items:center;gap:8px;font-size:12.5px;margin:3px 0}
+.xn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.xb.me .xn{font-weight:700}
+.xt{height:9px;background:var(--line);border-radius:5px;overflow:hidden}.xf{display:block;height:100%;background:var(--muted);border-radius:5px}
+.xb.me .xf{background:var(--accent)}.xv{text-align:right;font-variant-numeric:tabular-nums}.xv small{color:var(--muted)}
+.xw p{margin:0 0 8px;font-size:13px;line-height:1.6}.xw .xs{color:var(--muted);font-size:12px}
+.jd{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:10px;border:1.5px solid;white-space:nowrap}
+.j-own{background:var(--j-own);border-color:var(--j-own);color:var(--j-own-t)}
+.j-pot{border-style:dashed;border-color:var(--j-own);color:var(--j-own-t);background:rgba(53,202,0,.18)}
+.j-cmp{background:var(--j-cmp);border-color:var(--j-cmp);color:var(--j-cmp-t)}
+.j-low{background:var(--j-low);border-color:var(--j-low);color:var(--j-low-t)}
+.j-emp{background:var(--j-emp);border-color:var(--j-emp);color:var(--j-emp-t)}
+.jt{margin-left:6px;font-size:11px;color:var(--muted);white-space:nowrap}
+.s2tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}.s2tabs .chip-f{cursor:pointer;font-family:inherit}
+#t-uni tr.me td{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+#t-uni tr.me td.kw{font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}
+.xh{font-size:12px;font-weight:700;color:var(--muted);margin:2px 0 6px}
+table.cepm td.fill{background:rgba(var(--fill),var(--a))!important}table.cepm td.empty,table.cepm td:last-child{background:var(--bg)!important}table.cepm td.own{font-weight:700}.t-map tr.xd td{white-space:normal}.t-map tr.xd .scroll{max-width:100%}table.cepm{width:100%;font-size:12.5px;background:var(--bg)}table.cepm th,table.cepm td{padding:6px 8px;border-bottom:1px solid var(--line)}table.cepm th[scope=row]{background:var(--bg);font-weight:600;white-space:nowrap}table.cepm th[scope=row] small{display:block;font-weight:400;font-size:11px;color:var(--muted)}table.cepm td.empty{background:var(--bg)}table.cepm thead th{background:var(--bg)}
+.warn{color:var(--warn)}
+table.s1r td.r1,.lg.r1{background:color-mix(in srgb,var(--accent) 38%,var(--bg))}
+table.s1r td.r2,.lg.r2{background:color-mix(in srgb,var(--accent) 12%,var(--bg))}
+table.s1r td{text-align:right}table.s1r th.rh{white-space:nowrap;vertical-align:middle}table.s1r th.rh .jd,table.s1r th.rh .jt{vertical-align:middle}table.s1r th.rh .rn{display:inline-block;vertical-align:middle;min-width:4.5em;margin-right:6px}table.s1r td{vertical-align:middle}table.s1r .jc{text-align:center;white-space:nowrap}table.s1r th.rh,table.s1r thead th:first-child{position:sticky;left:0;z-index:2;background:var(--bg);min-width:96px;max-width:96px;width:96px;overflow:hidden;text-overflow:ellipsis}table.s1r .jc{position:sticky;left:96px;z-index:2;background:var(--bg);min-width:64px;width:64px}table.s1r .catv{position:sticky;left:160px;z-index:2;background:var(--bg)!important;min-width:76px;width:76px}table.s1r thead th{z-index:3}table.cepm th.rh,table.cepm .jc,table.cepm thead th{background:var(--bg)!important}table.s1r thead th:first-child{text-align:left}.hl{font-size:14px;line-height:1.75;margin:0 0 16px;padding:12px 14px;border-left:3px solid var(--accent);background:var(--soft);border-radius:0 8px 8px 0}.hl b{color:var(--fg)}
+.bwrap{position:relative}
+.btip{position:absolute;z-index:6;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 11px;box-shadow:0 6px 20px rgba(0,0,0,.14);font-size:12.5px;width:232px;pointer-events:none}
+.btip b{font-size:13.5px;margin-right:6px}
+.btip{overflow:hidden}.btip table{width:100%!important;min-width:0!important;table-layout:fixed;margin-top:6px;border-collapse:collapse}.btip th{width:52%}.btip td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btip th{text-align:left;font-weight:400;color:var(--muted);padding:2px 0}
+.btip td{text-align:right;font-variant-numeric:tabular-nums;padding:2px 0}
+.btip small{color:var(--muted)}
+circle.bcz{cursor:pointer;transition:fill-opacity .12s}
+svg.bub{width:100%;height:auto;display:block;margin:6px 0 2px}
+.bax{font-size:11px;fill:var(--muted)}.bq{font-size:12px;font-weight:700;fill:var(--muted);opacity:.75}
+.blb{font-size:11px;fill:var(--fg);font-weight:600;paint-order:stroke;stroke:var(--bg);stroke-width:3px}
+.blg{margin-right:10px;white-space:nowrap}.blg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}
+.dbar{margin:0 0 12px}.dbt{font-size:13px;font-weight:600;margin-bottom:5px}
+.dbr{display:flex;height:16px;border-radius:5px;overflow:hidden;background:var(--soft)}.dbr span{display:block}
+.dbl{font-size:12px;color:var(--muted);margin-top:4px}.dbl b{color:var(--fg)}
+th.sortable{cursor:pointer;user-select:none}th.sortable:hover{color:var(--accent)}th.sortable::after{content:'↕';opacity:.35;margin-left:4px;font-size:10px}th.sortable[data-on=desc]::after{content:'▼';opacity:.9}th.sortable[data-on=asc]::after{content:'▲';opacity:.9}.more-btn{font-size:13px;padding:5px 14px}.s1lead{font-size:13px;color:var(--muted);margin:0 0 8px}.s1lead b{color:var(--fg)}table.s1r .catv{font-weight:700;border-right:2px solid var(--line);color:var(--fg)}table.s1r td.ext{text-align:left;white-space:nowrap}table.s1r td.ext .lg{margin-right:4px}
+.lg{display:inline-block;padding:0 7px;border-radius:4px;font-size:11.5px}
+.kpis{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}
+.kpi{border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+.kpi b{display:block;font-size:20px}.kpi span{font-size:12px;color:var(--muted)}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.6}
+.note ol{margin:6px 0 0;padding-left:20px}/* 세부 수요 × 브랜드 매트릭스 · 두 축 토글 */
+.modesw{display:flex;gap:6px;margin:0 0 8px}
+.modesw .chip-f{font-size:12px;padding:3px 10px;cursor:pointer}
+.modesw .chip-f.on{background:var(--accent);border-color:var(--accent);color:#fff}
+table.cepm[data-mode="i"] .m-p,table.cepm[data-mode="p"] .m-i{display:none}
+table.cepm[data-mode="i"] td.i-r1,table.cepm[data-mode="p"] td.p-r1{background:color-mix(in srgb,var(--accent) 38%,var(--bg))!important}
+table.cepm[data-mode="i"] td.i-r2,table.cepm[data-mode="p"] td.p-r2{background:color-mix(in srgb,var(--accent) 12%,var(--bg))!important}
+table.cepm td.den{color:var(--muted);font-size:11.5px}
+.dcep{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 14px}
+.shead2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 6px}
+.shead2 h3{font-size:15px;margin:0}
+.shead2 .na{font-size:12px}
+table.cepm[data-mode="v"] .m-i,table.cepm[data-mode="v"] .m-p{display:none}
+table.cepm[data-mode="i"] .m-v,table.cepm[data-mode="p"] .m-v{display:none}
+table.cepm[data-mode="v"] td.v-r1{background:color-mix(in srgb,var(--accent) 38%,var(--bg))!important}
+table.cepm[data-mode="v"] td.v-r2{background:color-mix(in srgb,var(--accent) 12%,var(--bg))!important}
+.modesw .na{align-self:center;font-size:11.5px;margin-right:2px}
+.wtag{display:inline-block;font-size:10px;padding:0 5px;border-radius:3px;border:1px solid var(--accent);color:var(--accent);margin-left:4px;vertical-align:1px}
+.insb{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 12px}
+.insb h3{font-size:14.5px;margin:0 0 4px}
+.insb .xs{margin:0 0 8px}
+table.ins{width:100%;font-size:13px;min-width:0}
+table.ins th,table.ins td{padding:5px 8px;border-bottom:1px solid var(--line)}
+table.ins thead th{color:var(--muted);font-size:12px;font-weight:600}
+.kind{display:inline-block;font-size:10.5px;padding:0 6px;border-radius:3px;margin-right:6px;vertical-align:1px}
+.kind.k{background:var(--own);color:var(--bg)}
+.kind.t{border:1px solid #c0392b;color:#c0392b}
+
+/* ───── 셸 정합 · 이 스킬 전용 (형제는 스킬마다 커버 변종을 하나 정의한다) ───── */
+.dash-cover-gradient--brand{
+  background:linear-gradient(135deg,#120826 0%,#2A0B52 52%,#15142E 100%);
+}
+/* 카드 본문 안에서 쓰는 우리 클래스들이 카드 패딩과 겹치지 않게 */
+.dash-card__body>.scroll:first-child,
+.dash-card__body>.vtog:first-child{margin-top:0}
+.dash-card__body>:last-child{margin-bottom:0}
+.dash-card__body .kpis{margin-top:0}
+.dash-card__body table{min-width:0}
+.dash-card__body .scroll>table{min-width:520px}
+
+/* A4 사본 · 표는 쪽 폭(794px − 좌우 여백 80px = 714px)에 담는다.
+   table-layout:fixed 는 쓰지 않는다 — 머리글이 rowspan·colspan 2줄 구조라
+   고정 레이아웃이 열 너비를 엉뚱하게 나눠 머리글끼리 겹친다(실측). */
+.view-a4 .dash-card{box-shadow:none;border-color:var(--gray-200)}
+.view-a4 .scroll{overflow:visible}
+.view-a4 table{min-width:0 !important;width:100%;font-size:10px;table-layout:auto}
+.view-a4 th,.view-a4 td{padding:3px 4px}
+/* 머리글은 줄바꿈을 허용한다 — nowrap 을 걸면 「카테고리명 검색량」 같은 긴 말이
+   한 줄을 고집해 열이 못 줄고 표가 쪽 폭을 넘어 잘린다(실측). 숫자만 nowrap. */
+.view-a4 .t-map th{white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.25}
+.view-a4 .t-map td{white-space:nowrap}
+.view-a4 .t-map td.kw{white-space:normal;word-break:keep-all}
+/* 1·2위 칩은 세로로 쌓되 칩 안에서는 줄바꿈하지 않는다 — 안에서 끊기면 「참이슬 / 7,738 · / 56.9%」 */
+.view-a4 .t-map td.t12{white-space:normal}
+.view-a4 .t-map td.t12 .lg{display:block;white-space:nowrap;font-size:8.5px;padding:1px 4px;margin:0 0 2px}
+.view-a4 .bmore,.view-a4 .pager,.view-a4 .modesw,.view-a4 .more-btn{display:none !important}
+/* 가로 스크롤 전제의 고정 위치·폭 계산을 푼다 — 종이에는 스크롤이 없다 */
+.view-a4 .t-map td.kw,.view-a4 .t-map th.cat{position:static;box-shadow:none}
+.view-a4 .t-map tr.xd td>.xg,.view-a4 .t-map tr.xd td>p{position:static;width:auto}
+.view-a4 .t-map tr.xd td{white-space:normal}
+.view-a4 .btip{display:none !important}
+.view-a4 table.s1r .jc{white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.2}
+.view-a4 table.s1r .jc .jd{font-size:9px;padding:1px 4px;border-width:1px}
+.view-a4 table.s1r .catv{min-width:52px;width:52px}
+.view-a4 table.s1r thead th{font-size:9.5px;line-height:1.2}
+.view-a4 .sch2{grid-template-columns:1fr}
+/* A4 에서는 경쟁사 브랜드 열 블록을 접는다 — 열 21개를 714px 에 넣으면 숫자가 줄바꿈된다.
+   브랜드별 숫자는 펼침 내용(아래)과 「종합」에서 읽는다. */
+.view-a4 .t-map .bc,.view-a4 .t-map .gcomp,.view-a4 .t-map .bmore{display:none !important}
+/* A4 · 검색량과 점유율을 한 칸에 병기한다 — 토글은 종이에서 누를 수 없다 */
+.view-a4 .t-map .ms{display:inline !important}
+.view-a4 .t-map td .ms::before,.view-a4 .t-map th .ms::before{content:" · ";color:var(--muted)}
+/* A4 · 카테고리별 근거 (화면의 펼침 내용) */
+.a4-evs{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.a4-ev{margin:14px 0 0;padding-top:10px;border-top:1px dashed var(--line);break-inside:avoid;page-break-inside:avoid}
+.a4-ev__cat{margin:0 0 6px;font-size:12px;font-weight:700;color:var(--fg)}
+.a4-ev .xg{display:block}
+
+/* 차트는 그려진 크기(viewBox 440×260)를 넘겨 키우지 않는다. width:100% 만 주면 폭 714px 에서
+   높이가 420px 까지 커지는데, 선도 글자도 같이 확대될 뿐 읽히는 양은 늘지 않는다. */
+.schc .sch:not(.pie){max-width:440px;margin:0 auto}
+
+/* ───── 렌더러에 인라인으로 있던 규칙 (이식하며 파일로 옮김) ───── */
+.xbd>summary{list-style:none;cursor:pointer}.xbd>summary::-webkit-details-marker{display:none}
+.xbd>summary:hover .xn{text-decoration:underline}.xbd[disabled]>summary{cursor:default}
+.xbd>summary .xn::before{content:"▸ ";color:var(--muted,#888);font-size:10px}.xbd[open]>summary .xn::before{content:"▾ "}
+.xb .xv,.xb .xn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xbd>summary.xb{grid-template-columns:150px 1fr 92px}
+.xb .cot{font-style:normal;font-size:10px;padding:0 4px;border-radius:4px;background:var(--accent);color:#fff;margin-left:4px}
+.kwl{margin:2px 0 10px 18px;font-size:12px}.pz{display:inline-block;margin-left:5px;padding:0 6px;border-radius:999px;font-size:10.5px;border:1px solid currentColor;vertical-align:1px}.pz-in{color:var(--success-dark)}.pz-part{color:var(--warning-dark)}.pz-no{color:var(--error-dark)}.pz-unk{color:var(--gray-500)}
+.btip{border:0!important;border-radius:var(--radius-lg)!important;padding:12px 14px 10px!important;box-shadow:var(--shadow-lg)!important;font-size:11.5px!important;width:220px!important}.btip>b{font-size:13px!important;font-weight:700}.btip .jd{font-size:10.5px;padding:1px 7px;vertical-align:1px}.btip table{border-collapse:collapse;margin-top:0!important}.btip table:first-of-type{margin-top:9px!important;padding-top:0;border-top:1px solid var(--line)}.btip table+table{margin-top:6px!important}.btip tr:first-child th,.btip tr:first-child td{padding-top:7px!important}.btip th,.btip td{border:0!important;padding:2.5px 0!important;font-size:11.5px!important}.btip th{color:var(--gray-500)!important;font-weight:400}.btip td{color:var(--gray-800);font-weight:500}.btip td small{color:var(--gray-400)}.cwrap{position:relative}.cwrap>.btip{position:fixed}.ctz{cursor:pointer;transition:opacity .12s}.sch .ctz.hv{opacity:.78}.plg li.ctz.hv{background:var(--soft,rgba(0,0,0,.04))}.sch2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:10px 0 6px}.schc{border:1px solid var(--line);border-radius:var(--radius-md);padding:12px 14px}.sch{width:100%;height:auto;display:block}.sch .sg{stroke:var(--line,#e5e5e5)}.sch .sa{stroke:var(--muted,#999)}.sch .sy,.sch .sc{font-size:11px;fill:var(--muted,#888)}.sch .sx{font-size:12.5px;fill:var(--ink,#222);font-weight:600}.sch .sv{font-size:12px;fill:var(--ink,#222);font-weight:700}.pwrap{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:14px;align-items:center}.sch.pie{max-width:220px}.plg{list-style:none;margin:0;padding:0;font-size:12.5px}.plg li{display:grid;grid-template-columns:12px 1fr auto 48px;gap:8px;align-items:center;padding:3px 0;border-bottom:1px dashed var(--line,#eee)}.plg i{width:10px;height:10px;border-radius:2px;display:block}.plg .pv{font-variant-numeric:tabular-nums}.plg .pp{text-align:right;color:var(--muted,#777);font-variant-numeric:tabular-nums}@media (max-width:760px){.sch2{grid-template-columns:1fr}}.t-map:not(.allb) .bx{display:none}.t-map.allb .bmore{display:none}.t-map .bmore{width:40px;padding:0 4px;position:sticky;right:0;z-index:1;background:var(--bg,#fff);box-shadow:-6px 0 6px -4px rgba(0,0,0,.12);text-align:center}.bmbtn{border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg));color:var(--accent);border-radius:999px;font-size:11px;padding:1px 7px;cursor:pointer}.vtog .ball{margin-left:8px}.t-map[data-mode=v] .ms{display:none}.t-map[data-mode=s] .mv{display:none}.t-map td.kw,.t-map th.cat{position:sticky;left:0;z-index:1;background:var(--bg,#fff);}.t-map tr.xr:hover td.kw,.t-map tr.xr[data-open='1'] td.kw{background:inherit}.t-map td.kw,.t-map th.cat{box-shadow:1px 0 0 var(--line,#e5e5e5)}.t-map tr.xd td>.xg,.t-map tr.xd td>p{position:sticky;left:12px;width:min(1020px,calc(100vw - 150px));white-space:normal}.t-map tr.xd td{white-space:normal}.t-map td.r1{background:color-mix(in srgb,var(--accent) 38%,var(--bg))}.t-map td.r2{background:color-mix(in srgb,var(--accent) 12%,var(--bg))}.t-map .jcol{width:1%}.t-map thead tr.g1 th.gh{text-align:left;font-weight:700;border-bottom:1px solid var(--line,#e5e5e5)}.t-map thead tr.g1 th.gh.own{color:var(--accent)}.t-map thead th{vertical-align:bottom}.t-map .evl{display:block;white-space:nowrap}.t-map .evb{display:block;font-weight:700;color:var(--accent)}.t-map td.evc,.t-map td.own{color:var(--accent);font-weight:600}.t-map td.own.empty{color:var(--muted,#999);font-weight:400}.t-map td.t12 .lg{display:inline-block;margin-right:3px;padding:1px 6px;border-radius:4px;font-size:12px}.t-map th,.t-map td{white-space:nowrap}.t-map thead th,.t-map tbody td{padding-left:6px;padding-right:6px}.t-map .grp,.t-map tbody tr.xr>td:nth-child(2){font-size:12px;color:var(--muted,#777)}.vtog{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 8px}.vtog .xs{margin-left:6px}.bv td.co{outline:2px dashed var(--accent);outline-offset:-3px}.bv .grp{color:var(--muted,#777)}.bv thead th:nth-child(-n+3),.bv td.grp{text-align:left}.bv td.t12{white-space:nowrap}.bv .rh{white-space:nowrap}.kwl .xs{margin:2px 0 4px}
+.kwh{margin:4px 0 6px;font-size:12px;color:var(--muted,#666)}.kwh b{color:var(--ink,inherit)}
+.kleg{margin-left:8px;font-size:11px}.kleg .kc{display:inline-block;width:12px;height:10px;padding:0;margin:0 3px 0 6px;vertical-align:-1px}
+.kcs{display:flex;flex-wrap:wrap;gap:5px;max-height:196px;overflow:auto;padding:2px 2px 4px}
+.kc{display:inline-flex;align-items:baseline;gap:6px;padding:3px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);background:color-mix(in srgb,var(--accent) 5%,transparent);font-size:12px;line-height:1.35;white-space:nowrap}
+.kc.t2{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.kc.t1{background:color-mix(in srgb,var(--accent) 24%,transparent);border-color:color-mix(in srgb,var(--accent) 45%,transparent);font-weight:600}
+.kc.rep{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.kc .bn{opacity:.55;font-weight:400}
+.kc .kv{font-size:11px;color:var(--muted,#777);font-weight:500;font-variant-numeric:tabular-nums}
+@media (max-width:600px){.kwl{margin-left:0}}
+
+/* ───── 스크롤바를 눈에 보이게 한다 ─────
+   design-tokens.css 가 모든 스크롤바를 투명으로 깔고 `.is-scrolling` 일 때만 보이게 하는데,
+   그 클래스는 ListeningMind.AI 웹앱의 JS 가 붙인다. 단독 HTML 에는 그 JS 가 없어서 손잡이가
+   통째로 사라진다 — 트랙패드는 스와이프로 넘겨 눈치채지 못하지만 마우스 사용자는 넓은 표를
+   가로로 옮길 방법이 없다.
+
+   표준 속성(scrollbar-color·scrollbar-width)을 값으로 주면 Chrome 이 ::-webkit-scrollbar 를
+   무시하고 macOS 오버레이 스크롤바를 쓴다(자동으로 숨는다). 그래서 여기서는 표준 속성을
+   auto 로 되돌려 의사요소가 먹게 하고, 의사요소를 모르는 Firefox 만 표준 속성으로 받는다. */
+.scroll{scrollbar-color:auto;scrollbar-width:auto}
+.scroll::-webkit-scrollbar{height:12px;width:12px}
+.scroll::-webkit-scrollbar-track{background:var(--gray-100);border-radius:999px}
+.scroll::-webkit-scrollbar-thumb{background:var(--gray-400);border:3px solid var(--gray-100);border-radius:999px}
+.scroll::-webkit-scrollbar-thumb:hover{background:var(--gray-500)}
+.kcs{scrollbar-color:auto;scrollbar-width:auto}
+.kcs::-webkit-scrollbar{width:10px}
+.kcs::-webkit-scrollbar-thumb{background:var(--gray-400);border-radius:999px}
+@supports not selector(::-webkit-scrollbar){
+  .scroll,.kcs{scrollbar-width:auto;scrollbar-color:var(--gray-400) var(--gray-100)}
+}
+/* 종이에는 스크롤이 없다 */
+.view-a4 .scroll::-webkit-scrollbar{display:none}
+
+/* ───── A4 경쟁 매트릭스 (브랜드 × 카테고리) ─────
+   지도의 경쟁사 열 블록은 쪽 폭에 안 들어가 A4 에서 접힌다. 같은 숫자를 행·열을 바꿔 싣는다. */
+.a4m-h{font-size:14px;font-weight:700;margin:18px 0 4px;color:var(--gray-800)}
+.a4m{margin:6px 0 12px;break-inside:auto}
+.a4m-t{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10.5px}
+.a4m-t th,.a4m-t td{border-bottom:1px solid var(--line);padding:3px 4px;vertical-align:middle}
+.a4m-t thead th{font-weight:600;color:var(--gray-600);text-align:right;white-space:normal;line-height:1.25;word-break:keep-all;overflow-wrap:anywhere}
+.a4m-t th.a4m-b{width:92px;text-align:left;font-weight:600;color:var(--gray-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a4m-t td{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.a4m-t td .a4m-v{display:block;font-weight:600;color:var(--gray-800)}
+.a4m-t td .a4m-s{display:block;font-size:9.5px;color:var(--gray-500)}
+.a4m-t td.empty{color:var(--gray-300)}
+.a4m-t td.r1{background:color-mix(in srgb,var(--accent) 30%,var(--bg))}
+.a4m-t td.r2{background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+.a4m-t tr.own th,.a4m-t tr.own td .a4m-v{color:var(--accent)}
+.a4m-t tr.own{background:color-mix(in srgb,var(--accent) 5%,var(--bg))}
+.a4m-t thead{display:table-header-group}
+.a4m-t tr{break-inside:avoid}
+.view-dash .a4m-h,.view-dash .a4m{display:none}
+
+/* ───── 브랜드명 머리글 말줄임 ─────
+   머리글은 nowrap 이라 긴 브랜드명(노르딕내추럴·뉴트리코어)이 이웃 칸 위로 넘쳐 글자가 겹쳤다.
+   이름을 6.5em 에서 끊고 「…」 를 붙인다 — 마우스를 올리면 커스텀 툴팁(.bntip)으로 전체 이름을 띄운다. */
+.bn{display:inline-block;max-width:min(6.5em,100%);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+th:has(>.bn){overflow:hidden;text-overflow:ellipsis}
+/* A4 는 종이다 — 툴팁을 볼 수 없으니 줄이지 않고 줄을 바꿔 전체 이름을 싣는다 */
+.view-a4 .bn{display:inline;max-width:none;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;word-break:break-all}
+.view-a4 th:has(>.bn){overflow:visible;text-overflow:clip;white-space:normal}
+.view-a4 .a4m-t th.a4m-b{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.3}
+
+/* 브랜드명 커스텀 툴팁 — 브라우저 기본 title 은 늦게 뜨고 모양을 못 바꾼다 */
+.bn{cursor:default}
+.bntip{position:fixed;z-index:1000;pointer-events:none;opacity:0;transform:translateY(2px);transition:opacity .12s,transform .12s;
+ background:var(--gray-800);color:#fff;border-radius:var(--radius-md,8px);padding:6px 10px;box-shadow:var(--shadow-lg);
+ font-size:12px;line-height:1.35;max-width:260px;white-space:normal;word-break:keep-all}
+.bntip.on{opacity:1;transform:none}
+.bntip b{display:block;font-weight:700}
+.bntip span{display:block;margin-top:2px;font-size:11px;color:var(--gray-300)}
+@media print{.bntip{display:none}}
