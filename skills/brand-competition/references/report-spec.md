@@ -94,9 +94,38 @@ so both are set back to `auto` and Firefox is handled by `@supports not selector
 
 ## Sections
 
+### Cover · in-one-page figure · register
+
+The cover's big title is the **skill name** (「Brand competition analysis」), the brand goes
+underneath, and the top line is 「<skill name> · <market>」 from `config.gl`. The A4 cover is the same.
+Korean prose is written in the polite register (…합니다).
+
+The in-one-page figure is a **network graph**: the brand at the hub, one circle per category around it.
+
+- Circle area ∝ that category's **all-brand volume** (`sos.denom` = ours + rivals' branded queries, 12 months)
+- The fill rising from the bottom = **our share of search** = our branded volume ÷ all-brand volume
+- Text in the circle = 「share%」 and 「our volume / all-brand volume」. Below radius 46 the text drops under the circle
+- Colour = the same palette the pie used, assigned in order of our volume
+- A category with no branded volume gets no circle; its name is listed under the figure
+- The fill is drawn as a circular **segment path, not a clipPath** — the A4 copy strips `id`, which
+  would break a `url(#…)` reference
+- Layout treats 「the larger of circle and label」 as the radius and pushes overlaps apart, alternating
+  large and small circles around the ring
+- **Extremes and node count** — the largest radius is 150 at 7 nodes and shrinks as `150·√(7/N)`
+  (floor 70). If area-proportional drawing would squash 40% or more of the circles (at least two)
+  below radius 27, it switches to a **log scale** and says so in the caption. Do not switch on a plain
+  max/min ratio — an ordinary run would then always be log. The figures inside a circle are the exact
+  values; size only gives a sense of scale
+- **Interaction** — in the dashboard the layout continues as a physics layout from the same
+  coordinates: drag a node or the hub, drag the background to pan, **mouse wheel zooms while over the
+  graph** (cursor-anchored, 0.2–5x, and page scroll is blocked only over the graph), ＋/－ buttons and
+  re-layout. **A4 and print use the static layout computed on the server.**
+- This figure **replaces** the old 「our branded volume by category」 pie and the 「category demand by
+  verdict」 bars. Neither is emitted any more.
+
 | | Section | What it answers |
 | :---- | :---- | :---- |
-| — | In one page | one-line insight · demand composition bars · opportunity quadrant bubble map |
+| — | In one page | one-line insight · the brand-to-category network graph · opportunity quadrant bubble map |
 | S0 | Category map | group · category · category term volume · branded volume · verdict · 1st/2nd · ours (in related queries · on journeys · volume · share) · rival brand columns. **Volume view / share view toggle.** Expanding a row shows per-brand share bars, the reason for the verdict, the journey axis and a demand-facet note |
 | S0-p | Category priority | only when `presence` exists — regroups the map against what we actually sell |
 | S0-d | Demand facet deep dive | a facet × brand matrix plus a one-line summary, per chosen category |

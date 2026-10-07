@@ -61,7 +61,7 @@ def _t(key, **kw):
 def bn(b,tip=""):
     """브랜드명 머리글 — 열이 좁으면 「…」로 줄이고 마우스를 올리면 커스텀 툴팁으로 전체 이름을 띄운다.
     nowrap 머리글에 긴 브랜드명이 이웃 칸을 덮어 글자가 겹치던 문제. A4 에서는 CSS 가 줄바꿈으로 되돌린다."""
-    return f'<span class="bn" data-full="{esc(b)}" data-tip="{esc(tip)}">{kw(b)}</span>'
+    return f'<span class="bnh" data-full="{esc(b)}" data-tip="{esc(tip)}">{kw(b)}</span>'
 
 def _ev0(v): return v if v else '<span class=na>0</span>'
 def _st(v):
@@ -722,25 +722,147 @@ sec.querySelectorAll('.vtog button').forEach(function(b){b.addEventListener('cli
                 f'<tr><th>{_t("col.ownShare", own=esc(OWN))}</th><td>{x["own_rate"] if x["own_rate"] is not None else "-"}%</td></tr>'
                 +(f'<tr><th>{_t("col.rival1")}</th><td>{kw(c0["brand"])} <small>({c0["rate"]}%)</small></td></tr>' if c0 else '')
                 +'</table>')
-    def _pie_svg():
-        it=sorted([(x["own_vol"] or 0,x["term"]) for x in J if x["own_vol"]],reverse=True)
-        tt=sum(v for v,_ in it) or 1
-        # LM 브랜드 램프 4색 × (main → darker) · 은퇴한 판정색(#F96E6E·#EBAA03·#35CA00)이
-        # 파이에 남아 있으면 읽는 사람이 판정 배지와 섞어 본다. 색조를 번갈아 두어 인접 조각을 가른다.
+    def _orbit_svg():
         PAL=["#7F18FF","#CD3197","#AA18CC","#FF247A","#5A10B8","#821E60","#7A1194","#A81650"]
-        cx,cy,r=130,130,112; a0=-math.pi/2; o=[f'<svg viewBox="0 0 260 260" class="sch pie" role="img" aria-label="{_t("aria.pie", own=esc(OWN))}">']
-        if len(it)==1: o.append(f'<circle class="ctz" data-tip="{html.escape(_ptip(it[0][1],it[0][0],tt),quote=True)}" cx="{cx}" cy="{cy}" r="{r}" fill="{PAL[0]}"/>')
-        for i,(v,t) in enumerate(it if len(it)>1 else []):
-            a1=a0+2*math.pi*v/tt; lg=1 if a1-a0>math.pi else 0
-            x0,y0=cx+r*math.cos(a0),cy+r*math.sin(a0); x1,y1=cx+r*math.cos(a1),cy+r*math.sin(a1)
-            o.append(f'<path class="ctz" data-tip="{html.escape(_ptip(t,v,tt),quote=True)}" d="M{cx},{cy} L{x0:.2f},{y0:.2f} A{r},{r} 0 {lg} 1 {x1:.2f},{y1:.2f} Z" fill="{PAL[i%len(PAL)]}" stroke="var(--bg,#fff)" stroke-width="1.5"></path>')
-            a0=a1
-        o.append("</svg>")
-        lg_="".join(f'<li class="ctz" data-tip="{html.escape(_ptip(t,v,tt),quote=True)}"><i style="background:{PAL[i%len(PAL)]}"></i><span class="pn">{kw(t)}</span><span class="pv">{n(v)}</span><span class="pp">{v/tt*100:.1f}%</span></li>' for i,(v,t) in enumerate(it))
-        none=[x["term"] for x in J if not x["own_vol"]]
-        nn=(f'<p class="xs na">'+_t("chart.noKwCats", own=esc(OWN))+" · ".join(kw(z) for z in none)+'</p>') if none else ""
-        return "".join(o),f'<ul class="plg">{lg_}</ul>{nn}',tt
-    _pv,_pl,_pt=_pie_svg()
+        den=lambda x:((x.get("sos") or {}).get("denom") or 0)
+        it=[x for x in J if den(x)>0]
+        if not it: return "",[],False
+        col={}
+        for i,x in enumerate(sorted([x for x in it if x["own_vol"]],key=lambda x:-x["own_vol"])): col[x["term"]]=PAL[i%len(PAL)]
+        it=sorted(it,key=lambda x:-den(x)); md=den(it[0])
+        RMIN,GAP,CORE=18.0,26.0,78.0
+        # 노드가 많으면 가장 큰 원을 줄인다 — 7개 기준 150, 15개면 약 100 · 바닥 70
+        RMAX=max(70.0,min(150.0,150.0*math.sqrt(7/max(len(it),1))))
+        # 면적 비례로 그렸을 때 「눌린 원」(반지름 27 미만)이 40% 이상이면 로그 스케일로 바꾼다 —
+        # 튀는 값 하나에 나머지가 전부 같은 점이 되는 것을 막는다(3.7억 옆의 34만·7천) · 순서는 그대로 지킨다.
+        # 단순 최대/최소 비율로 가르면 평범한 회차(74만 vs 2천)도 늘 로그가 돼 크기 감각이 흐려진다
+        dmin=min(den(x) for x in it)
+        _sq=[RMAX*math.sqrt(den(x)/md) for x in it]
+        LOGS=len(it)>2 and sum(1 for r in _sq if r<RMIN*1.5)>=max(2,0.4*len(it))
+        if LOGS:
+            lo,hi=math.log(max(dmin,1)),math.log(md)
+            rad={x["term"]:RMIN+(RMAX-RMIN)*((math.log(max(den(x),1))-lo)/((hi-lo) or 1)) for x in it}
+        else:
+            rad={x["term"]:max(RMIN,RMAX*math.sqrt(den(x)/md)) for x in it}
+        # 큰 원과 작은 원이 번갈아 둘레에 놓이게 순서를 섞는다
+        order=[]; lo,hi=0,len(it)-1
+        while lo<=hi:
+            order.append(it[lo]); lo+=1
+            if lo<=hi: order.append(it[hi]); hi-=1
+        N=len(order); P={}
+        for i,x in enumerate(order):
+            a=-math.pi/2+math.pi/6+2*math.pi*i/N; r=rad[x["term"]]; d=CORE+r+40+(0 if N<4 else 30)
+            P[x["term"]]=[d*math.cos(a),d*math.sin(a)]
+        ks=[x["term"] for x in order]
+        def lw(t,fs): return len(t)*fs*0.62
+        # 겹침 판정은 원 반지름이 아니라 「원과 글자 중 큰 쪽」으로 — 작은 원은 글자가 원 밖으로 나온다
+        lab={x["term"]:(f'{x["term"]} {x["own_rate"] if x["own_rate"] is not None else 0}%',f'{n(x["own_vol"] or 0)} / {n(den(x))}') for x in order}
+        eff={k:max(rad[k]+(26 if rad[k]<46 else 0),max(lw(lab[k][0],17),lw(lab[k][1],15))/2+8) for k in ks}
+        CORE=max(CORE,lw(OWN,19)/2+34,lw(OWN,17)/2+24+26)
+        for i,x in enumerate(order):
+            a=-math.pi/2+math.pi/6+2*math.pi*i/N; k=x["term"]; d=CORE+eff[k]+60
+            P[k]=[d*math.cos(a),d*math.sin(a)]
+        for _ in range(800):   # 겹침을 밀어내고 가운데 쪽으로 살짝 당긴다
+            for i in range(N):
+                for j in range(i+1,N):
+                    a,b=P[ks[i]],P[ks[j]]; dx,dy=b[0]-a[0],b[1]-a[1]; dd=math.hypot(dx,dy) or 0.01
+                    need=eff[ks[i]]+eff[ks[j]]+GAP
+                    if dd<need:
+                        m=(need-dd)/2; ux,uy=dx/dd,dy/dd
+                        a[0]-=ux*m; a[1]-=uy*m; b[0]+=ux*m; b[1]+=uy*m
+            for k in ks:
+                q=P[k]; dd=math.hypot(*q) or 0.01; mn=CORE+eff[k]+40
+                if dd<mn: q[0]*=mn/dd; q[1]*=mn/dd
+                else: q[0]*=0.997; q[1]*=0.997
+        bx=[]
+        for x in order:
+            t=x["term"]; cx,cy=P[t]; r=rad[t]
+            l1=f'{t} {x["own_rate"] if x["own_rate"] is not None else 0}%'; l2=f'{n(x["own_vol"] or 0)} / {n(den(x))}'
+            w=max(lw(l1,17),lw(l2,15))/2
+            bx+=[cx-max(r,w),cx+max(r,w),cy-r-4,cy+r+(48 if r<46 else 4)]
+        X0=min(bx[0::4]+[-CORE])-16; X1=max(bx[1::4]+[CORE])+16; Y0=min(bx[2::4]+[-40])-12; Y1=max(bx[3::4]+[40])+12
+        W_,H_=X1-X0,Y1-Y0
+        # ── 네트워크 그래프: 노드 = <g transform="translate(x,y)"> · 링크 = 허브 중심 → 노드 중심
+        # 정적(A4·인쇄)은 이 좌표 그대로 그려지고, 대시에서는 NETJS 가 같은 좌표에서 물리 배치를 이어받는다
+        HR=lw(OWN,17)/2+24
+        o=[f'<svg viewBox="{X0:.0f} {Y0:.0f} {W_:.0f} {H_:.0f}" class="orb net" data-vb="{X0:.0f} {Y0:.0f} {W_:.0f} {H_:.0f}" data-hr="{HR:.1f}" role="img" aria-label="{_t("aria.orbit", own=esc(OWN))}">'
+           '<rect class="net-bg" x="-5000" y="-5000" width="10000" height="10000"/><g class="net-ln">']
+        # 차오른 부분은 clipPath 대신 원의 활꼴(segment) 경로로 직접 그린다 —
+        # A4 사본은 id 를 지우므로 url(#…) 참조가 끊긴다 · 노드 원점(0,0) 기준 상대 좌표
+        def seg(r,h):
+            h=min(max(h,0),2*r); yc=r-h; w=math.sqrt(max(r*r-(r-h)**2,0))
+            if h>=2*r-0.01: return f'M{-r:.2f},0 A{r:.2f},{r:.2f} 0 1 1 {r:.2f},0 A{r:.2f},{r:.2f} 0 1 1 {-r:.2f},0 Z'
+            return f'M{-w:.2f},{yc:.2f} L{w:.2f},{yc:.2f} A{r:.2f},{r:.2f} 0 {1 if h>r else 0} 1 {-w:.2f},{yc:.2f} Z'
+        mx_sh=max([(x["own_rate"] or 0) for x in order]+[1])
+        for i,x in enumerate(order):
+            cx,cy=P[x["term"]]; sw=1+3*((x["own_rate"] or 0)/mx_sh)   # 링크 굵기 = 점유율(상대)
+            o.append(f'<line class="orb-ln" data-i="{i}" x1="0" y1="0" x2="{cx:.1f}" y2="{cy:.1f}" style="stroke-width:{sw:.1f}"/>')
+        o.append('</g><g class="net-nd">')
+        for i,x in enumerate(order):
+            t=x["term"]; cx,cy=P[t]; r=rad[t]; sh=(x["own_rate"] or 0)/100; fh=2*r*sh; c=col.get(t,"var(--gray-400)")
+            c0=x["comp"][0] if x["comp"] else None
+            tip=(f'<b>{esc(t)}</b> <span class="jd {CLS[ju(x)]}">{VNAME(ju(x))}</span><table>'
+                 f'<tr><th>{_t("tip.allBrandVolume")}</th><td>{n(den(x))}</td></tr>'
+                 f'<tr><th>{_t("tip.ownVolume", own=esc(OWN))}</th><td>{n(x["own_vol"] or 0)}</td></tr>'
+                 f'<tr><th>{_t("col.ownShare", own=esc(OWN))}</th><td>{x["own_rate"] if x["own_rate"] is not None else 0}%</td></tr>'
+                 +(f'<tr><th>{_t("col.rival1")}</th><td>{kw(c0["brand"])} <small>({c0["rate"]}%)</small></td></tr>' if c0 else '')
+                 +'</table>')
+            small=r<46   # 작은 원은 글자를 원 아래로 내린다 — 원 위에 얹으면 원이 글자에 가려진다
+            ty=(r+22) if small else -(r*0.22 if r>60 else 0)
+            o.append(f'<g class="ctz orb-c net-n" data-i="{i}" data-r="{r:.1f}" data-e="{eff[t]:.1f}" transform="translate({cx:.1f},{cy:.1f})" data-tip="{html.escape(tip,quote=True)}">'
+                     f'<circle class="orb-bg" cx="0" cy="0" r="{r:.1f}" style="--nc:{c}"/>'
+                     +(f'<path d="{seg(r,fh)}" fill="{c}"/>' if fh>0 else '')
+                     +f'<circle class="orb-ring" cx="0" cy="0" r="{r:.1f}" style="stroke:{c}"/>'
+                     f'<text x="0" y="{ty-(0 if small else 4):.1f}" class="orb-t" text-anchor="middle">{esc(t)} {x["own_rate"] if x["own_rate"] is not None else 0}%</text>'
+                     f'<text x="0" y="{ty+20:.1f}" class="orb-v" text-anchor="middle">{n(x["own_vol"] or 0)} / {n(den(x))}</text></g>')
+        o.append(f'<g class="net-hub" transform="translate(0,0)"><circle r="{HR:.1f}"/>'
+                 f'<text x="0" y="6" class="orb-me" text-anchor="middle">{esc(OWN)}</text></g></g></svg>')
+        none=[x["term"] for x in J if den(x)<=0]
+        return "".join(o),none,LOGS
+    _ov,_onone,_ologs=_orbit_svg()
+    NETJS="""<script>(function(){document.querySelectorAll('.view-dash svg.net').forEach(function(svg){
+var card=svg.closest('.orbc'),HR=+svg.dataset.hr,vb0=svg.dataset.vb.split(' ').map(Number),vb=vb0.slice();
+var hubG=svg.querySelector('.net-hub'),hub={x:0,y:0,x0:0,y0:0,fix:false},N=[],L={};
+svg.querySelectorAll('.orb-ln').forEach(function(l){L[l.dataset.i]=l;});
+svg.querySelectorAll('.net-n').forEach(function(g){var m=/translate\\(([-\\d.]+),([-\\d.]+)\\)/.exec(g.getAttribute('transform'));
+ var x=+m[1],y=+m[2];N.push({g:g,i:g.dataset.i,x:x,y:y,x0:x,y0:y,vx:0,vy:0,r:+g.dataset.r,e:+g.dataset.e,rest:Math.hypot(x,y),fix:false});});
+function draw(){N.forEach(function(n){n.g.setAttribute('transform','translate('+n.x.toFixed(1)+','+n.y.toFixed(1)+')');
+ var l=L[n.i];l.setAttribute('x1',hub.x.toFixed(1));l.setAttribute('y1',hub.y.toFixed(1));l.setAttribute('x2',n.x.toFixed(1));l.setAttribute('y2',n.y.toFixed(1));});
+ hubG.setAttribute('transform','translate('+hub.x.toFixed(1)+','+hub.y.toFixed(1)+')');}
+var raf=0,heat=0;
+function step(){var E=0;
+ N.forEach(function(n){if(n.fix)return;var dx=n.x-hub.x,dy=n.y-hub.y,d=Math.hypot(dx,dy)||.01,f=.018*(d-n.rest);
+  n.vx-=f*dx/d;n.vy-=f*dy/d;var mn=HR+n.e+12;if(d<mn){n.vx+=(mn-d)*.2*dx/d;n.vy+=(mn-d)*.2*dy/d;}});
+ for(var i=0;i<N.length;i++)for(var j=i+1;j<N.length;j++){var a=N[i],b=N[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||.01,need=a.e+b.e+18;
+  if(d<need){var m=(need-d)*.25,ux=dx/d,uy=dy/d;if(!a.fix){a.vx-=ux*m;a.vy-=uy*m;}if(!b.fix){b.vx+=ux*m;b.vy+=uy*m;}}}
+ N.forEach(function(n){if(n.fix)return;n.vx*=.82;n.vy*=.82;n.x+=n.vx;n.y+=n.vy;E+=Math.abs(n.vx)+Math.abs(n.vy);});
+ draw();heat--;if((E>.3||drag)&&heat>0)raf=requestAnimationFrame(step);else raf=0;}
+function kick(){heat=240;if(!raf)raf=requestAnimationFrame(step);}
+function pt(e){var p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
+var drag=null,pan=null,moved=false;
+function down(e,obj){e.preventDefault();var p=pt(e);drag={o:obj,dx:obj.x-p.x,dy:obj.y-p.y};obj.fix=true;moved=false;svg.setPointerCapture(e.pointerId);card.classList.add('dragging');kick();}
+N.forEach(function(n){n.g.addEventListener('pointerdown',function(e){down(e,n);});});
+hubG.addEventListener('pointerdown',function(e){down(e,hub);});
+svg.querySelector('.net-bg').addEventListener('pointerdown',function(e){pan={x:e.clientX,y:e.clientY,vb:vb.slice()};svg.setPointerCapture(e.pointerId);card.classList.add('panning');});
+svg.addEventListener('pointermove',function(e){
+ if(drag){var p=pt(e);drag.o.x=p.x+drag.dx;drag.o.y=p.y+drag.dy;moved=true;if(drag.o===hub)draw();kick();}
+ else if(pan){var r=svg.getBoundingClientRect(),k=vb[2]/r.width;vb[0]=pan.vb[0]-(e.clientX-pan.x)*k;vb[1]=pan.vb[1]-(e.clientY-pan.y)*k;svg.setAttribute('viewBox',vb.join(' '));}});
+function up(){if(drag){drag.o.fix=false;drag=null;kick();}pan=null;card.classList.remove('dragging','panning');}
+svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
+function zoom(z,px,py){var w=vb[2]/z;if(w<vb0[2]*.2||w>vb0[2]*5)return;
+ if(px===undefined){px=vb[0]+vb[2]/2;py=vb[1]+vb[3]/2;}
+ vb[0]=px-(px-vb[0])/z;vb[1]=py-(py-vb[1])/z;vb[2]/=z;vb[3]/=z;svg.setAttribute('viewBox',vb.join(' '));}
+/* 마우스가 그래프 위에 있을 때만 휠로 확대·축소 — 커서 위치를 기준으로 당긴다 · 페이지 스크롤은 막는다 */
+svg.addEventListener('wheel',function(e){e.preventDefault();var p=pt(e),z=Math.exp(-(e.deltaMode===1?e.deltaY*16:e.deltaY)*.0015);zoom(z,p.x,p.y);},{passive:false});
+/* 처음 열 때 · 「다시 배치」 때 실제 그려진 크기(getBBox)에 맞춰 화면을 맞춘다 — 서버 추정치보다 글자가 길면 잘리던 문제 */
+function fit(){try{var b=svg.querySelector('.net-nd').getBBox(),pd=24,ar=vb0[3]/vb0[2],w=b.width+pd*2,h=b.height+pd*2;
+ if(h/w>ar)w=h/ar;else h=w*ar;var cx=b.x+b.width/2,cy=b.y+b.height/2;vb=[cx-w/2,cy-h/2,w,h];vb0=vb.slice();svg.setAttribute('viewBox',vb.join(' '));}catch(_){}}
+fit();
+card.querySelectorAll('.net-ctl button').forEach(function(b){b.addEventListener('click',function(){var z=+b.dataset.z;
+ if(z){zoom(z);return;}N.forEach(function(n){n.x=n.x0;n.y=n.y0;n.vx=n.vy=0;});hub.x=hub.y=0;draw();fit();});});
+N.forEach(function(n){n.g.addEventListener('mouseenter',function(){svg.classList.add('nhl');n.g.classList.add('on');L[n.i].classList.add('on');});
+ n.g.addEventListener('mouseleave',function(){svg.classList.remove('nhl');n.g.classList.remove('on');L[n.i].classList.remove('on');});});
+});})();</script>"""
     CJS="""<script>(function(){(document.querySelector('.view-dash')||document).querySelectorAll('.cwrap').forEach(function(w){var tip=w.querySelector('.btip');
 function show(el,ev){tip.innerHTML=el.dataset.tip;tip.hidden=false;var r=el.getBoundingClientRect(),W=window.innerWidth,H=window.innerHeight,tw=tip.offsetWidth,th=tip.offsetHeight;
 var cx=ev&&ev.clientX?ev.clientX:r.right,cy=ev&&ev.clientY?ev.clientY:r.top+r.height/2,L,T;
@@ -750,11 +872,24 @@ else{L=Math.min(Math.max(8,cx-tw/2),W-tw-8);T=r.top-th-10;                    /*
 tip.style.left=L+'px';tip.style.top=T+'px';}
 w.querySelectorAll('.ctz').forEach(function(el){el.addEventListener('mousemove',function(e){show(el,e);el.classList.add('hv');});
 el.addEventListener('mouseleave',function(){tip.hidden=true;el.classList.remove('hv');});el.addEventListener('click',function(e){show(el,e);});});});})();</script>"""
-    SUM=('<div class="sch2">'
-         f'<div class="schc cwrap"><div class="btip" hidden></div><div class="dbt">{_t("chart.demandByVerdict")} <small class="na">{_t("chart.demandByVerdictNote", total=short(sum(cat.values())))}</small></div>{_bar_svg()}</div>'
-         f'<div class="schc cwrap"><div class="btip" hidden></div><div class="dbt">{_t("chart.ownByCategory", own=esc(OWN))} <small class="na">{_t("chart.ownByCategoryNote", own=esc(OWN), total=n(_pt))}</small></div>'
-         f'<div class="pwrap">{_pv}<div>{_pl}</div></div></div>'
-         '</div>'+CJS)
+    CJS="""<script>(function(){(document.querySelector('.view-dash')||document).querySelectorAll('.cwrap').forEach(function(w){var tip=w.querySelector('.btip');
+function show(el,ev){tip.innerHTML=el.dataset.tip;tip.hidden=false;var r=el.getBoundingClientRect(),W=window.innerWidth,H=window.innerHeight,tw=tip.offsetWidth,th=tip.offsetHeight;
+var cx=ev&&ev.clientX?ev.clientX:r.right,cy=ev&&ev.clientY?ev.clientY:r.top+r.height/2,L,T;
+if(cx+18+tw<=W-8){L=cx+18;T=Math.min(Math.max(8,cy-th/2),H-th-8);}            /* 커서 오른쪽 */
+else{L=Math.min(Math.max(8,cx-tw/2),W-tw-8);T=r.top-th-10;                    /* 대상 위쪽 */
+ if(T<8){L=Math.max(8,cx-18-tw);T=Math.min(Math.max(8,cy-th/2),H-th-8);}}    /* 위도 막히면 커서 왼쪽 */
+tip.style.left=L+'px';tip.style.top=T+'px';}
+w.querySelectorAll('.ctz').forEach(function(el){el.addEventListener('mousemove',function(e){show(el,e);el.classList.add('hv');});
+el.addEventListener('mouseleave',function(){tip.hidden=true;el.classList.remove('hv');});el.addEventListener('click',function(e){show(el,e);});});});})();</script>"""
+    _onote=(f'<p class="xs na">{_t("orbit.noCircle")}'+" · ".join(kw(z) for z in _onone)+'</p>') if _onone else ""
+    SUM=(f'<div class="schc cwrap orbc"><div class="btip" hidden></div>'
+         f'<div class="dbt">{_t("orbit.title", own=esc(OWN))} <small class="na">{_t("orbit.note", own=esc(OWN))}'
+         +(f' · {_t("orbit.logScale")}' if _ologs else '')+'</small></div>'
+         f'<div class="net-ctl"><span class="xs na">{_t("orbit.howto")}</span>'
+         f'<button type="button" data-z="1.25" title="{_t("orbit.zoomIn")}">＋</button>'
+         f'<button type="button" data-z="0.8" title="{_t("orbit.zoomOut")}">－</button>'
+         f'<button type="button" data-z="0" title="{_t("orbit.reset")}">{_t("orbit.relayout")}</button></div>'
+         f'{_ov}{_onote}</div>'+NETJS+CJS)
     # ── 한 줄 요약
     _tc=sum(cat.values()) or 1; _cc=sum(agg.values()) or 1
     _win=[x for x in J if ju(x) in ("owned","emerging")]
@@ -892,9 +1027,9 @@ el.addEventListener('mouseleave',function(){tip.hidden=true;el.classList.remove(
 
     DASH=(f'<div class="dash-cover-block"><div class="dash-card">'
       f'<div class="dash-cover-gradient dash-cover-gradient--brand">'
-      f'<div class="dash-cover-eyebrow">{_t("cover.eyebrow")}</div>'
-      f'<div class="dash-cover-title">{esc(OWN)}</div>'
-      f'<div class="dash-cover-category">{_t("cover.subtitle")}</div>'
+      f'<div class="dash-cover-eyebrow">{_t("cover.eyebrow")} \u00b7 {_t(f"country.{gl.upper()}")}</div>'
+      f'<div class="dash-cover-title">{_t("cover.eyebrow")}</div>'
+      f'<div class="dash-cover-category">{esc(OWN)}</div>'
       f'<div class="dash-cover-meta">{meta}</div></div>'
       f'<div class="mr-summary-box mr-summary-box--dash"><div class="mr-summary-box__title">{_t("report.purpose.title")}</div>'
       f'<p class="mr-summary-text">{LEDE}</p></div></div></div>\n'
@@ -902,6 +1037,7 @@ el.addEventListener('mouseleave',function(){tip.hidden=true;el.classList.remove(
 
     A4=(f'<div class="rpt-page rpt-page--cover"><div class="cover-body"><div>'
       f'<div class="cover-lm">ListeningMind.AI</div>'
+      f'<div class="cover-eyebrow">{_t("cover.eyebrow")} \u00b7 {_t(f"country.{gl.upper()}")}</div>'
       f'<div class="cover-title">{_t("cover.eyebrow")}</div>'
       f'<div class="cover-category">{esc(OWN)}</div>'
       f'<div class="cover-meta"><span>{meta}</span></div></div></div></div>\n'

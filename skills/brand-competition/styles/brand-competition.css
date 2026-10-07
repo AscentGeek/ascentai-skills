@@ -283,15 +283,15 @@ table.ins thead th{color:var(--muted);font-size:12px;font-weight:600}
 /* ───── 브랜드명 머리글 말줄임 ─────
    머리글은 nowrap 이라 긴 브랜드명(노르딕내추럴·뉴트리코어)이 이웃 칸 위로 넘쳐 글자가 겹쳤다.
    이름을 6.5em 에서 끊고 「…」 를 붙인다 — 마우스를 올리면 커스텀 툴팁(.bntip)으로 전체 이름을 띄운다. */
-.bn{display:inline-block;max-width:min(6.5em,100%);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
-th:has(>.bn){overflow:hidden;text-overflow:ellipsis}
+.bnh{display:inline-block;max-width:min(6.5em,100%);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+th:has(>.bnh){overflow:hidden;text-overflow:ellipsis}
 /* A4 는 종이다 — 툴팁을 볼 수 없으니 줄이지 않고 줄을 바꿔 전체 이름을 싣는다 */
-.view-a4 .bn{display:inline;max-width:none;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;word-break:break-all}
-.view-a4 th:has(>.bn){overflow:visible;text-overflow:clip;white-space:normal}
+.view-a4 .bnh{display:inline;max-width:none;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;word-break:break-all}
+.view-a4 th:has(>.bnh){overflow:visible;text-overflow:clip;white-space:normal}
 .view-a4 .a4m-t th.a4m-b{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.3}
 
 /* 브랜드명 커스텀 툴팁 — 브라우저 기본 title 은 늦게 뜨고 모양을 못 바꾼다 */
-.bn{cursor:default}
+.bnh{cursor:default}
 .bntip{position:fixed;z-index:1000;pointer-events:none;opacity:0;transform:translateY(2px);transition:opacity .12s,transform .12s;
  background:var(--gray-800);color:#fff;border-radius:var(--radius-md,8px);padding:6px 10px;box-shadow:var(--shadow-lg);
  font-size:12px;line-height:1.35;max-width:260px;white-space:normal;word-break:keep-all}
@@ -299,3 +299,42 @@ th:has(>.bn){overflow:hidden;text-overflow:ellipsis}
 .bntip b{display:block;font-weight:700}
 .bntip span{display:block;margin-top:2px;font-size:11px;color:var(--gray-300)}
 @media print{.bntip{display:none}}
+
+/* ───── 한 장 요약 · 브랜드 궤도 (Figma 36:114) ─────
+   원 면적 = 카테고리 브랜드 검색량 · 아래서 차오른 색 = 자사 검색 점유율 · 색 = 파이와 같은 PAL */
+.orbc{margin:6px 0 14px}
+.orb{width:100%;height:auto;display:block;max-height:640px;margin:4px auto 0;font-family:inherit}
+.orb .orb-bg{fill:color-mix(in srgb,var(--gray-200,#e5e2ea) 70%,var(--bg,#fff))}
+.orb .orb-ln{stroke:var(--gray-300,#cfcfd6);stroke-width:1}
+.orb .orb-t{font-size:17px;font-weight:700;fill:var(--gray-800,#222)}
+.orb .orb-v{font-size:15px;fill:var(--gray-500,#888);font-variant-numeric:tabular-nums}
+.orb .orb-me{font-size:19px;font-weight:700;fill:var(--gray-800,#222)}
+.orb .orb-c{cursor:pointer}
+.orb .orb-c.hv .orb-bg{fill:color-mix(in srgb,var(--accent) 12%,var(--bg,#fff))}
+.orb-bar{max-width:620px}
+.view-a4 .orb{max-height:none}
+
+/* ───── 네트워크 그래프 (한 장 요약 궤도의 대시 인터랙션) ─────
+   노드 = 카테고리 원(드래그) · 허브 = 입력 브랜드(드래그) · 링크 굵기 = 상대 점유율 · 빈 곳 드래그 = 화면 이동 */
+.orbc{position:relative}
+.net-ctl{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin:4px 0 0}
+.net-ctl .xs{margin-right:auto}
+.net-ctl button{border:1px solid var(--line);background:var(--bg,#fff);color:var(--gray-700,#444);border-radius:999px;font-size:12px;padding:2px 10px;cursor:pointer;line-height:1.5}
+.net-ctl button:hover{border-color:var(--accent);color:var(--accent)}
+.orb .net-bg{fill:transparent}
+.view-dash .orb .net-bg{cursor:grab}
+.view-dash .orbc.panning .net-bg{cursor:grabbing}
+.view-dash .orb .net-n,.view-dash .orb .net-hub{cursor:grab;touch-action:none}
+.view-dash .orbc.dragging .net-n,.view-dash .orbc.dragging .net-hub{cursor:grabbing}
+.view-dash .orb{touch-action:none;user-select:none;-webkit-user-select:none}
+.orb .orb-ln{stroke:var(--gray-300,#cfcfd6);stroke-linecap:round;transition:stroke .15s,opacity .15s}
+.orb .orb-ring{fill:none;stroke-width:0;transition:stroke-width .15s}
+.orb .net-hub circle{fill:var(--accent);filter:drop-shadow(0 2px 6px rgba(80,20,160,.25))}
+.orb .net-hub .orb-me{fill:#fff;font-size:17px}
+.orb.nhl .net-n:not(.on){opacity:.35}
+.orb.nhl .orb-ln:not(.on){opacity:.25}
+.orb .orb-ln.on{stroke:var(--accent)}
+.orb .net-n.on .orb-ring{stroke-width:3}
+.orb .orb-c.hv .orb-bg{fill:color-mix(in srgb,var(--gray-200,#e5e2ea) 70%,var(--bg,#fff))}
+.view-a4 .net-ctl{display:none}
+@media print{.net-ctl{display:none}}
