@@ -7,9 +7,10 @@ MCP 는 호출자가 LLM 이고 응답이 컨텍스트(또는 호스트가 저�
   lookup · MCP 를 부르기 전에 물어본다. 있으면 파일로 꺼내주고 exit 0 → LLM 은 호출을 건너뛴다.
   store  · MCP 를 부른 뒤 덤프한 파일을 넘긴다. 다음 번 lookup 이 이걸 찾는다.
 
-왜 중요한가 · `keyword_info` 는 **키워드 1개당 10 crd** 다. 1,000개면 한 번에 10,000 crd.
-같은 시드로 리포트를 다시 뽑거나, pathfinder-report 뒤에 total-report 를 돌리면
-그만큼이 통째로 다시 나간다. 캐시가 그걸 막는다.
+왜 중요한가 · MCP 는 **호출당 1 크레딧**이다(키워드 수와 무관 · 실측으로 12개든 141개든 1).
+그래서 같은 호출을 다시 하는 것이 그대로 손실이다 — 회차를 이어서 돌거나 턴이 끊겼을 때
+앞서 산 호출을 다시 사지 않게 캐시가 막는다.
+  (사내 DaaS REST 판은 키워드 1개당 10 crd 로 과금된다. **이 스킬은 MCP 판이다** — 섞지 마라.)
 
 키 규칙은 sha256(도구이름 + 정렬된 파라미터). 파라미터가 하나만 달라도 다른 키다.
 `user_query` 는 키에서 뺀다(질의 문구가 달라져도 같은 데이터를 가리키므로, 넣으면
@@ -49,12 +50,24 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SKILL_DIR))
 
-try:
-    from api import logging as lima_log
-except Exception:  # noqa: BLE001 — 로깅 계층이 없어도 캐시는 동작해야 한다
-    lima_log = None  # type: ignore[assignment]
-
 CACHE_ROOT = Path.home() / ".lima-agents" / "mcp-cache"
+
+# 캐시를 대화창 단위로 가르는 세션 ID · 호스트가 env 로 준 값만 쓴다.
+# 머신 전역 파일로 폴백하지 않는다 — 동시에 열린 다른 대화창의 캐시를 집어
+# 엉뚱한 데이터를 돌려줄 수 있기 때문이다. env 가 없으면 캐시를 쓰지 않는다
+# (매번 MCP 를 부르지만 틀린 답을 주지는 않는다).
+_HOST_SESSION_ENVS = (
+    "CLAUDE_CODE_REMOTE_SESSION_ID",  # Claude Desktop / Code · 클라우드 세션 (실측)
+    "CLAUDE_CODE_SESSION_ID",         # Claude · 로컬 세션 (실측)
+    "CODEX_THREAD_ID",                # Codex Desktop · 대화별 thread ID (실측)
+    "OPENAI_CODEX_SESSION_ID",
+    "OPENAI_SESSION_ID",
+    "CODEX_SESSION_ID",
+    "CHATGPT_SESSION_ID",
+    "GEMINI_SESSION_ID",
+    "GOOGLE_AI_SESSION_ID",
+    "LIMA_SESSION_ID",                # 범용 폴백 · 호스트가 env 를 안 주면 직접 세팅
+)
 
 # 캐시 키에서 제외할 파라미터 · 데이터 동일성과 무관한 것들
 _KEY_EXCLUDE = ("user_query",)
@@ -75,12 +88,11 @@ def _refresh_enabled() -> bool:
 
 
 def _session_id() -> str | None:
-    if lima_log is None:
-        return None
-    try:
-        return lima_log.current_session_id() or lima_log.resolve_conversation_id()
-    except Exception:  # noqa: BLE001
-        return None
+    for name in _HOST_SESSION_ENVS:
+        v = os.getenv(name)
+        if v and v.strip():
+            return f"lima-agents-{v.strip()}"
+    return None
 
 
 def _cache_key(tool: str, params: dict) -> str:
@@ -200,7 +212,6 @@ def cmd_lookup(args: argparse.Namespace) -> int:
     n = _record_count(payload)
     print(f"✓ {args.tool} · 캐시 적중 · 레코드 {n:,}건 · 크레딧 소모 없음 → {out}")
     print("  → MCP 호출을 건너뛰고 다음 단계로 진행하세요.")
-    print("  → tool_call 로깅은 --cached --used-credits-delta 0 으로 발행하세요.")
     return 0
 
 

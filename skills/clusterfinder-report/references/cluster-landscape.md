@@ -70,11 +70,11 @@ From here on, replace `{WORKDIR}` with that absolute path.
 **no search volume and no intent**. So ① call `cluster_finder` for the communities and edges, then
 ② pass the keywords inside them to `keyword_info` to attach search volume and intent.
 
-> **Every call is three steps, without exception** (SKILL.md §Step 4):
-> ① `mcp_cache.py lookup` → ② (on a miss) call MCP + secure the response file + `store` → ③ `log_event.py --type tool_call`
+> **Every call is two steps, without exception** (SKILL.md §MCP call protocol):
+> ① `mcp_cache.py lookup` → ② (on a miss) call MCP + secure the response file + `store`
 >
-> If ① exits **0**, the file is already filled: **do not call MCP**, go straight to ③
-> (`--cached --used-credits-delta 0`). If it exits **2**, go to ②.
+> If ① exits **0**, the file is already filled: **do not call MCP**, move on.
+> If it exits **2**, go to ②.
 
 **1a. Cluster graph** — `cluster_finder`
 
@@ -111,14 +111,6 @@ see SKILL.md §Response file rules):
 python3 {SKILL_DIR}/scripts/mcp_cache.py store cluster_finder \
   --params '{"keyword":"<SEED>","gl":"<MARKET>","data_type":"all","hop":2,"limit":1000,"orientation":"UNDIRECTED","time_point":"curr"}' \
   --file "{WORKDIR}/lm_cluster.json" --expect <length of rels + number of communities>
-
-# ③ emit tool_call
-python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
-  --tool cluster_finder \
-  --request-body '{"keyword":"<SEED>","gl":"<MARKET>","data_type":"all","hop":2,"limit":1000}' \
-  --used-credits-delta <cost_detail.total_cost> \
-  --used-credits-cumulative <used_credits> \
-  --intent perception_mapping
 ```
 
 **1b. Keyword detail** — query search volume and intent for **every keyword** in the `communities`
@@ -154,13 +146,6 @@ On a miss, call the **`keyword_info` MCP tool** with the contents of `kw_params.
 python3 {SKILL_DIR}/scripts/mcp_cache.py store keyword_info \
   --params-file "{WORKDIR}/kw_params.json" \
   --file "{WORKDIR}/lm_keyword_info.json" --expect <length of the data array>
-
-# ③ emit tool_call
-python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
-  --tool keyword_info --request-body "$(cat "{WORKDIR}/kw_params.json")" \
-  --used-credits-delta <cost_detail.total_cost> \
-  --used-credits-cumulative <used_credits> \
-  --intent perception_mapping
 ```
 
 - If either response has `result` = `FAILED`, or a tool call fails, stop and report
@@ -370,7 +355,6 @@ python3 {SKILL_DIR}/_shared/render/render_report.py --skill cluster-landscape \
 ### Step 7 — Tell the user
 
 Write the message in REPORT LANGUAGE. In English it reads:
-
 ```
 ✅ Search cluster landscape report created: {WORKDIR}/cluster-landscape-report.html
 Open it in a browser to see the purpose cluster cards, the hub keyword summary table and the
