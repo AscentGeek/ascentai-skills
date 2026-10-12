@@ -725,6 +725,15 @@ sec.querySelectorAll('.vtog button').forEach(function(b){b.addEventListener('cli
     def _orbit_svg():
         PAL=["#7F18FF","#CD3197","#AA18CC","#FF247A","#5A10B8","#821E60","#7A1194","#A81650"]
         den=lambda x:((x.get("sos") or {}).get("denom") or 0)
+        def rk(x):   # 그 카테고리 안 자사 순위 — 브랜드 검색량 기준(자사 포함) · 자사 검색어가 없으면 순위 없음
+            ov=x["own_vol"] or 0
+            if not ov: return None
+            vs=[(v or {}).get("vol") or 0 for b,v in ((x.get("sos") or {}).get("brands") or {}).items() if b!=OWN]
+            return 1+sum(1 for w in vs if w>ov)
+        def l2(x):
+            r=rk(x)
+            tail=_t("unit.rankParen", rank=r) if r else _t("orbit.noRank")
+            return f'{n(x["own_vol"] or 0)} / {n(den(x))} '+tail
         it=[x for x in J if den(x)>0]
         if not it: return "",[],False
         col={}
@@ -756,7 +765,7 @@ sec.querySelectorAll('.vtog button').forEach(function(b){b.addEventListener('cli
         ks=[x["term"] for x in order]
         def lw(t,fs): return len(t)*fs*0.62
         # 겹침 판정은 원 반지름이 아니라 「원과 글자 중 큰 쪽」으로 — 작은 원은 글자가 원 밖으로 나온다
-        lab={x["term"]:(f'{x["term"]} {x["own_rate"] if x["own_rate"] is not None else 0}%',f'{n(x["own_vol"] or 0)} / {n(den(x))}') for x in order}
+        lab={x["term"]:(f'{x["term"]} {x["own_rate"] if x["own_rate"] is not None else 0}%',l2(x)) for x in order}
         eff={k:max(rad[k]+(26 if rad[k]<46 else 0),max(lw(lab[k][0],17),lw(lab[k][1],15))/2+8) for k in ks}
         CORE=max(CORE,lw(OWN,19)/2+34,lw(OWN,17)/2+24+26)
         for i,x in enumerate(order):
@@ -777,8 +786,8 @@ sec.querySelectorAll('.vtog button').forEach(function(b){b.addEventListener('cli
         bx=[]
         for x in order:
             t=x["term"]; cx,cy=P[t]; r=rad[t]
-            l1=f'{t} {x["own_rate"] if x["own_rate"] is not None else 0}%'; l2=f'{n(x["own_vol"] or 0)} / {n(den(x))}'
-            w=max(lw(l1,17),lw(l2,15))/2
+            l1=f'{t} {x["own_rate"] if x["own_rate"] is not None else 0}%'; l2_=l2(x)
+            w=max(lw(l1,17),lw(l2_,15))/2
             bx+=[cx-max(r,w),cx+max(r,w),cy-r-4,cy+r+(48 if r<46 else 4)]
         X0=min(bx[0::4]+[-CORE])-16; X1=max(bx[1::4]+[CORE])+16; Y0=min(bx[2::4]+[-40])-12; Y1=max(bx[3::4]+[40])+12
         W_,H_=X1-X0,Y1-Y0
@@ -799,22 +808,23 @@ sec.querySelectorAll('.vtog button').forEach(function(b){b.addEventListener('cli
             o.append(f'<line class="orb-ln" data-i="{i}" x1="0" y1="0" x2="{cx:.1f}" y2="{cy:.1f}" style="stroke-width:{sw:.1f}"/>')
         o.append('</g><g class="net-nd">')
         for i,x in enumerate(order):
-            t=x["term"]; cx,cy=P[t]; r=rad[t]; sh=(x["own_rate"] or 0)/100; fh=2*r*sh; c=col.get(t,"var(--gray-400)")
+            t=x["term"]; cx,cy=P[t]; r=rad[t]; sh=(x["own_rate"] or 0)/100; fh=2*r*sh; c="var(--accent)"   # 채움은 허브(입력 브랜드)와 같은 색
             c0=x["comp"][0] if x["comp"] else None
             tip=(f'<b>{esc(t)}</b> <span class="jd {CLS[ju(x)]}">{VNAME(ju(x))}</span><table>'
                  f'<tr><th>{_t("tip.allBrandVolume")}</th><td>{n(den(x))}</td></tr>'
                  f'<tr><th>{_t("tip.ownVolume", own=esc(OWN))}</th><td>{n(x["own_vol"] or 0)}</td></tr>'
                  f'<tr><th>{_t("col.ownShare", own=esc(OWN))}</th><td>{x["own_rate"] if x["own_rate"] is not None else 0}%</td></tr>'
+                 +(f'<tr><th>{_t("tip.rankInCategory")}</th><td>{_t("unit.rankPlain", rank=rk(x))} <small>{_t("unit.ofNBrands", n=len(((x.get("sos") or {}).get("brands") or {})))}</small></td></tr>' if rk(x) else '')
                  +(f'<tr><th>{_t("col.rival1")}</th><td>{kw(c0["brand"])} <small>({c0["rate"]}%)</small></td></tr>' if c0 else '')
                  +'</table>')
             small=r<46   # 작은 원은 글자를 원 아래로 내린다 — 원 위에 얹으면 원이 글자에 가려진다
             ty=(r+22) if small else -(r*0.22 if r>60 else 0)
             o.append(f'<g class="ctz orb-c net-n" data-i="{i}" data-r="{r:.1f}" data-e="{eff[t]:.1f}" transform="translate({cx:.1f},{cy:.1f})" data-tip="{html.escape(tip,quote=True)}">'
                      f'<circle class="orb-bg" cx="0" cy="0" r="{r:.1f}" style="--nc:{c}"/>'
-                     +(f'<path d="{seg(r,fh)}" fill="{c}"/>' if fh>0 else '')
+                     +(f'<path d="{seg(r,fh)}" style="fill:{c}"/>' if fh>0 else '')
                      +f'<circle class="orb-ring" cx="0" cy="0" r="{r:.1f}" style="stroke:{c}"/>'
                      f'<text x="0" y="{ty-(0 if small else 4):.1f}" class="orb-t" text-anchor="middle">{esc(t)} {x["own_rate"] if x["own_rate"] is not None else 0}%</text>'
-                     f'<text x="0" y="{ty+20:.1f}" class="orb-v" text-anchor="middle">{n(x["own_vol"] or 0)} / {n(den(x))}</text></g>')
+                     f'<text x="0" y="{ty+20:.1f}" class="orb-v" text-anchor="middle">{l2(x)}</text></g>')
         o.append(f'<g class="net-hub" transform="translate(0,0)"><circle r="{HR:.1f}"/>'
                  f'<text x="0" y="6" class="orb-me" text-anchor="middle">{esc(OWN)}</text></g></g></svg>')
         none=[x["term"] for x in J if den(x)<=0]
@@ -855,9 +865,17 @@ function zoom(z,px,py){var w=vb[2]/z;if(w<vb0[2]*.2||w>vb0[2]*5)return;
 /* 마우스가 그래프 위에 있을 때만 휠로 확대·축소 — 커서 위치를 기준으로 당긴다 · 페이지 스크롤은 막는다 */
 svg.addEventListener('wheel',function(e){e.preventDefault();var p=pt(e),z=Math.exp(-(e.deltaMode===1?e.deltaY*16:e.deltaY)*.0015);zoom(z,p.x,p.y);},{passive:false});
 /* 처음 열 때 · 「다시 배치」 때 실제 그려진 크기(getBBox)에 맞춰 화면을 맞춘다 — 서버 추정치보다 글자가 길면 잘리던 문제 */
-function fit(){try{var b=svg.querySelector('.net-nd').getBBox(),pd=24,ar=vb0[3]/vb0[2],w=b.width+pd*2,h=b.height+pd*2;
- if(h/w>ar)w=h/ar;else h=w*ar;var cx=b.x+b.width/2,cy=b.y+b.height/2;vb=[cx-w/2,cy-h/2,w,h];vb0=vb.slice();svg.setAttribute('viewBox',vb.join(' '));}catch(_){}}
-fit();
+/* 숨은 채로 로드되면(탭 뒤 iframe 등) getBBox 가 0 을 돌려준다. 그대로 쓰면 뷰박스가
+   여백만 남아 13배로 확대된 그림이 나온다 — 0 이면 손대지 않고, 보이게 된 뒤 다시 맞춘다. */
+function fit(){try{var b=svg.querySelector('.net-nd').getBBox();
+ if(!(b.width>0&&b.height>0))return false;
+ var pd=24,ar=vb0[3]/vb0[2],w=b.width+pd*2,h=b.height+pd*2;
+ if(h/w>ar)w=h/ar;else h=w*ar;var cx=b.x+b.width/2,cy=b.y+b.height/2;vb=[cx-w/2,cy-h/2,w,h];vb0=vb.slice();svg.setAttribute('viewBox',vb.join(' '));return true;}catch(_){return false;}}
+if(!fit()){
+ var ro=window.ResizeObserver?new ResizeObserver(function(){if(fit()&&ro)ro.disconnect();}):null;
+ if(ro)ro.observe(svg);
+ window.addEventListener('resize',function h(){if(fit())window.removeEventListener('resize',h);});
+}
 card.querySelectorAll('.net-ctl button').forEach(function(b){b.addEventListener('click',function(){var z=+b.dataset.z;
  if(z){zoom(z);return;}N.forEach(function(n){n.x=n.x0;n.y=n.y0;n.vx=n.vy=0;});hub.x=hub.y=0;draw();fit();});});
 N.forEach(function(n){n.g.addEventListener('mouseenter',function(){svg.classList.add('nhl');n.g.classList.add('on');L[n.i].classList.add('on');});
