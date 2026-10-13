@@ -626,8 +626,21 @@ def _cmd_context(args):
         print("ERROR: cluster_finder 응답에서 communities 를 찾지 못했습니다.", file=sys.stderr)
         return 1
     kw_info = normalize_keyword_info(kwinfo_raw)
+
+    # Never let the csv run past what was actually enriched. A row whose keyword has no
+    # volume is dead weight: it carries v=0, sorts to the bottom and still occupies a slot
+    # the LLM has to read. Callers that enrich fewer keywords than the cap (total-report
+    # unions three finders and cuts at 1,000) would otherwise fill half the csv with zeros.
+    enriched = sum(1 for kw in kw_info if _num((kw_info[kw] or {}).get("volume_avg")) > 0)
+    top_n = args.top_n
+    if enriched and enriched < top_n:
+        print(f"  note: only {enriched:,} keywords came back with a volume — "
+              f"capping the csv at that instead of {top_n:,}")
+        top_n = enriched
+
     result = build_cluster_context(
-        communities, rels, kw_info, seed=args.seed, gl=args.gl, date=args.date
+        communities, rels, kw_info, seed=args.seed, gl=args.gl, date=args.date,
+        top_n=top_n,
     )
     Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     csv_rows = len(result["keywords"])
@@ -638,12 +651,12 @@ def _cmd_context(args):
     if csv_rows < result["keywordCount"]:
         dropped = result["keywordCount"] - csv_rows
         print(f"  csv for the LLM: {csv_rows:,} rows "
-              f"(cap {KEYWORD_CONTEXT_TOP_N:,}; {dropped:,} of the graph's {result['keywordCount']:,} "
+              f"(cap {top_n:,}; {dropped:,} of the graph's {result['keywordCount']:,} "
               f"nodes are not in it — peripheral, low-volume keywords; every cluster hub and "
               f">= {CLUSTER_MIN_KEYWORDS} keywords per cluster are kept)")
     else:
         print(f"  csv for the LLM: {csv_rows:,} rows (all keywords, under the "
-              f"{KEYWORD_CONTEXT_TOP_N:,} cap)")
+              f"{top_n:,} cap)")
     return 0
 
 
@@ -720,6 +733,12 @@ def main(argv=None):
     p_context.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
     p_context.add_argument("--date", required=True, help="YYYY-MM-DD")
     p_context.add_argument("--out", required=True)
+    p_context.add_argument("--top-n", type=int, default=KEYWORD_CONTEXT_TOP_N,
+                           help=f"CSV 행 상한 (기본 {KEYWORD_CONTEXT_TOP_N}). "
+                                "조회한 키워드가 이보다 적으면 그 수에 맞춰 낮춰 준다 — "
+                                "그러지 않으면 검색량 0 인 행이 CSV 절반을 채운다 "
+                                "(total-report 는 3개 파인더 합집합을 1,000개로 끊어 "
+                                "조회하므로 --top-n 1000 으로 부른다)")
     p_context.set_defaults(func=_cmd_context)
 
     p_groups = sub.add_parser("groups", help="Postprocess LLM group output + context into lm_groups.json")

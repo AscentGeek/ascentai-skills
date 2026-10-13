@@ -236,6 +236,13 @@ The remaining budget is filled by volume desc, so the head is unaffected (top-50
 are retained). `cluster_aggregate.py context` prints how many rows reached the LLM and how many
 low-volume keywords were left out — read that line rather than assuming full coverage.
 
+> **total-report shares this code and must pass `--top-n` to match.** It enriches a *union* of
+> three finders capped at 1,000 keywords, not the 2,000 this skill fetches alone, and it calls
+> `select_enrich_keywords()` so cluster hubs survive that cut. Without both, hubs were picked by
+> degree while enrichment followed community order: measured on 마그네슘영양제, **30 of 33 hubs
+> arrived with volume 0 and 996 of 2,000 csv rows were empty.** `context` now also lowers the cap
+> on its own when fewer keywords came back enriched, so a future caller cannot silently regress.
+
 ### Runtime · where the minutes go
 
 Measured 2026-10-13 (seed 마그네슘영양제, kr: 7,884 relations / 3,285 nodes / 33 clusters /

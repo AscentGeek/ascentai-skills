@@ -121,7 +121,7 @@ Each call goes through the same **two steps** as in the sibling documents (`mcp_
 succeeded.
 
 ```bash
-python3 - "{WORKDIR}" <<'MKPARAM' > "{WORKDIR}/kw_params.json"
+python3 - "{WORKDIR}" "{SKILL_DIR}" <<'MKPARAM' > "{WORKDIR}/kw_params.json"
 import json, sys
 from pathlib import Path
 
@@ -146,20 +146,19 @@ if f.exists():
         for k in (path if isinstance(path, list) else []):
             add(k)
 
-# Cluster · community members + both ends of every edge
+# Cluster · ask the shared selector which nodes matter, in its own priority order.
+# Taking community members in dict order instead would truncate arbitrarily: the hub of
+# a cluster is chosen by edge degree, so it can sit far down that order and arrive with
+# no volume. Measured on 마그네슘영양제 (3,285 nodes): dict order left 30 of 33 hubs at
+# volume 0 and half the csv rows empty. select_enrich_keywords() reserves every hub first.
 f = W / "c/lm_cluster.json"
 if f.exists():
-    data = json.loads(f.read_text(encoding="utf-8")).get("data") or {}
-    for members in (data.get("communities") or {}).values():
-        for k in (members if isinstance(members, list) else []):
-            add(k)
-    for r in (data.get("rels") or []):
-        if isinstance(r, dict):
-            for fld in ("from", "to", "source", "target"):
-                add(r.get(fld))
-        elif isinstance(r, list):
-            for k in r:
-                add(k)
+    sys.path.insert(0, str(Path(sys.argv[2]) / "_shared" / "render"))
+    import cluster_aggregate as ca
+    raw = ca._load_json(f)
+    comm, rels = ca.parse_cluster_response(raw)
+    for k in ca.select_enrich_keywords(comm, rels):
+        add(k)
 
 kws = kws[:1000]               # keyword_info maxItems=1000
 print(json.dumps({"keywords": kws, "gl": "<MARKET>", "data_type": "all"}, ensure_ascii=False))
@@ -261,9 +260,13 @@ python3 {SKILL_DIR}/_shared/render/path_aggregate.py context \
   --out "{WORKDIR}/p/lm_path_result.json"
 
 # cluster (if collection succeeded)
+#   --top-n 1000 · this skill enriches a UNION of three finders capped at 1,000 keywords,
+#   not the 2,000 the cluster skill fetches on its own. Left at the default the csv would
+#   be half rows with no volume (measured 996 of 2,000 on 마그네슘영양제). The script also
+#   lowers the cap by itself when it sees fewer enriched keywords, so this is belt and braces.
 python3 {SKILL_DIR}/_shared/render/cluster_aggregate.py context \
   --cluster "{WORKDIR}/c/lm_cluster.json" --keyword-info "{WORKDIR}/c/lm_keyword_info.json" \
-  --seed "<SEED>" --gl <MARKET> --date <YYYY-MM-DD> \
+  --seed "<SEED>" --gl <MARKET> --date <YYYY-MM-DD> --top-n 1000 \
   --out "{WORKDIR}/c/lm_cluster_result.json"
 ```
 
