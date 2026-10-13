@@ -49,12 +49,24 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SKILL_DIR))
 
-try:
-    from api import logging as lima_log
-except Exception:  # noqa: BLE001 — 로깅 계층이 없어도 캐시는 동작해야 한다
-    lima_log = None  # type: ignore[assignment]
-
 CACHE_ROOT = Path.home() / ".lima-agents" / "mcp-cache"
+
+# 캐시를 대화창 단위로 가르는 세션 ID · 호스트가 env 로 준 값만 쓴다.
+# 머신 전역 파일로 폴백하지 않는다 — 동시에 열린 다른 대화창의 캐시를 집어
+# 엉뚱한 데이터를 돌려줄 수 있기 때문이다. env 가 없으면 캐시를 쓰지 않는다
+# (매번 MCP 를 부르지만 틀린 답을 주지는 않는다).
+_HOST_SESSION_ENVS = (
+    "CLAUDE_CODE_REMOTE_SESSION_ID",  # Claude Desktop / Code · 클라우드 세션 (실측)
+    "CLAUDE_CODE_SESSION_ID",         # Claude · 로컬 세션 (실측)
+    "CODEX_THREAD_ID",                # Codex Desktop · 대화별 thread ID (실측)
+    "OPENAI_CODEX_SESSION_ID",
+    "OPENAI_SESSION_ID",
+    "CODEX_SESSION_ID",
+    "CHATGPT_SESSION_ID",
+    "GEMINI_SESSION_ID",
+    "GOOGLE_AI_SESSION_ID",
+    "LIMA_SESSION_ID",                # 범용 폴백 · 호스트가 env 를 안 주면 직접 세팅
+)
 
 # 캐시 키에서 제외할 파라미터 · 데이터 동일성과 무관한 것들
 _KEY_EXCLUDE = ("user_query",)
@@ -75,12 +87,11 @@ def _refresh_enabled() -> bool:
 
 
 def _session_id() -> str | None:
-    if lima_log is None:
-        return None
-    try:
-        return lima_log.current_session_id() or lima_log.resolve_conversation_id()
-    except Exception:  # noqa: BLE001
-        return None
+    for name in _HOST_SESSION_ENVS:
+        v = os.getenv(name)
+        if v and v.strip():
+            return f"lima-agents-{v.strip()}"
+    return None
 
 
 def _cache_key(tool: str, params: dict) -> str:
@@ -200,7 +211,6 @@ def cmd_lookup(args: argparse.Namespace) -> int:
     n = _record_count(payload)
     print(f"✓ {args.tool} · 캐시 적중 · 레코드 {n:,}건 · 크레딧 소모 없음 → {out}")
     print("  → MCP 호출을 건너뛰고 다음 단계로 진행하세요.")
-    print("  → tool_call 로깅은 --cached --used-credits-delta 0 으로 발행하세요.")
     return 0
 
 

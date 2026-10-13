@@ -71,11 +71,11 @@ The **list** of related keywords and the keyword **details** come from two diffe
 Get the list of related keyword strings with `intent_finder`, pass that list to `keyword_info` to get
 the details containing search volume, intent and monthly trend, and save it as `lm_query.json`.
 
-> **Every call takes 3 steps, without exception** (SKILL.md §Step 4):
-> ① `mcp_cache.py lookup` → ② (on a miss) call MCP + dump + `store` → ③ `log_event.py --type tool_call`
+> **Every call takes 2 steps, without exception** (SKILL.md §MCP call protocol):
+> ① `mcp_cache.py lookup` → ② (on a miss) call MCP + dump + `store`
 >
-> If ① returns **exit 0**, the file is already filled, so **do not call MCP** — go to ③
-> (`--cached --used-credits-delta 0`). On **exit 2**, proceed to ②.
+> If ① returns **exit 0**, the file is already filled, so **do not call MCP** — move on.
+> On **exit 2**, proceed to ②.
 
 **1a. List of related keywords** — `intent_finder`
 
@@ -114,14 +114,6 @@ DUMP_EOF
 python3 {SKILL_DIR}/scripts/mcp_cache.py store intent_finder \
   --params '{"keywords":["<SEED>"],"gl":"<MARKET>","limit":1000,"sort":"volume_avg","order":"desc","volume_threshold":0}' \
   --file "{WORKDIR}/lm_keyword_list.json" --expect <length of the data array>
-
-# ③ emit tool_call
-python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
-  --tool intent_finder \
-  --request-body '{"keywords":["<SEED>"],"gl":"<MARKET>","limit":1000,"volume_threshold":0}' \
-  --used-credits-delta <cost_detail.total_cost> \
-  --used-credits-cumulative <used_credits> \
-  --intent query_expansion
 ```
 
 **1b. Keyword details** — `keyword_info` · the **top 1,000** of the list above
@@ -158,7 +150,6 @@ How you receive the response splits into two paths depending on its size.
 #### Path A — the response was large and the host saved it to a file (1,000 keywords usually lands here)
 
 The tool result sometimes arrives as this notice instead of a body:
-
 ```
 Tool result too large for context, stored at
 /mnt/user-data/tool_results/ListeningMind_keyword_info_<id>.json.
@@ -208,16 +199,6 @@ DUMP_EOF
 python3 {SKILL_DIR}/scripts/mcp_cache.py store keyword_info \
   --params-file "{WORKDIR}/kw_params.json" \
   --file "{WORKDIR}/lm_query.json" --expect <length of the data array>
-```
-
-#### ③ Emit tool_call (same for Path A and Path B)
-
-```bash
-python3 "$SKILL_DIR/scripts/log_event.py" --type tool_call --session-id "$SID" \
-  --tool keyword_info --request-body "$(cat "{WORKDIR}/kw_params.json")" \
-  --used-credits-delta <cost_detail.total_cost> \
-  --used-credits-cumulative <used_credits> \
-  --intent query_expansion
 ```
 
 > **Forbidden** · because the response is large, do not ① reduce the number of keywords,
@@ -446,7 +427,6 @@ python3 {SKILL_DIR}/_shared/render/render_report.py --skill query-opportunity \
 
 Write this message to the user in REPORT LANGUAGE (`kr` → Korean, `jp` → Japanese, `us` → English), keeping the
 paths and the command exactly as they are:
-
 ```
 ✅ Query opportunity analysis report created: {WORKDIR}/query-opportunity-report.html
 Open it in a browser to see the search purpose and brand cards plus the insights in dashboard or A4
