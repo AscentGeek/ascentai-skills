@@ -1,0 +1,7 @@
+name: brand-competition
+version: "3.0.0"
+slug: brand-competition
+mcp_tools: [intent_finder, path_finder, keyword_info]
+vendor_chart: false
+# 리포트를 쓸 수 있는 언어 · 실행 시 --lang 으로 고른다
+report_langs: [kr, jp, us]
