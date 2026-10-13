@@ -81,16 +81,16 @@ From here on, replace `{WORKDIR}` with that absolute path.
 ```bash
 # ① check the cache
 python3 {SKILL_DIR}/scripts/mcp_cache.py lookup cluster_finder \
-  --params '{"keyword":"<SEED>","gl":"<MARKET>","data_type":"all","hop":2,"limit":1000,"orientation":"UNDIRECTED","time_point":"curr"}' \
+  --params '{"keyword":"<SEED>","gl":"<MARKET>","data_type":"all","hop":2,"limit":10000,"orientation":"UNDIRECTED","time_point":"curr"}' \
   --out "{WORKDIR}/lm_cluster.json"
 ```
 
 On a miss, call the **`cluster_finder` MCP tool** with these parameters:
 
 ```json
-{"keyword": "<SEED>", "gl": "<MARKET>", "data_type": "all", "hop": 2, "limit": 1000,
+{"keyword": "<SEED>", "gl": "<MARKET>", "data_type": "all", "hop": 2, "limit": 10000,
  "orientation": "UNDIRECTED", "time_point": "curr",
- "user_query": "<the user's utterance, verbatim>"}
+ "user_query": "<the user's utterance, verbatim>", "is_skills": true}
 ```
 
 > `data_type` must be **`all`** — you need both `communities` (the cluster dict) and `rels` (the
@@ -98,54 +98,129 @@ On a miss, call the **`cluster_finder` MCP tool** with these parameters:
 > With `communities` only (the `data_type` default) the flow analysis comes back empty; with `rels`
 > only the communities are empty and no cards can be built.
 > `limit` caps the number of **relations (edges)**, not keywords, and `hop` is the graph traversal
-> depth (1–3).
+> depth (1–3). `limit` is a **ceiling, not a target** — raising it never invents relations that the
+> graph does not have. Measured 2026-10-08 (seed 등산화, kr, hop=2): limit 500 → 499 relations,
+> 2,000 → 1,984, 10,000 → 3,240 (saturated). How close a seed gets to the ceiling varies a lot —
+> 노트북 saturates at 1,704 relations while 나이키 reaches 9,765 (6 seeds measured 2026-10-12, see
+> SKILL.md §How much of the graph the LLM sees). Cost was **2 Lima at every limit and every seed**
+> (see SKILL.md §Credits), so request the full 10,000 in **one call** — never split `cluster_finder`.
 >
 > `user_query` is excluded from the cache key, so do not put it in `--params` (see the lookup above).
 
-Secure the response as `{WORKDIR}/lm_cluster.json` and store it in the cache (if the host saved the
-response to a file because it was large, `cp` that path; if it arrived in the body, use a heredoc —
-see SKILL.md §Response file rules):
+> **Use `response_format: "download_url"` for this call.** At limit=10,000 the payload reaches
+> ~200KB+ and would blow the context if returned inline. With `download_url` the envelope carries
+> only `download.{browser_download_url, sha256, item_count, size_bytes}`; fetch the body with
+> `fetch_dl.py`, which verifies sha256 and stores it in the cache in one step:
+>
+> ```bash
+> python3 {SKILL_DIR}/_shared/render/fetch_dl.py \
+>   --url "<download.browser_download_url>" --out "{WORKDIR}/lm_cluster.json" \
+>   --sha256 <download.sha256> \
+>   --tool cluster_finder --params '{"keyword":"<SEED>","gl":"<MARKET>","data_type":"all","hop":2,"limit":10000,"orientation":"UNDIRECTED","time_point":"curr"}'
+> ```
+>
+> Do **not** pass `--items` here: `download.item_count` counts relations only, while the saved file
+> is a 2-key object (`rels` + `communities`), so the record count will not match and the fetch would
+> be rejected. (`--items` is correct for `keyword_info`, which returns a flat list.)
+> `fetch_dl.py` runs the `store` step itself — do not also run `mcp_cache.py store` for this call.
+> If the fetch fails or sha256 mismatches, re-fetch the **same URL**: it costs no credits.
+
+**Fallback — if the response arrived inline anyway** (no `download` field in the envelope, e.g. a
+host that ignores `response_format`): secure it as `{WORKDIR}/lm_cluster.json` yourself (if the host
+saved it to a file because it was large, `cp` that path; if it arrived in the body, use a heredoc —
+see SKILL.md §Response file rules), then store it:
 
 ```bash
-# ② store in the cache
+# ② store in the cache — ONLY on the inline fallback. After fetch_dl.py, skip this (it already stored).
 python3 {SKILL_DIR}/scripts/mcp_cache.py store cluster_finder \
-  --params '{"keyword":"<SEED>","gl":"<MARKET>","data_type":"all","hop":2,"limit":1000,"orientation":"UNDIRECTED","time_point":"curr"}' \
+  --params '{"keyword":"<SEED>","gl":"<MARKET>","data_type":"all","hop":2,"limit":10000,"orientation":"UNDIRECTED","time_point":"curr"}' \
   --file "{WORKDIR}/lm_cluster.json" --expect <length of rels + number of communities>
 ```
 
-**1b. Keyword detail** — query search volume and intent for **every keyword** in the `communities`
-above (deduplicated, top 1,000) through `keyword_info` (`data_type=all` → includes `ads_metrics`
-and `intents`):
+**1b. Keyword detail** — attach search volume and intent through `keyword_info`
+(`data_type=all` → includes `ads_metrics` and `intents`). The script below picks which keywords to
+ask for and writes one params file per chunk (`keyword_info` accepts at most 1,000 per call):
 
 ```bash
-python3 - "{WORKDIR}/lm_cluster.json" <<'MKPARAM' > "{WORKDIR}/kw_params.json"
-import json, sys
-d = json.load(open(sys.argv[1]))
-comm = (d.get("data") or {}).get("communities") or {}
-# Flatten the community values (each cluster's keyword list), dedupe, take the top 1,000.
-seen, kws = set(), []
-for members in comm.values():
-    for k in (members or []):
-        if isinstance(k, str) and k not in seen:
-            seen.add(k); kws.append(k)
-kws = kws[:1000]  # keyword_info maxItems=1000
-print(json.dumps({"keywords": kws, "gl": "<MARKET>", "data_type": "all"}, ensure_ascii=False))
-MKPARAM
-
-# ① check the cache
-python3 {SKILL_DIR}/scripts/mcp_cache.py lookup keyword_info \
-  --params-file "{WORKDIR}/kw_params.json" \
-  --out "{WORKDIR}/lm_keyword_info.json"
+python3 {SKILL_DIR}/_shared/render/cluster_aggregate.py enrich-plan \
+  --cluster "{WORKDIR}/lm_cluster.json" --gl <MARKET> --outdir "{WORKDIR}"
 ```
 
-On a miss, call the **`keyword_info` MCP tool** with the contents of `kw_params.json` plus
-`user_query`, secure the response as `{WORKDIR}/lm_keyword_info.json`, then store it:
+It prints how many keywords it will enrich and how many chunks that is — **read that line**, it
+tells you how many calls to make.
+
+> **Why it does not enrich every node.** Only `KEYWORD_CONTEXT_TOP_N` (2,000) keywords ever reach
+> the csv, and volume/intent are used **only** for csv rows — hubs and flows come from the
+> `cluster_finder` graph. Enriching the rest means fetching data that is then discarded (measured
+> 2026-10-13, 마그네슘영양제: 3,285 nodes → 1,285 discarded, 39%).
+>
+> That waste is also the single biggest cost in runtime: the slow part of `keyword_info` is the
+> **request**, not the response. A 1,000-keyword array is ~9,500 tokens the agent has to write, so
+> each chunk costs minutes, while downloading the reply takes under a second. Capping the fetch at
+> the csv limit halved the chunks on that seed (4 → 2) and the run went ~17 min → ~13 min.
+>
+> Selection uses **edge degree**, because volume is precisely what this call fetches and is not
+> known yet. Every cluster hub is reserved first and each cluster is guaranteed
+> `CLUSTER_MIN_KEYWORDS` rows, so nothing the report needs structurally goes missing. Measured on
+> that seed: clusters 33/33, hubs 33/33, no cluster left short, `totalVolume` −2.3%, csv volume
+> coverage 98.4% → 97.7%. Everything dropped was a **degree ≤ 1 leaf node** (real volume median 41,
+> 73% under 100, versus a 3,811 average for the enriched set).
+>
+> Caveat worth knowing: a high-volume keyword that sits on the graph's edge can be dropped
+> (measured: `고혈압에 좋은 음식`, 9,313 searches, degree 1). It is a neighbouring topic rather than
+> part of this market's structure, but the volume total will read lower because of it.
+
+Now run the
+2-step protocol **once per chunk**, with `<N>` = `0, 1, 2, …`:
 
 ```bash
-# ② store in the cache
-python3 {SKILL_DIR}/scripts/mcp_cache.py store keyword_info \
-  --params-file "{WORKDIR}/kw_params.json" \
-  --file "{WORKDIR}/lm_keyword_info.json" --expect <length of the data array>
+# ① check the cache
+python3 {SKILL_DIR}/scripts/mcp_cache.py lookup keyword_info \
+  --params-file "{WORKDIR}/kw_params_<N>.json" \
+  --out "{WORKDIR}/lm_keyword_info_<N>.json"
+```
+
+On a miss, call the **`keyword_info` MCP tool** with the contents of `kw_params_<N>.json` plus
+`user_query`, `"is_skills": true` and `"response_format": "download_url"`, then fetch + store in
+one step:
+
+```bash
+python3 {SKILL_DIR}/_shared/render/fetch_dl.py \
+  --url "<download.browser_download_url>" --out "{WORKDIR}/lm_keyword_info_<N>.json" \
+  --sha256 <download.sha256> --items <download.item_count> \
+  --tool keyword_info --params-file "{WORKDIR}/kw_params_<N>.json"
+```
+
+> **Call the chunks one at a time, never in parallel.** The API key's concurrent-request limit is
+> **1**; firing two calls at once fails the second with `Too Many Requests` (measured 2026-10-08).
+>
+> `--items` is correct here (`keyword_info` returns a flat list), but note the count is **not** the
+> number of keywords you asked for — unlisted keywords are dropped and spelling variants added
+> (600 requested → 601 rows, measured). Always pass the envelope's own `download.item_count`.
+
+Finally merge the chunks into the single file Step 2 expects:
+
+```bash
+python3 - "{WORKDIR}" <<'MERGE'
+import json, re, sys, glob, os
+rows, seen = [], set()
+# Match ONLY the numbered chunk files — never lm_keyword_info.json itself, or a re-run
+# would fold the previous merge back in and double-count.
+chunks = [p for p in glob.glob(os.path.join(sys.argv[1], "lm_keyword_info_*.json"))
+          if re.fullmatch(r"lm_keyword_info_\d+\.json", os.path.basename(p))]
+if not chunks:
+    sys.exit("no chunk files found — did the keyword_info calls run?")
+for p in sorted(chunks, key=lambda p: int(re.search(r"(\d+)\.json$", p).group(1))):
+    d = json.load(open(p, encoding="utf-8"))
+    data = d.get("data") if isinstance(d, dict) else d
+    for row in (data or []):
+        kw = row.get("keyword") if isinstance(row, dict) else None
+        if kw and kw not in seen:
+            seen.add(kw); rows.append(row)
+with open(os.path.join(sys.argv[1], "lm_keyword_info.json"), "w", encoding="utf-8") as f:
+    json.dump({"data": rows}, f, ensure_ascii=False)
+print(f"merged {len(rows)} keyword rows")
+MERGE
 ```
 
 - If either response has `result` = `FAILED`, or a tool call fails, stop and report

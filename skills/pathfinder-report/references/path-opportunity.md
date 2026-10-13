@@ -91,7 +91,7 @@ On a miss, call the **`path_finder` MCP tool** with these parameters:
 
 ```json
 {"keyword": "<SEED>", "gl": "<MARKET>", "time_point": "<TIME_POINT>", "limit": 300,
- "user_query": "<the user's utterance, verbatim>"}
+ "user_query": "<the user's utterance, verbatim>", "is_skills": true}
 ```
 
 > `limit` (the number of routes) defaults to 300. `time_point` is the value collected in Step 0
@@ -137,7 +137,8 @@ python3 {SKILL_DIR}/scripts/mcp_cache.py lookup keyword_info \
 ```
 
 On a miss, call the **`keyword_info` MCP tool** with the contents of `kw_params.json` plus
-`user_query`, secure the response as `{WORKDIR}/lm_nodes.json`, then store it:
+`user_query` and `"is_skills": true`, secure the response as `{WORKDIR}/lm_nodes.json`, then
+store it:
 
 ```bash
 # ② store in the cache
