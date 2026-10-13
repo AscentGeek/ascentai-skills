@@ -174,6 +174,109 @@ different keyword list (total-report calls it once for the union of the 3 finder
 internal duplicates disappear).
 To bypass the cache, set `LIMA_MCP_REFRESH=1`.
 
+### Credits
+
+**MCP (Lima) charges per call — not per returned relation.** Measured 2026-10-08 on the live
+connector (seed 등산화, gl=kr, hop=2, data_type=all, response_format=download_url):
+
+| `cluster_finder` limit | relations returned | unique nodes | clusters | payload | cost |
+|---|---|---|---|---|---|
+| 500 | 499 | 452 | 5 | 35KB | **2 Lima** |
+| 2,000 | 1,984 | 1,491 | 15 | 136KB | **2 Lima** |
+| 10,000 | **3,240** (saturated) | 2,044 | 18 | 216KB | **2 Lima** |
+
+Consequences, and why this skill requests `limit=10000`:
+
+- **Raising `limit` is free.** Cost did not move while the payload grew 6×. So there is no reason to
+  under-request. (The DaaS edition is billed `150 + relations × 50` — **proportional**, a different
+  model. Do not carry a conclusion from one edition to the other.)
+- **`limit` is a ceiling, not a target.** This seed saturates at 3,240 relations; the remaining
+  6,760 simply do not exist in the graph. A larger `limit` never fabricates relations, and a small
+  graph costs no more than a large one.
+- **A full run is 6–18 Lima**: `cluster_finder` ×1 (2) + `keyword_info` ×(2–8) chunks (2 each).
+  Chunk count tracks node count, which varies ~6× across seeds — see §How much of the graph the LLM
+  sees for the measured range. Do not quote a single figure as "the" cost.
+- Read the actual number from the response envelope's `cost_detail.total_cost` — do not estimate it
+  from this table.
+
+> Note: `_core/scripts/mcp_cache.py` carries an older comment claiming "1 credit per call". Every
+> call measured on 2026-10-08 returned `total_cost: 2`. Trust the envelope, not the comment.
+
+### How much of the graph the LLM sees
+
+`cluster_finder` at `limit=10000` returns wildly different graph sizes depending on the seed.
+Measured 2026-10-12 across 6 seeds and all 3 markets:
+
+| seed | market | relations | nodes | clusters | `keyword_info` chunks |
+|---|---|---|---|---|---|
+| 노트북 | kr | 1,704 | 1,225 | 12 | 2 |
+| 다이어트 | kr | 2,113 | 1,553 | 10 | 2 |
+| 脱毛 | jp | 2,115 | 2,000 | 10 | 2 |
+| 등산화 | kr | 3,240 | 2,044 | 18 | 3 |
+| 무선이어폰 추천 | kr | 5,578 | 2,467 | 28 | 3 |
+| running shoes | us | 8,506 | 6,538 | 63 | 7 |
+| 나이키 | kr | 9,765 | 7,124 | 76 | 8 |
+
+So a run costs **2 Lima for `cluster_finder` + 2 per `keyword_info` chunk** — roughly 6 Lima on a
+narrow seed and **18 Lima on a dense one**. Node count drives everything downstream; do not assume
+one seed's shape generalizes.
+
+Beyond ~2,000 nodes the csv handed to the LLM is capped (`KEYWORD_CONTEXT_TOP_N`). The selection is
+**not** a plain volume cut, because two things break if it is:
+
+- **Every cluster's hub is reserved first.** A hub is picked by edge degree, not volume, so a
+  low-volume hub can sit thousands of rows down. `postprocess_groups()` discards any cluster whose
+  hub is missing from the csv — on 나이키 a plain volume cut kept only **21 of 76** hubs, so most
+  clusters would have been thrown away. With hubs reserved it is **76 of 76**.
+- **Then each cluster is guaranteed `CLUSTER_MIN_KEYWORDS` (6) rows.** A cluster represented by its
+  hub alone gives the LLM nothing to characterize it with. This takes clusters with fewer than 3 csv
+  members from **9 to 0** on 나이키 and **18 to 0** on running shoes.
+
+The remaining budget is filled by volume desc, so the head is unaffected (top-50 keywords by volume
+are retained). `cluster_aggregate.py context` prints how many rows reached the LLM and how many
+low-volume keywords were left out — read that line rather than assuming full coverage.
+
+### Runtime · where the minutes go
+
+Measured 2026-10-13 (seed 마그네슘영양제, kr: 7,884 relations / 3,285 nodes / 33 clusters /
+4 chunks), total ~17 min:
+
+| stage | who | time |
+|---|---|---|
+| 1a `cluster_finder` ×1 | MCP | 22s (+0.4s download) |
+| **1b `keyword_info` ×4 chunks** | **MCP + agent** | **~10 min (59%)** |
+| 2 aggregate | Python | <1s |
+| **3 cluster grouping** | **LLM** | **3–6 min (29%)** |
+| 4 postprocess | Python | <1s |
+| 5 insights | LLM | 1–2 min |
+| 6 render | Python | <1s |
+
+**The cost of 1b is the request, not the response.** A 1-keyword call took 9s and a 50-keyword call
+35s, while downloading the response file takes 0.1–0.4s. A 1,000-keyword array is ~9,500 tokens the
+agent must *emit*; four chunks is ~31,000 tokens of output. Two consequences:
+
+- Shrinking the response is pointless. `data_type=all` returns ~5.7KB per keyword of which the
+  aggregator reads 6.3% (`ads_metrics` + `intents`), but the download is already sub-second — and
+  `intents` exists only in `all`, so it cannot be narrowed anyway.
+- The only real lever is **how many keywords get enriched**, which is why `enrich-plan` caps the
+  fetch at `KEYWORD_ENRICH_TOP_N`. Before that cap existed this seed fetched 3,285 keywords while
+  only 2,000 could reach the csv — 1,285 (39%) enriched and discarded. Capping it took the run to
+  **2 chunks / ~13 min**.
+
+Remaining headroom, if 13 min is still too slow: lowering `KEYWORD_CONTEXT_TOP_N` shortens step 3
+(the csv is ~52 bytes/row, so 2,000 rows ≈ 33K tokens of LLM input), and dropping the csv's `i`
+column would cut another ~18% of that input — but `intents` is what lets step 3 merge clusters by
+search purpose, so that trade is a quality decision, not a free win.
+
+Python stages are never the bottleneck; do not optimize them.
+
+### Concurrency · one call at a time
+
+**The API key's concurrent-request limit is 1.** Two MCP calls issued in parallel fail the second
+with `Too Many Requests: Your API key's concurrent request limit is 1` (measured 2026-10-08); the
+same request succeeds when retried sequentially. This matters most for the chunked `keyword_info`
+calls — **issue them one after another, never in a single parallel batch.**
+
 ### user_query · record the query alongside the call in the history
 
 The MCP tools (cluster_finder · keyword_info) accept an optional `user_query` parameter and store it in the history
@@ -181,3 +284,16 @@ The MCP tools (cluster_finder · keyword_info) accept an optional `user_query` p
 
 Put in the **user's utterance verbatim** · no translating, summarizing or paraphrasing.
 It is not part of the cache key, so the cache still hits even when the wording changes.
+
+### is_skills · mark the call as skill-routed
+
+The MCP tools accept an optional `is_skills` boolean. It exists so the platform can tell
+**skill-driven calls apart from plain prompt calls**. Default is `false`; **a skill run sets it to
+`true`.** This skill is a skill run, so **set `is_skills: true` on every call it makes.**
+
+Verified 2026-10-08 on the live connector: `is_skills: true` returned the **same data** (identical
+499 relations, 452 nodes and 5-cluster partition) at the **same cost** as `false` — it changes
+neither the data nor the billing, only how the call is classified. So there is no downside to
+sending it, and omitting it mis-files this skill's calls as prompt calls.
+
+> Like `user_query`, it is **not** part of the cache key — do not put it in `mcp_cache.py --params`.

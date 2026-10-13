@@ -29,10 +29,48 @@ INTENT_KEYS = ("i", "n", "c", "t")
 # 지배 의도 라벨 (agent_cluster 는 '검색 의도 축'을 정성 해석하므로 대표 라벨만 CSV 로 전달)
 INTENT_LABEL = {"i": "정보탐색", "n": "길찾기", "c": "상업조사", "t": "거래"}
 
-# keyword_info 상세 조회 상한(공개 API maxItems) 과 동일. LLM CSV 도 이 상한으로 캡.
-KEYWORD_CONTEXT_TOP_N = 1000
+# LLM 분석 입력(CSV) 상한. cluster_finder limit=10000 이면 노드 수가 시드에 따라 크게 갈린다
+# (실측 2026-10-12 · 6개 시드: 1,225 ~ 7,124 노드 · 클러스터 10 ~ 76개). 수집 상한과 분리해 둔다.
+#
+# 이 값은 **CSV 와 context["keywords"] 를 동시에 캡한다** — 둘을 벌리면 안 된다.
+# _members_of_clusters() 가 '카드 근거를 CSV 에 있는 키워드로만 제한'하는 환각 방지 장치이고
+# 그 판정을 build_keyword_map(context["keywords"]) 으로 하기 때문에, keywords 만 넓히면
+# LLM 이 못 본 키워드가 카드 근거로 올라온다.
+#
+# 그래프·허브·흐름 계산은 이 상한과 무관하게 **받은 노드 전체**로 돈다(5단계 이전).
+KEYWORD_CONTEXT_TOP_N = 2000
+
+# 클러스터별 최소 보장 수. 검색량순으로만 자르면 꼬리 클러스터가 통째로 사라진다
+# (실측 · 나이키 kr: 76개 클러스터 중 31개가 상위 2,000 밖). 그 클러스터는 검색량이 작아도
+# 구조상 존재하는 탐색 묶음이고, 허브가 CSV 에 없으면 STEP 4 게이트가 카드째로 버린다.
+# 그래서 상위 N 을 채우기 전에 **클러스터마다 검색량 상위 k 개를 먼저 확보**한다.
+# 76 클러스터 × 6 = 456 행이면 상한 2,000 의 23% 이고, 나머지 1,544 행은 검색량순으로 채운다.
+CLUSTER_MIN_KEYWORDS = 6
 # 카드 evidence·허브 표에 노출할 대표 키워드 수(검색량순).
 EVIDENCE_TOP_N = 8
+
+# keyword_info 로 상세 조회할 키워드 수 상한.
+#
+# 왜 두는가 · 노드 전량을 조회해도 CSV 에 들어가는 건 KEYWORD_CONTEXT_TOP_N 개뿐이다.
+# 검색량·의도는 CSV 행에만 쓰이고(허브·흐름은 cluster_finder 그래프로 계산된다) 나머지는
+# 받아서 버린다 — 실측 2026-10-13 '마그네슘영양제': 3,285 조회 → 1,285개(39%) 폐기.
+#
+# 그리고 이 폐기가 **리포트 생성 시간의 최대 병목**이다. 느린 쪽은 받는 응답이 아니라
+# **보내는 키워드 배열**이다(1개 호출 9초 / 50개 35초 · 응답 다운로드는 1초 미만).
+# 1,000개 배열이 약 9,500 토큰이라 청크 하나가 곧 수 분이다. 조회를 CSV 상한에 맞추면
+# 청크 수가 줄어 그만큼 직접 단축된다(실측 시드 4청크 → 2청크 · 약 17분 → 13분).
+#
+# 왜 degree 로 고르는가 · 조회 전에는 검색량을 모른다(그게 이 호출로 받는 값이다). 그래서
+# 그래프만으로 골라야 하고, degree 는 downstream 허브 선정 기준과 같은 축이다.
+# 실측 2026-10-13 '마그네슘영양제': 제외된 1,285개가 **전부 degree<=1 말단 노드**였고
+# 실제 검색량 중앙값 41 · 73%가 100 미만이었다(조회군 평균 3,811 — 약 60배 차이).
+# 즉 빠지는 쪽은 그래프 주변부의 저검색량 키워드다.
+#
+# 품질 영향(실측) · 클러스터 33/33 유지 · 허브 33/33 유지 · 멤버 부족 클러스터 0개 ·
+# totalVolume -2.3% · CSV 검색량 커버리지 98.4% → 97.7%.
+# 주의 · 검색량이 큰데 말단인 키워드는 빠질 수 있다(실측 '고혈압에 좋은 음식' 9,313 · degree 1).
+# 시드 시장의 주변 토픽이라 카드 근거로서의 가치는 낮지만, 숫자만 보면 손실로 읽힌다.
+KEYWORD_ENRICH_TOP_N = KEYWORD_CONTEXT_TOP_N
 
 
 def _unwrap_content_blocks(raw):
@@ -166,7 +204,119 @@ def _dominant_intent(intents):
 # context — fuse graph + enrichment into lm_cluster_result.json
 # ─────────────────────────────────────────
 
-def build_cluster_context(communities, rels, kw_info, seed, gl, date, top_n=KEYWORD_CONTEXT_TOP_N):
+def select_enrich_keywords(communities, rels, top_n=KEYWORD_ENRICH_TOP_N,
+                           cluster_min=CLUSTER_MIN_KEYWORDS):
+    """Pick which keywords to send to `keyword_info`, before any volume is known.
+
+    Volumes are exactly what this call fetches, so the pick can only use the graph.
+    It mirrors build_cluster_context's own ranking so nothing it needs goes missing:
+
+      1. every cluster's hub (highest edge degree) — postprocess_groups() discards a
+         cluster whose hub is absent from the csv, so these are non-negotiable,
+      2. then each cluster's next `cluster_min - 1` members by degree, so no cluster
+         arrives with too few rows to characterize,
+      3. then the rest by degree desc until `top_n`.
+
+    Degree is the right proxy here: it is what picks hubs downstream, and a keyword
+    co-searched with many others is the one worth enriching. Returns keywords in a
+    stable order (degree desc, then first-seen) so the chunking is reproducible.
+    """
+    kw_cluster = {}
+    for cid in sorted(communities.keys(), key=lambda c: (0, int(c)) if str(c).isdigit() else (1, c)):
+        for kw in communities[cid]:
+            kw_cluster.setdefault(kw, cid)
+
+    degree = {}
+    for a, b in rels:
+        degree[a] = degree.get(a, 0) + 1
+        degree[b] = degree.get(b, 0) + 1
+
+    order = {kw: i for i, kw in enumerate(kw_cluster)}
+    rank = sorted(kw_cluster, key=lambda k: (-degree.get(k, 0), order[k]))
+    if top_n is None or len(rank) <= top_n:
+        return rank
+
+    by_cluster = {}
+    for kw in rank:
+        by_cluster.setdefault(kw_cluster[kw], []).append(kw)
+
+    picked = []
+    seen = set()
+
+    def take(kw):
+        if kw not in seen:
+            seen.add(kw)
+            picked.append(kw)
+
+    floor = max(1, cluster_min or 1)
+    for depth in range(floor):
+        for members in by_cluster.values():
+            if depth < len(members) and len(seen) < top_n:
+                take(members[depth])
+    for kw in rank:
+        if len(seen) >= top_n:
+            break
+        take(kw)
+
+    return sorted(picked, key=lambda k: (-degree.get(k, 0), order[k]))
+
+
+def _select_context_keywords(keywords, top_n, cluster_min):
+    """Pick the CSV rows: guarantee each cluster its top `cluster_min` keywords,
+    then fill the remaining budget by volume desc.
+
+    Ranking by volume alone drops whole clusters off the tail — measured on seed
+    나이키 (kr), 31 of 76 clusters fell outside the top 2,000. Those clusters are
+    small in volume but real in structure, and a cluster whose hub is missing from
+    the csv is discarded outright by postprocess_groups(). The floor keeps every
+    cluster representable; the rest of the budget still goes to the biggest
+    keywords, so the head is unaffected.
+
+    `keywords` must already be sorted by volume desc. Order of the returned list
+    stays volume desc so the csv reads head-first.
+    """
+    if top_n is None or len(keywords) <= top_n:
+        return keywords
+
+    picked = set()
+
+    # Hubs first, unconditionally. A hub is chosen by edge degree, not volume, so a
+    # low-volume hub can sit far down this volume-sorted list — and postprocess_groups()
+    # discards any cluster whose hub is absent from the csv. Reserving hubs is what
+    # actually keeps a cluster usable; the per-cluster floor below only adds context.
+    for i, k in enumerate(keywords):
+        if k.get("is_hub"):
+            picked.add(i)
+    if len(picked) > top_n:
+        picked = set(sorted(picked)[:top_n])
+
+    if cluster_min and cluster_min > 0 and len(picked) < top_n:
+        per = {}
+        for i in sorted(picked):
+            letter = keywords[i].get("cluster") or ""
+            per[letter] = per.get(letter, 0) + 1
+        for i, k in enumerate(keywords):
+            if len(picked) >= top_n:
+                break
+            if i in picked:
+                continue
+            letter = k.get("cluster") or ""
+            n = per.get(letter, 0)
+            if n < cluster_min:
+                per[letter] = n + 1
+                picked.add(i)
+
+    for i in range(len(keywords)):
+        if len(picked) >= top_n:
+            break
+        picked.add(i)
+
+    return [keywords[i] for i in sorted(picked)]
+
+
+def build_cluster_context(communities, rels, kw_info, seed, gl, date,
+                          top_n=KEYWORD_CONTEXT_TOP_N,
+                          cluster_min=CLUSTER_MIN_KEYWORDS):
     """Fuse communities + rels + keyword_info into the report context dict."""
     # 1) keyword -> cluster letter (a keyword belongs to a single community).
     #    Community ids are numeric strings ('0','1',...); sort numerically so
@@ -243,7 +393,7 @@ def build_cluster_context(communities, rels, kw_info, seed, gl, date, top_n=KEYW
             "intents": info.get("intents", {}),
         })
     keywords.sort(key=lambda k: k["volume_avg"], reverse=True)
-    top_keywords = keywords[:top_n]
+    top_keywords = _select_context_keywords(keywords, top_n, cluster_min)
 
     # 6) per-cluster rollup (volume sum, keyword count, hub, out) for hub table.
     clusters = {}
@@ -432,6 +582,42 @@ def postprocess_groups(groups_raw, context):
 # CLI
 # ─────────────────────────────────────────
 
+def _cmd_enrich_plan(args):
+    cluster_raw = _load_json(args.cluster)
+    communities, rels = parse_cluster_response(cluster_raw)
+    if not communities:
+        print("ERROR: cluster_finder 응답에서 communities 를 찾지 못했습니다.", file=sys.stderr)
+        return 1
+
+    total = len({kw for members in communities.values() for kw in members})
+    picked = select_enrich_keywords(communities, rels, top_n=args.top_n)
+
+    outdir = Path(args.outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    # 이전 회차의 청크가 남아 있으면 병합 단계가 섞어 읽는다.
+    for stale in outdir.glob("kw_params_*.json"):
+        stale.unlink()
+
+    chunk = max(1, args.chunk)
+    n_chunks = (len(picked) + chunk - 1) // chunk
+    for i in range(n_chunks):
+        (outdir / f"kw_params_{i}.json").write_text(
+            json.dumps({"keywords": picked[i * chunk:(i + 1) * chunk],
+                        "gl": args.gl, "data_type": "all"}, ensure_ascii=False),
+            encoding="utf-8")
+
+    print(f"{len(picked):,} keywords to enrich → {n_chunks} chunk(s) in {outdir}")
+    if len(picked) < total:
+        print(f"  graph has {total:,} nodes; enriching the top {len(picked):,} by connection count "
+              f"(cap {args.top_n:,}) — every cluster hub and >= {CLUSTER_MIN_KEYWORDS} keywords "
+              f"per cluster are included")
+        print(f"  the remaining {total - len(picked):,} would not have reached the csv "
+              f"(cap {KEYWORD_CONTEXT_TOP_N:,}); cluster volume totals read ~2% lower as a result")
+    else:
+        print(f"  all {total:,} nodes fit under the {args.top_n:,} cap")
+    return 0
+
+
 def _cmd_context(args):
     cluster_raw = _load_json(args.cluster)
     kwinfo_raw = _load_json(args.keyword_info)
@@ -444,8 +630,20 @@ def _cmd_context(args):
         communities, rels, kw_info, seed=args.seed, gl=args.gl, date=args.date
     )
     Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    csv_rows = len(result["keywords"])
     print(f"wrote {args.out} ({result['clusterCount']} clusters, "
           f"{result['keywordCount']} keywords, {result['edgeCount']} edges)")
+    # Say plainly how much of the graph reached the LLM. A silent cap reads as
+    # "everything was analyzed" when a dense seed may have dropped thousands of rows.
+    if csv_rows < result["keywordCount"]:
+        dropped = result["keywordCount"] - csv_rows
+        print(f"  csv for the LLM: {csv_rows:,} rows "
+              f"(cap {KEYWORD_CONTEXT_TOP_N:,}; {dropped:,} of the graph's {result['keywordCount']:,} "
+              f"nodes are not in it — peripheral, low-volume keywords; every cluster hub and "
+              f">= {CLUSTER_MIN_KEYWORDS} keywords per cluster are kept)")
+    else:
+        print(f"  csv for the LLM: {csv_rows:,} rows (all keywords, under the "
+              f"{KEYWORD_CONTEXT_TOP_N:,} cap)")
     return 0
 
 
@@ -503,6 +701,17 @@ def main(argv=None):
         description="Cluster Finder data pipeline: graph+enrichment context builder + LLM group postprocessing."
     )
     sub = parser.add_subparsers(dest="command", required=True)
+
+    p_plan = sub.add_parser(
+        "enrich-plan",
+        help="Pick the keywords to send to keyword_info and write one params file per chunk")
+    p_plan.add_argument("--cluster", required=True, help="/cluster_finder 응답 JSON 경로 (data_type=all)")
+    p_plan.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
+    p_plan.add_argument("--outdir", required=True, help="kw_params_<N>.json 을 쓸 폴더 (= WORKDIR)")
+    p_plan.add_argument("--top-n", type=int, default=KEYWORD_ENRICH_TOP_N,
+                        help=f"조회 상한 (기본 {KEYWORD_ENRICH_TOP_N})")
+    p_plan.add_argument("--chunk", type=int, default=1000, help="청크 크기 (keyword_info maxItems=1000)")
+    p_plan.set_defaults(func=_cmd_enrich_plan)
 
     p_context = sub.add_parser("context", help="Fuse cluster_finder + keyword_info into lm_cluster_result.json")
     p_context.add_argument("--cluster", required=True, help="/cluster_finder 응답 JSON 경로 (data_type=all)")
