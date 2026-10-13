@@ -19,7 +19,7 @@ ListeningMind **SaaS 고객용** 리포트 스킬. 데이터는 **ListeningMind 
 > `listeningmind-data-api.ascentlab.io` 송신이 들어오면 그 전제가 깨진다.
 > pre-commit 훅이 이를 차단한다.
 
-## 스킬 4종
+## 스킬 5종
 
 | 스킬 | 리포트 | 쓰는 MCP 도구 |
 |---|---|---|
@@ -27,6 +27,7 @@ ListeningMind **SaaS 고객용** 리포트 스킬. 데이터는 **ListeningMind 
 | `lm-clusterfinder-report` | 검색 클러스터 지형 | `cluster_finder` + `keyword_info` |
 | `lm-pathfinder-report` | 검색 여정 분석 | `path_finder` + `keyword_info` |
 | `lm-total-report` | 3파인더 통합 | 위 3종 + `keyword_info` 1회 |
+| `lm-search-demand-report` | 검색 수요 진단 (시장 흐름 대비 변화) | `intent_finder` + `cluster_finder`(선택) + `keyword_info` |
 
 스킬 이름은 `lm-<스킬명>` 이다 — 국가 코드는 붙지 않는다.
 
