@@ -1,0 +1,7 @@
+name: search-demand-report
+version: "1.0.0"
+slug: demand-shift
+mcp_tools: [intent_finder, cluster_finder, keyword_info]
+vendor_chart: false
+# 리포트를 쓸 수 있는 언어 · 실행 시 --lang 으로 고른다
+report_langs: [kr, jp, us]
