@@ -177,3 +177,15 @@ The 4 MCP tools accept an optional `user_query` parameter and store it in the hi
 
 Put in the **user's utterance verbatim** · no translating, summarizing or paraphrasing.
 It is not part of the cache key, so the cache still hits even when the wording changes.
+
+### is_skills · mark the call as skill-routed
+
+The MCP tools accept an optional `is_skills` boolean. It exists so the platform can tell
+**skill-driven calls apart from plain prompt calls**. Default is `false`; **a skill run sets it to
+`true`.** This skill is a skill run, so **set `is_skills: true` on every call it makes.**
+
+Verified 2026-10-08 on the live connector: `is_skills: true` returned the same data at the same
+cost as `false` — it changes neither the data nor the billing, only how the call is classified.
+So there is no downside to sending it, and omitting it mis-files this skill's calls as prompt calls.
+
+> Like `user_query`, it is **not** part of the cache key — do not put it in `mcp_cache.py --params`.

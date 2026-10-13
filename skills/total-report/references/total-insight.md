@@ -169,8 +169,8 @@ python3 {SKILL_DIR}/scripts/mcp_cache.py lookup keyword_info \
   --params-file "{WORKDIR}/kw_params.json" \
   --out "{WORKDIR}/lm_keyword_info.json"
 
-# On a miss, call the keyword_info MCP tool with the contents of kw_params.json + user_query,
-# secure the response as {WORKDIR}/lm_keyword_info.json, then:
+# On a miss, call the keyword_info MCP tool with the contents of kw_params.json + user_query
+# + "is_skills": true, secure the response as {WORKDIR}/lm_keyword_info.json, then:
 
 # ② store in the cache
 python3 {SKILL_DIR}/scripts/mcp_cache.py store keyword_info \
