@@ -96,7 +96,6 @@ def BN(slug):
     return _t("bucket."+slug) if slug in BUCKETS else VNAME(slug)
 def WNAME(axis):  return _t("walk."+WAK.get(axis,"hold"))
 
-
 def build(run, out, *, gl, lang, date, translations=None):
     global LABELS
     LABELS = _load_labels(lang)
@@ -129,12 +128,6 @@ def build(run, out, *, gl, lang, date, translations=None):
         SPL[c]=json.load(open(f)) if os.path.exists(f) else {"n":0,"mods":[]}
     # ── 판정: 이름 축(검색 점유율 2배 규칙) · 탐색 축은 보조
     # 라벨(참전·부분 참전·미판매·미확인)은 curate.json 의 내부값이다 — 표시만 번역한다
-    PZC={"참전":"pz-in","부분 참전":"pz-part","미판매":"pz-no","미확인":"pz-unk"}
-    PZK={"참전":"in","부분 참전":"part","미판매":"no","미확인":"unknown"}
-    def _pz(x):
-        p=x.get("presence")
-        if not p: return ""
-        return f'<small class="pz {PZC.get(p["label"],"pz-unk")}" title="{esc(p.get("note",""))}">{_t("presence."+PZK.get(p["label"],"unknown"))}</small>'
     def _bden(x): return (x.get("sos") or {}).get("denom",0)
     def _bsum(x):
         s=x.get("sos") or {}
@@ -401,16 +394,6 @@ sec.querySelectorAll('.vtog button').forEach(function(b){b.addEventListener('cli
     # ── S2
     VARX=cfg.get("brand_var",{}); OWNV=cfg.get("own",[OWN])
     def al(b): return [a.lower() for a in (OWNV if b==OWN else VARX.get(b,[b]))]
-    def mentions(c,b):
-        ms=[x for x in SPL[c]["mods"] if x["mod"].split()[0].lower() in al(b)]
-        return len(ms),(min(x["rank"] for x in ms) if ms else None)
-    def brandshare(c):
-        """연관어 앞말 중 브랜드(자사 + 라벨링된 경쟁사)가 차지하는 비율."""
-        M=SPL[c]["mods"]
-        if not M: return 0.0
-        names=[OWN]+list(C_.get(c,{}).get("comp") or [])
-        b=sum(1 for x in M if any(x["mod"].split()[0].lower() in al(nm) for nm in names))
-        return b/len(M)*100
     selfhead=f'<th class="num">{_t("col.brandTotal")}</th>' if SELFV else ''
     so=[f'<div class="s2tabs" role="tablist" aria-label="{_t("aria.category")}">'+"".join(f'<button type="button" role="tab" class="chip-f s2t{" on" if i==0 else ""}" data-s2="{CID[x["term"]]}" aria-selected="{"true" if i==0 else "false"}">{kw(x["term"])}<small>{short(x["vol12"])}</small></button>' for i,x in enumerate(J))+'</div>',
        f'<div class="scroll"><table id="t-uni" class="uni">',
@@ -669,11 +652,6 @@ sec.querySelectorAll('.vtog button').forEach(function(b){b.addEventListener('cli
         BUB=f'<p class="xs na">{_t("bubble.skipped", own=esc(OWN), pct=f"{_mx*100:.0f}")}</p>'
     cat=Counter()
     for x in J: cat[ju(x)]+=x["vol12"]
-    def barline(d,title,note,lm=None):
-        tt=sum(d.values()) or 1; ks=lm or list(VERDICTS)
-        seg="".join(f'<span style="width:{d[k]/tt*100:.2f}%;background:{JC.get(k,"var(--line)")}" title="{BN(k)} {d[k]/tt*100:.0f}%"></span>' for k in ks if d.get(k))
-        lab=" · ".join(f'<b>{BN(k)}</b> {d[k]/tt*100:.0f}%' for k in ks if d.get(k))
-        return f'<div class="dbar"><div class="dbt">{title} <small class="na">{note} · {_t("bar.total", vol=short(tt))}</small></div><div class="dbr">{seg}</div><div class="dbl">{lab}</div></div>'
     # 한 장 요약의 세부 수요 막대 — S3 절은 없앴지만 구성은 요약에 남긴다
     def cbucket(q):
         if q["own"]: return "named"
@@ -684,36 +662,6 @@ sec.querySelectorAll('.vtog button').forEach(function(b){b.addEventListener('cli
     for x in DEEP:
         for q in x["ceps"]: agg[cbucket(q)]+=q["vol"] or 0
     # ── 한 장 요약 차트: ① 판정별 카테고리 수요(막대) ② 자사 검색량의 카테고리 구성(파이)
-    def _bar_svg():
-        ks=["owned","contested","trailing","unclaimed"]; vs=[cat.get(k,0) for k in ks]
-        mxv=max(vs) or 1; step=10**max(0,len(str(int(mxv)))-1)
-        top=((int(mxv)//step)+1)*step
-        W,H,L_,B_,T_=440,260,64,34,14; pw=W-L_-12; ph=H-B_-T_; bw=pw/len(ks)*0.56
-        o=[f'<svg viewBox="0 0 {W} {H}" class="sch" role="img" aria-label="{_t("chart.demandByVerdict")}">']
-        for g in range(0,5):
-            v=top*g/4; y=T_+ph-ph*g/4
-            o.append(f'<line x1="{L_}" x2="{W-12}" y1="{y:.1f}" y2="{y:.1f}" class="sg"/><text x="{L_-6}" y="{y+4:.1f}" class="sy" text-anchor="end">{short(v) if v else 0}</text>')
-        for i,(k,v) in enumerate(zip(ks,vs)):
-            cx=L_+pw/len(ks)*(i+.5); h=ph*v/top; y=T_+ph-h
-            xs_=sorted([x for x in J if ju(x)==k],key=lambda x:-x["vol12"]); tt_=sum(cat.values()) or 1
-            tip_=(f'<b>{VNAME(k)}</b> <span class="jd {CLS.get(k,"")}">{_t("unit.catCount", n=len(xs_))}</span><table>'
-                  f'<tr><th>{_t("tip.catVolumeSum")}</th><td>{n(v)}</td></tr><tr><th>{_t("tip.ofTotal")}</th><td>{v/tt_*100:.0f}%</td></tr></table>'
-                  +('<table class="tl">'+"".join(f'<tr><th>{kw(x["term"])}</th><td>{n(x["vol12"])}</td></tr>' for x in xs_)+'</table>' if xs_ else ""))
-            if v: o.append(f'<rect class="ctz" data-tip="{html.escape(tip_,quote=True)}" x="{cx-bw/2:.1f}" y="{y:.1f}" width="{bw:.1f}" height="{h:.1f}" rx="3" fill="{JC.get(k,"var(--accent)")}"></rect>'
-                       f'<text x="{cx:.1f}" y="{y-6:.1f}" class="sv" text-anchor="middle">{short(v)}</text>')
-            o.append(f'<text x="{cx:.1f}" y="{H-B_+18}" class="sx" text-anchor="middle">{VNAME(k)} <tspan class="sc">{_t("unit.countCats", n=sum(1 for x in J if ju(x)==k))}</tspan></text>')
-        o.append(f'<line x1="{L_}" x2="{W-12}" y1="{T_+ph}" y2="{T_+ph}" class="sa"/></svg>')
-        return "".join(o)
-    JX={x["term"]:x for x in J}
-    def _ptip(t,v,tt):
-        x=JX[t]; c0=x["comp"][0] if x["comp"] else None
-        return (f'<b>{kw(t)}</b> <span class="jd {CLS[ju(x)]}">{VNAME(ju(x))}</span><table>'
-                f'<tr><th>{_t("tip.ownVolume", own=esc(OWN))}</th><td>{n(v)}</td></tr>'
-                f'<tr><th>{_t("tip.ownVolumeShare", own=esc(OWN))}</th><td>{v/tt*100:.1f}%</td></tr>'
-                f'<tr><th>{_t("col.catVolume")}</th><td>{n(x["vol12"])}</td></tr>'
-                f'<tr><th>{_t("col.ownShare", own=esc(OWN))}</th><td>{x["own_rate"] if x["own_rate"] is not None else "-"}%</td></tr>'
-                +(f'<tr><th>{_t("col.rival1")}</th><td>{kw(c0["brand"])} <small>({c0["rate"]}%)</small></td></tr>' if c0 else '')
-                +'</table>')
     def _orbit_svg():
         PAL=["#7F18FF","#CD3197","#AA18CC","#FF247A","#5A10B8","#821E60","#7A1194","#A81650"]
         den=lambda x:((x.get("sos") or {}).get("denom") or 0)
