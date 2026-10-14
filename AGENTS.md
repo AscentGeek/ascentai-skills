@@ -41,9 +41,26 @@ MCP 응답을 **가공 없이 원문 그대로** 덤프해야 한다. 요약·�
 
 ### 규모 정책
 
-DaaS 판의 상한을 그대로 승계한다 — `intent_finder` 상위 1,000 · `keyword_info` 최대 1,000.
+- `intent_finder` 상위 1,000 · `keyword_info` 최대 1,000(API maxItems) — DaaS 판 승계
+- `cluster_finder` `limit` **10,000** · MCP 는 **호출당 고정 과금**이라 상한을 올려도 비용이
+  늘지 않는다(실측: limit 500/2,000/10,000 전부 2 Lima). DaaS 는 반환량 비례이므로
+  **두 판의 과금 결론을 서로 옮기지 말 것** — DaaS 판은 1,000 을 유지한다
+
 **임의로 줄이지 말 것.** 200개 등으로 자르면 총검색량·그룹 합산이 과소집계되어
-프로덕션과 어긋난다.
+프로덕션과 어긋난다. 반대로 `keyword_info` 는 **보낼 키워드 수가 곧 생성 시간**이다 —
+느린 쪽은 응답이 아니라 요청이고(1,000개 배열 ≈ 9,500 토큰), 조회해도 CSV 에 못 들어갈
+키워드는 받아서 버린다. 조회 상한을 CSV 상한에 맞추는 선별이 필요하면
+`cluster_aggregate.py enrich-plan` 을 참고한다.
+
+### `is_skills` 는 모든 호출에 붙인다
+
+MCP 도구는 `is_skills` 불리언으로 **스킬이 부른 호출과 사람이 프롬프트로 부른 호출**을
+갈라 집계한다. 기본값이 `false` 라서 빠뜨리면 그 스킬의 사용량이 전부 프롬프트 호출로
+잡힌다. 데이터도 과금도 달라지지 않고 분류만 달라진다.
+
+- `references/` 의 **호출 예시마다** 넣는다. 산문으로만 적어 두면 긴 문서에서 지켜지지
+  않는다 — 실행 중 LLM 이 보는 것은 호출 예시다
+- `user_query` 와 마찬가지로 **캐시 키에서는 빠진다** → `mcp_cache.py --params` 에 넣지 않는다
 
 ---
 
@@ -229,7 +246,15 @@ scripts/publish-dist.sh --dry-run              # 무엇이 나갈지 확인
 
 ---
 
-## 7-b. `brand-competition` 은 이식본이다 — 정본은 다른 리포에 있다
+## 7-b. 스킬의 출처는 셋이다 — 이식본 · 정본 분리 · 자체 개발
+
+스킬마다 "어디서 먼저 고치는가" 가 다르다. 틀리면 다음 이식 때 덮어써진다.
+
+| 스킬 | 출처 | 고치는 곳 |
+| :-- | :-- | :-- |
+| `queryfinder` · `clusterfinder` · `pathfinder` · `total` | lima-skills 리포트 4종 이식 | 정본 먼저 · 여기로 가져옴 |
+| `brand-competition` | `lm-brand-competition` 정본 분리 | **정본 먼저** · `check_upstream.py` 가 감시 |
+| `search-demand-report` | **이 리포 자체 개발** | 여기서 바로 고친다 (정본 없음) |
 
 `skills/brand-competition/` 은 **빌드 산출**이다. 정본은 `lm-brand-competition` 이고,
 판정 규칙·수집 절차·렌더 로직의 변경은 **거기서 먼저 일어난다.**
@@ -254,6 +279,12 @@ python3 scripts/check_upstream.py --record   # 이식을 끝낸 뒤 맞춘 시�
 
 맞춘 시점은 `skills/brand-competition/upstream.json` 에 정본 버전과 파일 해시로 적힌다.
 정본 경로는 `$LM_BRAND_COMPETITION_SRC` 로 바꾼다 — 없는 머신에서는 검사를 건너뛴다.
+
+> **`check_upstream.py` 는 `brand-competition` 만 본다.** 리포트 4종(`queryfinder` ·
+> `clusterfinder` · `pathfinder` · `total`)도 lima-skills 가 정본이지만 자동 감지가 없으니,
+> 그쪽을 고칠 때는 DaaS 판도 손봐야 하는지 **사람이 판단해야 한다.** 과금 체계가 달라
+> 결론이 갈리는 경우가 있다 — 예: `cluster_finder` `limit` 은 MCP 만 10,000 으로 올리고
+> DaaS 판은 1,000 을 유지했다(§1 규모 정책).
 
 > **여기서 먼저 고치지 마라.** 이식본에서 고치면 정본이 모르는 채로 갈라지고, 다음 이식 때
 > 덮어써진다. 급하면 정본에 먼저 넣고 그대로 가져온다.
