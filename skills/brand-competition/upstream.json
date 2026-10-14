@@ -1,13 +1,13 @@
 {
   "_note": "정본을 마지막으로 맞춘 시점. check_upstream.py --record 로 갱신한다.",
-  "upstream_version": "2.10.0",
+  "upstream_version": "2.11.0",
   "ported": {
-    "scripts/build_report.py": "5c6fcacde401ecb7",
+    "scripts/build_report.py": "e2d6463b3e4e17cb",
     "scripts/fetch_dl.py": "bd3a6e0856ca14d3",
     "scripts/assets/report.css": "c85371bf638c05ee",
-    "SKILL.md": "9370e7eae97d9777",
+    "SKILL.md": "2bf0bda7b67585a9",
     "references/judging-rules.md": "a82029c6291db7ee",
     "references/limits.md": "efae5bc35f13642f",
-    "references/report-spec.md": "8ddc4fbc943c84cc"
+    "references/report-spec.md": "d66acf2db1a4c055"
   }
 }

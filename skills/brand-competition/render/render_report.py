@@ -553,14 +553,6 @@ sec.querySelectorAll('.vtog button').forEach(function(b){b.addEventListener('cli
         tbl([_t("col.category"),_t("col.facetMix"),_t("col.facetStudied")],dis) if dis
         else f'<p class="na">{_t("s4.mismatchNone")}</p>',
         _t("s4.mismatchLead")))
-    # ③ 이 회차는 무엇으로 판정했나 (항상)
-    byname=sum(1 for x in J if hr(x)); bywalk=sum(1 for x in J if not hr(x) and x["walk"] and x["walk"]["axis"] in WMx)
-    none_=len(J)-byname-bywalk
-    cepq=sum(1 for x in DEEP for q in x["ceps"] if q.get("deep"))
-    so.append(block(_t("s4.axisTitle"),
-        tbl([_t("col.axis"),_t("col.catCount")],[(_t("axis.naming"),byname),(_t("axis.journeyOnly"),bywalk),(_t("axis.neither"),none_),
-                              (_t("axis.facetDeep"),_t("s4.facetCount", n=cepq, cats=len(DEEP)))]),
-        _t("s4.axisLead")))
     # ④ 반복 상대 (조건부)
     t1=Counter(); ap=Counter(); dv=Counter()
     for x in J:
