@@ -1,6 +1,5 @@
 {
   "agent.pathAnalysis.name": "検索ジャーニー分析",
-  "agent.pathAnalysis.desc": "消費者がキーワードからキーワードへ移動する検索ジャーニーを、経路と分岐点(Hub)で分析します。",
   "pathAnalysis.dash.coverEyebrow": "検索ジャーニー分析",
   "pathAnalysis.dash.coverMeta": "収集: {date} · 経路 {pathCount} · ハブ {hubCount}",
   "pathAnalysis.a4.coverMeta": "経路 {pathCount} · ハブ {hubCount}",
@@ -9,10 +8,10 @@
   "pathAnalysis.dash.flowTitle": "検索ジャーニーのフロー図",
   "pathAnalysis.dash.flowDesc": "「{category}」を起点に最も多く現れた検索ジャーニーを、上位の流れから分岐ツリーで表しました。共有される前半は統合され、分かれる地点が分岐(ハブ)です。",
   "pathAnalysis.dash.flowLegendLabel": "検索意図  ",
-  "pathAnalysis.intent.i": "情報探索",
-  "pathAnalysis.intent.n": "ナビゲーション",
-  "pathAnalysis.intent.c": "商業調査",
-  "pathAnalysis.intent.t": "取引",
+  "pathAnalysis.intent.i": "情報型",
+  "pathAnalysis.intent.n": "移動型",
+  "pathAnalysis.intent.c": "商業型",
+  "pathAnalysis.intent.t": "取引型",
   "pathAnalysis.flow.tierEntry": "入口キーワード",
   "pathAnalysis.flow.tier1": "1 次分岐",
   "pathAnalysis.flow.tier2": "2 次分岐",
@@ -53,7 +52,5 @@
   "report.marketLabel.KR": "韓国 (Naver + Google)",
   "report.marketLabel.JP": "日本 (Google)",
   "report.marketLabel.US": "米国 (Google)",
-  "customerAnalysis.stage.brand": "ブランド",
-  "customerAnalysis.stage.nonbrand": "ノンブランド",
   "customerAnalysis.dash.keywordTranslateBtn": "検索語を翻訳"
 }
