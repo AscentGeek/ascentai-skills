@@ -135,8 +135,6 @@
   "report.marketLabel.KR": "韓国 (Naver + Google)",
   "report.marketLabel.JP": "日本 (Google)",
   "report.marketLabel.US": "米国 (Google)",
-  "customerAnalysis.stage.brand": "ブランド",
-  "customerAnalysis.stage.nonbrand": "ノンブランド",
   "ti.unit.count": "{n}件",
   "ti.axis.na": "データなし",
   "customerAnalysis.dash.keywordTranslateBtn": "検索語を翻訳"
