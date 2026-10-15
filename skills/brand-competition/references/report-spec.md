@@ -176,23 +176,25 @@ customer needs; "which design we chose" is not. Tools we did not use, version hi
 and the rationale for internal rules all come out. **Never hardcode a run-specific sentence into
 the renderer** — given the right conditions it prints on another brand's run.
 
-### Synthesis — 4 sections always, 4 conditional
+### Synthesis — 3 sections always, 4 conditional
 
 | | Section | Condition |
 | :---- | :---- | :---- |
 | ① | Where to defend and where to take | always |
 | ② | Where the category verdict and its facets disagree | always (if none, say so) |
-| ③ | What this run judged on | always |
-| ④ | What we could not measure | always |
-| ⑤ | Rivals you keep meeting | a brand leads in 2 or more categories |
-| ⑥ | By group | 2 or more groups hold 3 or more categories |
-| ⑦ | Where naming and journey disagree | there is a disagreement |
-| ⑧ | Watched brands | `watch_brands` is set |
+| ③ | What we could not measure | always |
+| ④ | Rivals you keep meeting | a brand leads in 2 or more categories |
+| ⑤ | By group | 2 or more groups hold 3 or more categories |
+| ⑥ | Where naming and journey disagree | there is a disagreement |
+| ⑦ | Watched brands | `watch_brands` is set |
 
 Specified categories (`watch_categories`) get no section of their own — they are badged on the S0 row.
 
 **No per-category card.** That is the S0 row rewritten as prose, with no reason to read it.
-Measured section counts across four runs — 8 · 5 · 5 · 4.
+Measured section counts across four runs — 7 · 4 · 4 · 3.
+(Counted after dropping the old "What this run judged on" section: it came from the days when
+the category axis was built from journeys, so every category now lands in the naming-axis row
+and the other two rows are always 0.)
 
 ### Bubble map
 
