@@ -233,7 +233,7 @@ MERGE
 python3 {SKILL_DIR}/_shared/render/cluster_aggregate.py context \
   --cluster "{WORKDIR}/lm_cluster.json" \
   --keyword-info "{WORKDIR}/lm_keyword_info.json" \
-  --seed "<SEED>" --gl <MARKET> --date <YYYY-MM-DD> \
+  --seed "<SEED>" --gl <MARKET> --lang <REPORT_LANGUAGE> --date <YYYY-MM-DD> \
   --out "{WORKDIR}/lm_cluster_result.json"
 ```
 

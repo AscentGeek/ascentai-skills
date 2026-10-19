@@ -135,8 +135,6 @@
   "report.marketLabel.KR": "한국 (네이버 + 구글)",
   "report.marketLabel.JP": "일본 (구글)",
   "report.marketLabel.US": "미국 (구글)",
-  "customerAnalysis.stage.brand": "브랜드",
-  "customerAnalysis.stage.nonbrand": "논브랜드",
   "ti.unit.count": "{n}개",
   "ti.axis.na": "자료 없음",
   "customerAnalysis.dash.keywordTranslateBtn": "검색어 번역"

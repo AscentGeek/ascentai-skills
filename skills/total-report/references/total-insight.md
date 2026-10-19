@@ -266,7 +266,7 @@ python3 {SKILL_DIR}/_shared/render/path_aggregate.py context \
 #   lowers the cap by itself when it sees fewer enriched keywords, so this is belt and braces.
 python3 {SKILL_DIR}/_shared/render/cluster_aggregate.py context \
   --cluster "{WORKDIR}/c/lm_cluster.json" --keyword-info "{WORKDIR}/c/lm_keyword_info.json" \
-  --seed "<SEED>" --gl <MARKET> --date <YYYY-MM-DD> --top-n 1000 \
+  --seed "<SEED>" --gl <MARKET> --lang <REPORT_LANGUAGE> --date <YYYY-MM-DD> --top-n 1000 \
   --out "{WORKDIR}/c/lm_cluster_result.json"
 ```
 

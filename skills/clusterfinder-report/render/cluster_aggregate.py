@@ -26,8 +26,20 @@ from pathlib import Path
 
 
 INTENT_KEYS = ("i", "n", "c", "t")
-# 지배 의도 라벨 (agent_cluster 는 '검색 의도 축'을 정성 해석하므로 대표 라벨만 CSV 로 전달)
-INTENT_LABEL = {"i": "정보탐색", "n": "길찾기", "c": "상업조사", "t": "거래"}
+# 지배 의도 (agent_cluster 는 '검색 의도 축'을 정성 해석하므로 대표 라벨만 CSV 로 전달)
+#
+# 표시 문자열은 라벨 JSON 에서 가져온다. 예전에는 한국어를 여기 박아 두었는데, 그러면
+# us·jp 리포트의 CSV 에도 한국어가 들어가 LLM 이 그 말로 해석하게 된다. 리포트 화면에
+# 직접 찍히지는 않지만 해석 품질에 섞이므로 다른 스킬과 같은 라벨 키를 쓴다.
+INTENT_LABEL_KEY = {
+    "i": "customerAnalysis.stage.informational",
+    "n": "customerAnalysis.stage.navigational",
+    "c": "customerAnalysis.stage.commercial",
+    "t": "customerAnalysis.stage.transactional",
+}
+# 라벨 파일을 못 읽었을 때만 쓰는 폴백 — 영어로 둔다(한국어가 섞이는 것이 원래 문제였다)
+INTENT_FALLBACK = {"i": "Informational", "n": "Navigational",
+                   "c": "Commercial", "t": "Transactional"}
 
 # LLM 분석 입력(CSV) 상한. cluster_finder limit=10000 이면 노드 수가 시드에 따라 크게 갈린다
 # (실측 2026-10-12 · 6개 시드: 1,225 ~ 7,124 노드 · 클러스터 10 ~ 76개). 수집 상한과 분리해 둔다.
@@ -191,13 +203,36 @@ def parse_cluster_response(raw):
     return clean_comm, clean_rels
 
 
-def _dominant_intent(intents):
+def load_intent_labels(lang):
+    """Return {i/n/c/t: display string} for `lang`, read from the label JSON.
+
+    Falls back to English when the file is missing or a key is absent — the bug
+    this replaces was Korean leaking into every market's csv, so the fallback
+    must not reintroduce it.
+    """
+    out = dict(INTENT_FALLBACK)
+    # 소스 트리는 skills/<스킬>/{render,labels}/, zip 은 _shared/{render,labels}/ —
+    # 둘 다 render 의 형제 폴더라 한 경로로 닿는다.
+    path = Path(__file__).resolve().parent.parent / "labels" / f"cluster-landscape.{lang}.json"
+    try:
+        labels = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return out
+    for k, key in INTENT_LABEL_KEY.items():
+        v = labels.get(key)
+        if isinstance(v, str) and v.strip():
+            out[k] = v
+    return out
+
+
+def _dominant_intent(intents, intent_labels=None):
     if not intents:
         return ""
     total = sum((intents.get(k, 0) or 0) for k in INTENT_KEYS)
     if total <= 0:
         return ""
-    return INTENT_LABEL[max(INTENT_KEYS, key=lambda k: intents.get(k, 0) or 0)]
+    table = intent_labels or INTENT_FALLBACK
+    return table[max(INTENT_KEYS, key=lambda k: intents.get(k, 0) or 0)]
 
 
 # ─────────────────────────────────────────
@@ -316,7 +351,8 @@ def _select_context_keywords(keywords, top_n, cluster_min):
 
 def build_cluster_context(communities, rels, kw_info, seed, gl, date,
                           top_n=KEYWORD_CONTEXT_TOP_N,
-                          cluster_min=CLUSTER_MIN_KEYWORDS):
+                          cluster_min=CLUSTER_MIN_KEYWORDS,
+                          intent_labels=None):
     """Fuse communities + rels + keyword_info into the report context dict."""
     # 1) keyword -> cluster letter (a keyword belongs to a single community).
     #    Community ids are numeric strings ('0','1',...); sort numerically so
@@ -419,7 +455,7 @@ def build_cluster_context(communities, rels, kw_info, seed, gl, date,
         "clusterMembers": cluster_members,
         "hubKeywords": hub_keywords,
         "keywords": top_keywords,
-        "csv": _build_csv(top_keywords),
+        "csv": _build_csv(top_keywords, intent_labels),
     }
 
 
@@ -430,7 +466,7 @@ def _csv_field(value):
     return s
 
 
-def _build_csv(keywords):
+def _build_csv(keywords, intent_labels=None):
     """LLM analysis input. Columns mirror the internal agent_cluster context:
     n=keyword, v=volume_avg(월평균), c=cluster letter, h=is_hub(TRUE/FALSE),
     o=outgoing cluster letters(pipe-joined), i=대표 검색의도."""
@@ -442,7 +478,7 @@ def _build_csv(keywords):
             kw["cluster"],
             "TRUE" if kw["is_hub"] else "FALSE",
             "|".join(kw["outgoing"]),
-            _dominant_intent(kw.get("intents") or {}),
+            _dominant_intent(kw.get("intents") or {}, intent_labels),
         ]))
     return "\n".join(lines)
 
@@ -626,6 +662,7 @@ def _cmd_context(args):
         print("ERROR: cluster_finder 응답에서 communities 를 찾지 못했습니다.", file=sys.stderr)
         return 1
     kw_info = normalize_keyword_info(kwinfo_raw)
+    intent_labels = load_intent_labels(getattr(args, "lang", None) or args.gl)
 
     # Never let the csv run past what was actually enriched. A row whose keyword has no
     # volume is dead weight: it carries v=0, sorts to the bottom and still occupies a slot
@@ -640,7 +677,7 @@ def _cmd_context(args):
 
     result = build_cluster_context(
         communities, rels, kw_info, seed=args.seed, gl=args.gl, date=args.date,
-        top_n=top_n,
+        top_n=top_n, intent_labels=intent_labels,
     )
     Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     csv_rows = len(result["keywords"])
@@ -732,6 +769,9 @@ def main(argv=None):
     p_context.add_argument("--seed", required=True)
     p_context.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
     p_context.add_argument("--date", required=True, help="YYYY-MM-DD")
+    p_context.add_argument("--lang", choices=["kr", "jp", "us"],
+                           help="CSV 의 의도 라벨 언어 (리포트 언어). 생략하면 --gl 을 따른다 — "
+                                "CSV 는 LLM 입력이고 그 출력이 리포트 언어로 나가므로 맞춰 주는 편이 낫다")
     p_context.add_argument("--out", required=True)
     p_context.add_argument("--top-n", type=int, default=KEYWORD_CONTEXT_TOP_N,
                            help=f"CSV 행 상한 (기본 {KEYWORD_CONTEXT_TOP_N}). "

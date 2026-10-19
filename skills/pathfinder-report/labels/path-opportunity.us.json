@@ -1,6 +1,5 @@
 {
   "agent.pathAnalysis.name": "Search Journey Analysis",
-  "agent.pathAnalysis.desc": "Analyses the search journey consumers take from keyword to keyword, as routes and branch points (hubs).",
   "pathAnalysis.dash.coverEyebrow": "Search Journey Analysis",
   "pathAnalysis.dash.coverMeta": "Collected: {date} · {pathCount} routes · {hubCount} hubs",
   "pathAnalysis.a4.coverMeta": "{pathCount} routes · {hubCount} hubs",
@@ -9,10 +8,10 @@
   "pathAnalysis.dash.flowTitle": "Search Journey Flow",
   "pathAnalysis.dash.flowDesc": "The journeys that appear most often starting from '{category}', drawn as a branching tree with the largest flows first. Shared openings are merged, and the points where they split are the branch points (hubs).",
   "pathAnalysis.dash.flowLegendLabel": "Search intent  ",
-  "pathAnalysis.intent.i": "Information Seeking",
-  "pathAnalysis.intent.n": "Navigation",
-  "pathAnalysis.intent.c": "Commercial Research",
-  "pathAnalysis.intent.t": "Transaction",
+  "pathAnalysis.intent.i": "Informational",
+  "pathAnalysis.intent.n": "Navigational",
+  "pathAnalysis.intent.c": "Commercial",
+  "pathAnalysis.intent.t": "Transactional",
   "pathAnalysis.flow.tierEntry": "Entry keyword",
   "pathAnalysis.flow.tier1": "1st branch",
   "pathAnalysis.flow.tier2": "2nd branch",
@@ -53,7 +52,5 @@
   "report.marketLabel.KR": "South Korea (Naver + Google)",
   "report.marketLabel.JP": "Japan (Google)",
   "report.marketLabel.US": "United States (Google)",
-  "customerAnalysis.stage.brand": "Brand",
-  "customerAnalysis.stage.nonbrand": "Non-Brand",
   "customerAnalysis.dash.keywordTranslateBtn": "Translate keywords"
 }
