@@ -14,14 +14,19 @@ That is not repeated at each step below.
 | Ask | Default | Where it lands |
 | :---- | :---- | :---- |
 | Brand name | (required) | `config.brand` |
-| TARGET MARKET | `kr` | `gl` on every call |
-| REPORT LANGUAGE | same as market | `--lang` on the renderer |
+| TARGET MARKET | **none — must ask** | `gl` on every call |
+| REPORT LANGUAGE | **none — must ask** | `--lang` on the renderer |
 | Rivals that must be covered (max 10) | none | `watch_brands` |
 | Categories that must be covered (max 10) | none | `watch_categories` |
 | Official store URL | found with `web_search` | Step 2-c |
 
-**"Tell me if there are none — I will proceed as is."** If there is no answer, or the user says
-"you decide", **proceed on the defaults. You ask once.** Only if many categories mean several
+**TARGET MARKET and REPORT LANGUAGE are never defaulted.** They are independent — never derive
+one from the other, from the brand, or from the conversation language. If either is missing, it
+must be in the question, and **no MCP call starts until both are fixed.** If the user answers
+"you decide" for these two, state the values you will use in one line and get a yes first.
+
+For the remaining items: **"Tell me if there are none — I will proceed as is."** If there is no
+answer, or the user says "you decide", **proceed on the defaults. You ask once.** Only if many categories mean several
 turns, say so in one line — **never claim the environment prevents you from continuing.**
 
 - **Specified rivals** are measured across **every** category in Step 5. Do not make the user pick.
