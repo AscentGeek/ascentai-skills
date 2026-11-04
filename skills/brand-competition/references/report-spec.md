@@ -20,7 +20,7 @@
 | `alias` | | rival spelling variants, product lines and common misspellings. **Adds to the brand name, does not replace it** |
 | `alias_exclude` | | removes a different brand that shares the same characters |
 | `self_keywords` | | keywords summed into total brand volume. If present, a reference column appears |
-| `gl` | | market. `kr` · `jp` · `us`. Asked at Step 0, default `kr` |
+| `gl` | | market. `kr` · `jp` · `us`. Asked at Step 0, no default |
 | `extra_brands` | | brands found during the run but absent from `curate.comp` |
 | `watch_brands` | | rivals the user specified (max 10). Measured in **every** category and never cut from the table |
 | `watch_categories` | | categories the user specified (max 10). Added to Step 2 candidates without evidence; **the row is kept** even with no volume data |

@@ -1193,7 +1193,7 @@ if __name__=="__main__":
     ap.add_argument("--category",help="brand name for the cover (default: config.brand)")
     # --gl = market analysed · --lang = report language. They are independent.
     ap.add_argument("--gl",required=True,choices=["kr","jp","us"],help="target market")
-    ap.add_argument("--lang",choices=list(REPORT_LANGS),help="report language (default: same as --gl)")
+    ap.add_argument("--lang",required=True,choices=list(REPORT_LANGS),help="report language (no default · set at Step 0)")
     ap.add_argument("--date",required=True,help="YYYY-MM-DD")
     ap.add_argument("--out",required=True,help="output HTML path")
     ap.add_argument("--translations",
@@ -1201,5 +1201,5 @@ if __name__=="__main__":
                          "Only when the market language differs from --lang. "
                          "Passing it adds the keyword-translation toggle to the toolbar.")
     a=ap.parse_args()
-    build(a.run, a.out, gl=a.gl, lang=(a.lang or a.gl).lower(), date=a.date,
+    build(a.run, a.out, gl=a.gl, lang=a.lang.lower(), date=a.date,
           translations=a.translations)

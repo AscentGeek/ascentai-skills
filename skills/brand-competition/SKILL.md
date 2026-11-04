@@ -81,14 +81,21 @@ translation map and the report carries a **"Translate keywords"** toggle — see
 | Item | Default | Note |
 | :---- | :---- | :---- |
 | Brand name | (required) | one name · the whole run starts here |
-| TARGET MARKET | `kr` | `kr` · `jp` · `us` |
-| REPORT LANGUAGE | same as market | `kr` · `jp` · `us` |
+| TARGET MARKET | **none — must ask** | `kr` · `jp` · `us` |
+| REPORT LANGUAGE | **none — must ask** | `kr` · `jp` · `us` |
 | Rivals that must be covered | none | measured in every category, ahead of automatic discovery |
 | Categories that must be covered | none | included even without evidence, flagged as specified |
 | Official store URL | found by `web_search` | Step 2-c reads it to label what we actually sell |
 
-If the brand name is given and nothing else is mentioned, **proceed on the defaults — do not
-ask again.**
+**TARGET MARKET and REPORT LANGUAGE have no default.** If the request does not make both
+explicit, **ask once, in a single short question, before any MCP call** — do not guess them from
+the brand, from the market, or from the language of the conversation. Do not start any MCP call,
+collection or rendering until both values are fixed.
+
+The other items (rivals, categories, store URL) do have defaults: if the user does not mention
+them, **proceed on those defaults — do not ask about them again.**
+
+From then on, **conduct the whole conversation in REPORT LANGUAGE.**
 
 ## Output
 
