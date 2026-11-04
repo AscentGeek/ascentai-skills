@@ -1,5 +1,5 @@
 name: clusterfinder-report
-version: "3.0.0"
+version: "3.0.1"
 slug: cluster-landscape
 mcp_tools: [cluster_finder, keyword_info]
 vendor_chart: false

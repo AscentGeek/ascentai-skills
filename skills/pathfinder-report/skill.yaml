@@ -1,5 +1,5 @@
 name: pathfinder-report
-version: "3.0.0"
+version: "3.0.1"
 slug: path-opportunity
 mcp_tools: [path_finder, keyword_info]
 vendor_chart: false

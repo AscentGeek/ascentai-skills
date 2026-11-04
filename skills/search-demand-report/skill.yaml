@@ -1,5 +1,5 @@
 name: search-demand-report
-version: "1.0.0"
+version: "1.0.1"
 slug: demand-shift
 mcp_tools: [intent_finder, cluster_finder, keyword_info]
 vendor_chart: false

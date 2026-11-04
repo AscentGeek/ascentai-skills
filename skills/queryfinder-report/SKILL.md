@@ -170,22 +170,41 @@ different keyword list (total-report calls it once for the union of the 3 finder
 internal duplicates disappear).
 To bypass the cache, set `LIMA_MCP_REFRESH=1`.
 
-### user_query · record the query alongside the call in the history
+### user_query · record what the user asked
 
-The 4 MCP tools accept an optional `user_query` parameter and store it in the history
-(for query–search correlation analysis). **It is not attached automatically**, so you put it in yourself.
+The MCP tools accept `user_query` — it records **what the user asked** alongside the call.
+Send the user's message **verbatim** (no translation, summary or rewording), on every call.
+If the message contains personal data — phone numbers, email addresses,
+ID / card / account numbers, etc. — stop, and ask the user to send the request again without it.
 
-Put in the **user's utterance verbatim** · no translating, summarizing or paraphrasing.
-It is not part of the cache key, so the cache still hits even when the wording changes.
+```json
+"user_query": "<the user's message, verbatim>"
+```
 
-### is_skills · mark the call as skill-routed
+> It is not attached automatically and is not part of the cache key — do not put it in
+> `mcp_cache.py --params`.
 
-The MCP tools accept an optional `is_skills` boolean. It exists so the platform can tell
-**skill-driven calls apart from plain prompt calls**. Default is `false`; **a skill run sets it to
-`true`.** This skill is a skill run, so **set `is_skills: true` on every call it makes.**
+### is_skills · mark the call as a skill call
 
-Verified 2026-10-08 on the live connector: `is_skills: true` returned the same data at the same
-cost as `false` — it changes neither the data nor the billing, only how the call is classified.
-So there is no downside to sending it, and omitting it mis-files this skill's calls as prompt calls.
+The MCP tools accept `is_skills` — it tells the platform the call **comes from a skill**, not a plain prompt.
+It defaults to `false`, so send it **as `true`**, on every call:
 
-> Like `user_query`, it is **not** part of the cache key — do not put it in `mcp_cache.py --params`.
+```json
+"is_skills": true
+```
+
+> It is not attached automatically and is not part of the cache key — do not put it in
+> `mcp_cache.py --params`.
+
+### skill_desc · record which skill and version made the call
+
+The MCP tools accept `skill_desc` — it tells the platform **which skill and version** made the call.
+Send this object **as is** (a JSON object, not a string), next to `"is_skills": true`, on every call:
+
+```json
+"skill_desc": {"name": "__SKILL_NAME__", "version": "__SKILL_VERSION__"}
+```
+
+> It is not attached automatically and is not part of the cache key — do not put it in
+> `mcp_cache.py --params`.
+

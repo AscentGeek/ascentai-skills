@@ -35,7 +35,7 @@ Always write `"gl"` — the purchase-exploration words and the broad-seed thresh
 
 ## 3. Verification — 2 MCP calls (all candidates at once)
 
-Each call follows SKILL.md "MCP call protocol" (cache lookup → call with `download_url` + `is_skills: true` + `user_query` → `fetch_dl.py`).
+Each call follows SKILL.md "MCP call protocol" (cache lookup → call with `download_url` + `is_skills: true` + `skill_desc` + `user_query` → `fetch_dl.py`).
 
 | File | Tool · parameters |
 |---|---|

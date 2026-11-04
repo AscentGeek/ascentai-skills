@@ -111,6 +111,22 @@ build_one() {
     }
   ' "$d/SKILL.md" > "$d/SKILL.md.tmp" && mv "$d/SKILL.md.tmp" "$d/SKILL.md"
 
+  # ── skill_desc 플레이스홀더 주입 · MCP 호출 예시의 스킬 이름·버전 ──
+  #   MCP 서버가 skill_desc 로 "어느 스킬·버전이 부른 호출인지" 를 기록한다.
+  #   문서에는 __SKILL_NAME__ · __SKILL_VERSION__ 만 적고 값은 여기서 박는다 —
+  #   버전을 사람이 두 곳에 적지 않게 하려는 것이다 (출처는 skill.yaml).
+  #   남은 플레이스홀더가 있으면 admin 에 그대로 기록되므로 빌드를 멈춘다.
+  local md
+  for md in "$d/SKILL.md" "$d"/references/*.md; do
+    [[ -f "$md" ]] || continue
+    sed -e "s/__SKILL_NAME__/$skill_name/g" -e "s/__SKILL_VERSION__/$version/g" "$md" > "$md.tmp" \
+      && mv "$md.tmp" "$md"
+  done
+  if grep -rl "__SKILL_NAME__\|__SKILL_VERSION__" "$d" >/dev/null 2>&1; then
+    echo "  ✗ $name · 플레이스홀더 남음: $(grep -rl "__SKILL_NAME__\|__SKILL_VERSION__" "$d" | sed "s|$d/||" | tr '\n' ' ')" >&2
+    rm -rf "$stage"; return 1
+  fi
+
   # ── zip ──
   mkdir -p "$OUT"
   rm -f "$OUT/$skill_name.zip"

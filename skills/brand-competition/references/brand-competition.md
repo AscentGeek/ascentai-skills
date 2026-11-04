@@ -54,8 +54,10 @@ From here on, replace `{WORKDIR}` with that absolute path, and `{RUN}` means the
 ```
 intent_finder(keywords=["<BRAND>"], gl="<MARKET>", limit=1000, sort="volume_avg",
               volume_threshold=1, response_format="download_url", is_skills=True,
+              skill_desc=<the object in SKILL.md ### skill_desc>,
               user_query="<the user's utterance, verbatim>")
 path_finder(keyword="<BRAND>", gl="<MARKET>", limit=300, time_point="curr", is_skills=True,
+            skill_desc=<the object in SKILL.md ### skill_desc>,
             user_query="<the user's utterance, verbatim>")
 ```
 
@@ -82,7 +84,8 @@ non-brand nodes of the brand journey, keep **product categories** only.
 (Step 5 needs them anyway), show a table with sizes, and let the user choose.
 
 ```
-keyword_info(keywords=[<all candidates>], data_type="ads_metrics", gl="<MARKET>", is_skills=True)
+keyword_info(keywords=[<all candidates>], data_type="ads_metrics", gl="<MARKET>", is_skills=True,
+             skill_desc=<the object in SKILL.md ### skill_desc>)
 ```
 
 **Do not cut to "the top N by volume", and do not suggest it.** The positions a brand actually
@@ -119,7 +122,8 @@ use** — Step 11's self-check needs both.
 
 ```
 intent_finder(keywords=["<CATEGORY>"], gl="<MARKET>", limit=1000, sort="volume_avg",
-              volume_threshold=1, response_format="download_url", is_skills=True)
+              volume_threshold=1, response_format="download_url", is_skills=True,
+              skill_desc=<the object in SKILL.md ### skill_desc>)
 ```
 
 **Do not pick categories. Run them all at the same depth, serially.** Do not change `limit` inside
@@ -175,7 +179,8 @@ python3 {SKILL_DIR}/scripts/mcp_cache.py lookup keyword_info \
 ```
 # ② on a miss, call MCP with exactly what the params file contains
 keyword_info(keywords=[...], gl="<MARKET>", data_type="ads_metrics", response_format="download_url",
-             is_skills=True)
+             is_skills=True,
+             skill_desc=<the object in SKILL.md ### skill_desc>)
 ```
 ```bash
 # ③ fetch + verify + store, in one command
@@ -222,7 +227,8 @@ market; a single digit means being first matters little.
 Call it **only for categories that came out Unclaimed.** Not for the rest.
 
 ```
-path_finder(keyword="<CATEGORY>", gl="<MARKET>", limit=300, time_point="curr", is_skills=True)
+path_finder(keyword="<CATEGORY>", gl="<MARKET>", limit=300, time_point="curr", is_skills=True,
+            skill_desc=<the object in SKILL.md ### skill_desc>)
 ```
 ```bash
 python3 {SKILL_DIR}/_shared/render/pathcand.py {RUN}   # frequent journey nodes → more rivals
@@ -270,7 +276,8 @@ Write `deep: true` and `cep` into `curate.json` — **the code and the files kee
 One seed, **one call**, per facet.
 
 ```
-path_finder(keyword="<FACET> <CATEGORY>", gl="<MARKET>", limit=300, time_point="curr", is_skills=True)
+path_finder(keyword="<FACET> <CATEGORY>", gl="<MARKET>", limit=300, time_point="curr", is_skills=True,
+            skill_desc=<the object in SKILL.md ### skill_desc>)
 ```
 
 **300 is a floor. Never lower it** — below it the gate floors bind, the bar quietly tightens and

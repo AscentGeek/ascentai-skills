@@ -23,13 +23,14 @@ Every call follows SKILL.md "MCP call protocol" — no exceptions:
 ```bash
 # ① cache · exit 0 = hit (skip the call) · exit 2 = miss
 python3 "$CACHE" lookup intent_finder --params '<PARAMS>' --out "$WORKDIR/lm_intent_seed.json"
-# ② miss → call the tool with <PARAMS> + "response_format":"download_url" + "is_skills":true + "user_query":"<user's words verbatim>"
+# ② miss → call the tool with <PARAMS> + "response_format":"download_url" + "is_skills":true
+#    + "skill_desc":<the object in SKILL.md ### skill_desc> + "user_query":"<user's words verbatim>"
 #    → fetch the URL, verify, store
 python3 "$R/fetch_dl.py" --url "<download.browser_download_url>" --out "$WORKDIR/lm_intent_seed.json" \
   --sha256 <download.sha256> --items <download.item_count> --tool intent_finder --params '<PARAMS>'
 ```
 
-- `<PARAMS>` = the parameter JSON in the tables below, **without** `user_query`, `response_format` and `is_skills`. Use the same string in ① and ②.
+- `<PARAMS>` = the parameter JSON in the tables below, **without** `user_query`, `response_format`, `is_skills` and `skill_desc`. Use the same string in ① and ②.
 - One call at a time — the account allows 1 concurrent request (`Too Many Requests` otherwise; wait and retry).
 - keyword_info takes up to 1,000 keywords per call; split only above that. **Never trim a bundle.**
 

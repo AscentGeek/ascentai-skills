@@ -90,7 +90,8 @@ On a miss, call the **`cluster_finder` MCP tool** with these parameters:
 ```json
 {"keyword": "<SEED>", "gl": "<MARKET>", "data_type": "all", "hop": 2, "limit": 10000,
  "orientation": "UNDIRECTED", "time_point": "curr",
- "user_query": "<the user's utterance, verbatim>", "is_skills": true}
+ "user_query": "<the user's utterance, verbatim>", "is_skills": true,
+ "skill_desc": <the object in SKILL.md ### skill_desc>}
 ```
 
 > `data_type` must be **`all`** — you need both `communities` (the cluster dict) and `rels` (the
@@ -181,7 +182,7 @@ python3 {SKILL_DIR}/scripts/mcp_cache.py lookup keyword_info \
 ```
 
 On a miss, call the **`keyword_info` MCP tool** with the contents of `kw_params_<N>.json` plus
-`user_query`, `"is_skills": true` and `"response_format": "download_url"`, then fetch + store in
+`user_query`, `"is_skills": true`, `"skill_desc": <the object in SKILL.md ### skill_desc>` and `"response_format": "download_url"`, then fetch + store in
 one step:
 
 ```bash
