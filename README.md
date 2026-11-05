@@ -21,21 +21,33 @@ ListeningMind **SaaS 고객용** 리포트 스킬. 데이터는 **ListeningMind 
 > `listeningmind-data-api.ascentlab.io` 송신이 들어오면 그 전제가 깨진다.
 > pre-commit 훅이 이를 차단한다.
 
-## 스킬 6종
+## 스킬 7종
 
 | 스킬 | 리포트 | 버전 | 쓰는 MCP 도구 |
 |---|---|---|---|
-| `lm-queryfinder-report` | 쿼리 기회 분석 | 3.0.0 | `intent_finder` + `keyword_info` |
-| `lm-clusterfinder-report` | 검색 클러스터 지형 | 3.0.0 | `cluster_finder` + `keyword_info` |
-| `lm-pathfinder-report` | 검색 여정 분석 | 3.0.0 | `path_finder` + `keyword_info` |
-| `lm-total-report` | 3파인더 통합 | 3.0.0 | 위 3종 + `keyword_info` 1회 |
-| `lm-brand-competition` | 브랜드 경쟁 구도 카테고리 지도 | 1.0.0 | `intent_finder` + `path_finder` + `keyword_info` |
-| `lm-search-demand-report` | 검색 수요 진단 (시장 흐름 대비 변화) | 1.0.0 | `intent_finder` + `cluster_finder`(선택) + `keyword_info` |
+| `lm-queryfinder-report` | 쿼리 기회 분석 | 3.1.0 | `intent_finder` + `keyword_info` |
+| `lm-clusterfinder-report` | 검색 클러스터 지형 | 3.0.1 | `cluster_finder` + `keyword_info` |
+| `lm-pathfinder-report` | 검색 여정 분석 | 3.0.1 | `path_finder` + `keyword_info` |
+| `lm-total-report` | 3파인더 통합 | 3.0.1 | 위 3종 + `keyword_info` 1회 |
+| `lm-brand-competition` | 브랜드 경쟁 구도 카테고리 지도 | 1.0.1 | `intent_finder` + `path_finder` + `keyword_info` |
+| `lm-search-demand-report` | 검색 수요 진단 (시장 흐름 대비 변화) | 1.0.1 | `intent_finder` + `cluster_finder`(선택) + `keyword_info` |
+| `lm-season-trend-report` | 시즌·트렌드 분석 (48개월 월별 패턴) | 1.0.0 | `intent_finder` + `cluster_finder` + `keyword_info` |
 
 스킬 이름은 `lm-<스킬명>` 이다 — 국가 코드는 붙지 않는다.
 
+### 씨드 검색어는 스킬마다 개수가 다르다
+
+대부분의 스킬은 씨드 검색어 **1개**를 받는다. `lm-queryfinder-report` 만 **1~10개**를
+받으며, 여러 개를 넣어도 **씨드별 리포트가 아니라 연관 쿼리를 합친 리포트 한 장**이
+나온다. 한 카테고리 안의 경쟁 브랜드나 대체재를 함께 넣는 용도다.
+
+> `keyword_info` 의 1,000건 상한은 **호출당**이라 씨드 N개가 한 예산을 나눈다.
+> 그래서 씨드별로 균등 배분(1000÷N)한 뒤 남는 자리를 검색량 상위로 채운다 —
+> 전역 상위 1,000 으로 자르면 검색량 큰 씨드가 작은 씨드를 통째로 밀어내
+> 10개를 넣고 3개만 나오는 일이 생긴다.
+
 **버전은 스킬 단위로 간다.** 기존 리포트 4종은 로케일 통합(2.0.0)과 로깅 제거(3.0.0)를
-함께 겪어 **3.0.0 으로 묶여** 있고, 나중에 추가된 두 스킬은 그 이력이 없어 **1.0.0 에서
+함께 겪어 **3.0.x 로 묶여** 있고, 나중에 추가된 세 스킬은 그 이력이 없어 **1.0.x 에서
 시작**한다. 한 저장소에 버전이 섞여 보이는 것이 정상이다. 출처는 `skill.yaml` 하나이며
 (`SKILL.md` 에는 적지 않는다) 빌드가 `metadata.version` 으로 넣어 준다.
 
