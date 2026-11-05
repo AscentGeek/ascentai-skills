@@ -76,6 +76,17 @@ def kw_html(kw: str) -> str:
             f'<span class="kw-t">{html.escape(tr)}</span>')
 
 
+def kw_list_html(kws, sep: str = " · ") -> str:
+    """여러 키워드의 표시 HTML. 각 키워드를 따로 kw_html 에 통과시킨다.
+
+    씨드를 미리 한 문자열로 이어붙이면 TRANSLATIONS 조회 키가 어긋나 번역이
+    통째로 빠지므로(조회는 키워드 원문 단위다), 합치는 일은 escape 뒤에 한다.
+    """
+    if isinstance(kws, str):
+        return kw_html(kws)
+    return html.escape(sep).join(kw_html(k) for k in kws if k)
+
+
 def t(labels: Dict[str, str], key: str) -> str:
     """i18n lookup; falls back to the key itself if missing."""
     return labels.get(key, key)
@@ -353,7 +364,7 @@ def purpose_box_html(
     # 문구를 먼저 이스케이프한 뒤 자리표시자를 채운다. 검색어는 번역 토글용
     # 이중 span 이라 이미 안전한 HTML 이고, 뒤늦게 넣어야 두 번 이스케이프되지 않는다.
     key = "customerAnalysis.purpose.body" if market_label else "customerAnalysis.purpose.bodyNoMarket"
-    body_html = escape_with_strong(t(labels, key)).replace("{category}", kw_html(category))
+    body_html = escape_with_strong(t(labels, key)).replace("{category}", kw_list_html(category))
     if market_label:
         body_html = body_html.replace("{market}", html.escape(market_label))
     box_class = "mr-summary-box mr-summary-box--dash" if variant == "dash" else "mr-summary-box"
@@ -407,7 +418,7 @@ def dash_cover_html(
         '<div class="dash-cover-gradient">'
         f'<div class="dash-cover-eyebrow">{html.escape(eyebrow)}</div>'
         f'<div class="dash-cover-title">{t(labels, "agent.customerAnalysis.name")}</div>'
-        f'<div class="dash-cover-category">{kw_html(category)}</div>'
+        f'<div class="dash-cover-category">{kw_list_html(category)}</div>'
         f'<div class="dash-cover-meta">{html.escape(cover_meta)}</div>'
         '</div>'
         + purpose_box_html(category, market_label, labels, "dash", overview=overview)
@@ -448,7 +459,7 @@ def dash_panel_personas_html(
             '<div class="dash-card">'
             '<div class="dash-card__head">'
             f'<span class="dash-card__title">'
-            + t(labels, "customerAnalysis.dash.coreSectionTitle").replace("{category}", kw_html(category))
+            + t(labels, "customerAnalysis.dash.coreSectionTitle").replace("{category}", kw_list_html(category))
             + '</span>'
             f'<span class="dash-card__badge">{format_count(labels, len(core))}</span>'
             '</div>'
@@ -457,7 +468,7 @@ def dash_panel_personas_html(
         )
     if alt:
         cards = "".join(persona_card_html(p, i, labels) for i, p in enumerate(alt))
-        desc = t(labels, "customerAnalysis.dash.altSectionDesc").replace("{category}", kw_html(category))
+        desc = t(labels, "customerAnalysis.dash.altSectionDesc").replace("{category}", kw_list_html(category))
         sections.append(
             '<div class="dash-card">'
             '<div class="dash-card__head">'
@@ -555,7 +566,7 @@ def a4_cover_page_html(meta: Dict[str, Any], category: str, labels: Dict[str, st
         '<div>'
         '<div class="cover-lm">ListeningMind.AI</div>'
         f'<div class="cover-title">{t(labels, "agent.customerAnalysis.name")}</div>'
-        f'<div class="cover-category">{kw_html(category)}</div>'
+        f'<div class="cover-category">{kw_list_html(category)}</div>'
         '<div class="cover-meta">'
         f'<span>{html.escape(str(meta.get("date", "")))}</span>'
         '<span class="cover-meta-sep">|</span>'

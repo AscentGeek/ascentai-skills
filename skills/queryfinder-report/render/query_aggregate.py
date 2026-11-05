@@ -60,8 +60,17 @@ def _unwrap_content_blocks(raw):
     return raw
 
 
-def normalize_records(raw):
-    """Return a flat list of {keyword, ads_metrics, monthly_volume, intents}."""
+def normalize_records(raw, seed=None):
+    """Return a flat list of {keyword, ads_metrics, monthly_volume, intents, seed}.
+
+    `seed` records which input seed this batch of records came from. With a
+    single seed it is that seed; with several it is set per-batch by
+    _cmd_context, which reads one response file per seed, so a later
+    cross-seed comparison can tell the origin of every keyword without
+    re-fetching. The response itself
+    carries no origin field — multi-seed intent_finder returns one flat list
+    — so it is attached here, at the only point that knows the mapping.
+    """
     raw = _unwrap_content_blocks(raw)
     rows = []
     if isinstance(raw, list):
@@ -94,12 +103,19 @@ def normalize_records(raw):
         ads_metrics = src.get("ads_metrics")
         intents = src.get("intents")
         monthly_volume = src.get("monthly_volume")
-        records.append({
+        rec = {
             "keyword": keyword,
             "ads_metrics": ads_metrics if isinstance(ads_metrics, dict) else {},
             "monthly_volume": monthly_volume if isinstance(monthly_volume, list) else [],
             "intents": intents if isinstance(intents, dict) else {},
-        })
+        }
+        # 응답에 출처 씨드가 있으면 그것을 믿고, 없으면 호출자가 준 값을 단다.
+        src_seed = src.get("seed") or src.get("source_keyword")
+        if src_seed:
+            rec["seed"] = src_seed
+        elif seed:
+            rec["seed"] = seed
+        records.append(rec)
     return records
 
 
@@ -292,7 +308,15 @@ def build_keyword_context(records, seed, gl, date, top_n=KEYWORD_CONTEXT_TOP_N):
     """Aggregate normalize_records() output into the lm_query_result.json
     shape: per-keyword volume/intent breakdown + a CSV text blob that's the
     `{{query_csv}}` the LLM grouping step (step 3) consumes.
+
+    `seed` is a list of 1-10 input seeds (a bare string is accepted and
+    wrapped). The report itself is one union across every seed — the seed
+    only survives as a per-keyword `seed` field and the `seedCounts`
+    tally, which nothing on screen reads yet. That is deliberate: it keeps
+    the origin in the data for a later per-seed comparison section without
+    changing the current card layout.
     """
+    seeds = [seed] if isinstance(seed, str) else list(seed or [])
     keywords = []
     intent_totals = {k: 0 for k in INTENT_KEYS}
     total_volume = 0
@@ -303,13 +327,16 @@ def build_keyword_context(records, seed, gl, date, top_n=KEYWORD_CONTEXT_TOP_N):
         total_volume += vavg
         for k in INTENT_KEYS:
             intent_totals[k] += intents[k]
-        keywords.append({
+        row = {
             "keyword": r["keyword"],
             "volume_avg": vavg,
             "volume_total": _num(am.get("volume_total")),
             "volume_trend": _num(am.get("volume_trend")),
             "intents": intents,
-        })
+        }
+        if r.get("seed"):
+            row["seed"] = r["seed"]
+        keywords.append(row)
 
     keywords.sort(key=lambda k: k["volume_avg"], reverse=True)
     raw_intent_total = sum(intent_totals.values())
@@ -318,8 +345,15 @@ def build_keyword_context(records, seed, gl, date, top_n=KEYWORD_CONTEXT_TOP_N):
     )
 
     top_keywords = keywords[:top_n]
+    # 씨드별로 몇 건이 상위 컷에 남았는지 — 한 씨드가 전부 밀려났는지 확인하는 용도.
+    seed_counts = {sd: 0 for sd in seeds}
+    for k in top_keywords:
+        if k.get("seed"):
+            seed_counts[k["seed"]] = seed_counts.get(k["seed"], 0) + 1
     return {
-        "seed": seed,
+        "seed": seeds[0] if len(seeds) == 1 else seeds,
+        "seeds": seeds,
+        "seedCounts": seed_counts,
         "gl": gl,
         "date": date,
         "keywordCount": len(records),
@@ -491,15 +525,89 @@ def postprocess_groups(groups_raw, keyword_map):
 # CLI — subcommands
 # ─────────────────────────────────────────
 
+MAX_SEEDS = 10
+
+
+def _dedupe_records(records):
+    """Drop keywords that several seeds both returned, keeping the first.
+
+    Seeds in one category overlap heavily, so the union double-counts search
+    volume without this — the same keyword would be summed once per seed that
+    returned it and every group total would be inflated.
+    """
+    seen, out = set(), []
+    for r in records:
+        kw = r.get("keyword")
+        if kw in seen:
+            continue
+        seen.add(kw)
+        out.append(r)
+    return out
+
+
 def _cmd_context(args):
-    raw = json.loads(Path(args.raw).read_text(encoding="utf-8"))
-    records = normalize_records(raw)
+    seeds = args.seed
+    if len(seeds) > MAX_SEEDS:
+        print(f"ERROR: 씨드는 최대 {MAX_SEEDS}개까지입니다 (받은 개수 {len(seeds)}).",
+              file=sys.stderr)
+        return 1
+    if len(set(seeds)) != len(seeds):
+        print("ERROR: 중복된 씨드가 있습니다.", file=sys.stderr)
+        return 1
+
+    raws = args.raw
+    # --raw 를 씨드와 같은 개수로 주면 파일 하나당 씨드 하나로 보고 출처를 단다.
+    # 하나만 주면 (씨드 여러 개라도) 합쳐 받은 응답으로 보고 출처를 달지 않는다.
+    if len(raws) not in (1, len(seeds)):
+        print(f"ERROR: --raw 는 1개 또는 씨드 개수({len(seeds)})만큼 주세요 "
+              f"(받은 개수 {len(raws)}).", file=sys.stderr)
+        return 1
+
+    records = []
+    # 씨드당 파일을 받은 경우에만 출처가 붙는다. 하나로 합쳐 받으면 어느 씨드에서
+    # 나온 키워드인지 알 수 없고, 그건 오류가 아니라 허용된 입력 형태다.
+    seed_attributed = len(raws) == len(seeds) and len(seeds) > 1
+    if len(raws) == len(seeds):
+        for sd, path in zip(seeds, raws):
+            batch = normalize_records(
+                json.loads(Path(path).read_text(encoding="utf-8")), seed=sd)
+            if not batch:
+                print(f"ERROR: '{sd}' 응답({path})에서 레코드를 찾지 못했습니다.",
+                      file=sys.stderr)
+                return 1
+            records.extend(batch)
+    else:
+        single_seed = seeds[0] if len(seeds) == 1 else None
+        records = normalize_records(
+            json.loads(Path(raws[0]).read_text(encoding="utf-8")), seed=single_seed)
+
     if not records:
         print("ERROR: intent_finder 응답에서 레코드를 찾지 못했습니다.", file=sys.stderr)
         return 1
-    result = build_keyword_context(records, seed=args.seed, gl=args.gl, date=args.date)
+
+    before = len(records)
+    records = _dedupe_records(records)
+    if before != len(records):
+        print(f"씨드 간 중복 키워드 {before - len(records)}건 제거 "
+              f"({before} → {len(records)})")
+
+    result = build_keyword_context(records, seed=seeds, gl=args.gl, date=args.date)
     Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"wrote {args.out} ({result['keywordCount']} keywords)")
+    counts = result.get("seedCounts") or {}
+    if seed_attributed and counts:
+        dist = " · ".join(f"{sd} {counts.get(sd, 0)}" for sd in seeds)
+        print(f"상위 {len(result.get('keywords') or [])}건의 씨드별 분포: {dist}")
+        empty = [sd for sd in seeds if not counts.get(sd)]
+        if empty:
+            # Step 1b 의 균등 배분을 거쳤다면 생기지 않는다 — 전역 상위 1,000 으로
+            # 자른 탓에 한 씨드가 통째로 밀려난 상태다.
+            print(f"⚠ 상위 컷에 한 건도 남지 않은 씨드: {', '.join(empty)} "
+                  f"— Step 1b 의 씨드별 균등 배분(1000÷N)으로 kw_params.json 을 "
+                  f"다시 만들어 keyword_info 를 재수집하세요.", file=sys.stderr)
+    elif len(seeds) > 1:
+        print(f"씨드 {len(seeds)}개 · 합쳐 받은 응답이라 키워드별 출처는 남지 않습니다 "
+              f"(씨드당 --raw 파일을 주면 보존됩니다).")
     return 0
 
 
@@ -529,7 +637,8 @@ def _cmd_keywords(args):
             ordered.append(kw)
 
     # 표지·목적 문구에 박히는 씨드 검색어도 화면에 보이므로 번역 대상이다.
-    add(args.category)
+    for sd in args.category:
+        add(sd)
 
     for group in doc.get("groups", []):
         for row in (group.get("members") or []) + (group.get("evidence") or []):
@@ -552,8 +661,11 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_context = sub.add_parser("context", help="Aggregate an intent_finder response into lm_query_result.json")
-    p_context.add_argument("--raw", required=True, help="intent_finder 응답 JSON 경로")
-    p_context.add_argument("--seed", required=True)
+    p_context.add_argument("--raw", required=True, nargs="+",
+                           help="intent_finder 응답 JSON 경로 — 1개(합쳐 받은 응답) 또는 "
+                                "씨드 개수만큼(씨드당 1개, 출처가 보존된다)")
+    p_context.add_argument("--seed", required=True, nargs="+",
+                           help=f"씨드 검색어 1~{MAX_SEEDS}개")
     # --gl 은 분석 대상 시장이다. 리포트 언어(--lang)와는 별개로 움직인다.
     p_context.add_argument("--gl", required=True, choices=["kr", "jp", "us"])
     p_context.add_argument("--date", required=True, help="YYYY-MM-DD")
@@ -570,7 +682,8 @@ def main(argv=None):
         "keywords",
         help="List the keywords that actually appear in the report (for translation)")
     p_kw.add_argument("--groups", required=True, help="lm_groups.json 경로")
-    p_kw.add_argument("--category", required=True, help="씨드 검색어 — 표지에 박히므로 함께 번역한다")
+    p_kw.add_argument("--category", required=True, nargs="+",
+                      help="씨드 검색어 — 표지에 박히므로 함께 번역한다 (여러 개 가능)")
     p_kw.add_argument("--out", required=True)
     p_kw.set_defaults(func=_cmd_keywords)
 

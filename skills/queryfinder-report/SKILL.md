@@ -1,7 +1,7 @@
 ---
 name: lm-queryfinder-report
 description: >-
-  Analyzes the related queries of a seed keyword with ListeningMind MCP
+  Analyzes the related queries of 1-10 seed keywords with ListeningMind MCP
   (intent_finder · keyword_info) and generates a "Query Opportunity Analysis"
   rich HTML report (dashboard/A4). Using the QueryFinder agent's analysis frame,
   it groups related queries by search purpose and by brand/non-brand, and
@@ -57,13 +57,30 @@ both values are fixed.
 
 ## Inputs (ask the user in chat at Step 0)
 
-1. **Seed keyword**: the analysis target (written in the language of the target market —
-   Korean for `kr`, Japanese for `jp`, English for `us`)
+1. **Seed keywords**: **1 to 10** analysis targets (written in the language of the target
+   market — Korean for `kr`, Japanese for `jp`, English for `us`)
 2. **TARGET MARKET (`gl`)**: `kr` · `jp` · `us`
 3. **REPORT LANGUAGE (`lang`)**: `kr` · `jp` · `us`
 
-If the seed is already given, proceed with it. If market or report language is missing,
+If the seeds are already given, proceed with them. If market or report language is missing,
 ask once — there is no default.
+
+### Seed count rules
+
+- **1 to 10 seeds.** More than 10 → do not proceed; tell the user the cap is 10 and ask
+  which ones to keep. Duplicate seeds are an error (the aggregator rejects them).
+- **The report is one union, not one report per seed.** Related queries from every seed are
+  merged, deduplicated and analyzed as a single landscape. Seeds that belong to one category
+  (`나이키 러닝화` · `아식스 러닝화`) give a coherent report; unrelated seeds
+  (`러닝화` · `보험` · `호텔`) produce group cards with no shared thread — if the seeds look
+  unrelated, say so and ask whether to split them into separate runs.
+- **The origin seed stays in the data.** Every keyword carries which seed returned it
+  (`seed` per keyword · `seedCounts` tally in `lm_query_result.json`). Nothing on screen
+  shows it yet — it is kept so a per-seed comparison view can be added later without
+  re-fetching. Do not surface it in the analysis text.
+- **Search-volume budget is shared.** `keyword_info` takes at most 1,000 keywords per call
+  no matter how many seeds there are, so each seed gets roughly `1000 ÷ N` of the detail
+  budget. See `references/query-opportunity.md` Step 1b.
 
 **Never ask for an API key** — data comes from the MCP connector. If an MCP tool call fails
 with "tool not found", the connector is not connected: ask the user to connect the
@@ -72,7 +89,9 @@ ListeningMind MCP connector and stop. **Do not invent data.**
 ## Output
 
 `{WORKDIR}/query-opportunity-report.html` — a self-contained HTML file (dashboard↔A4 toggle · printable PDF).
-`{WORKDIR}` is `tmp/reports/listeningmind-query-opportunity-{seed}-{timestamp}/` inside the running project.
+`{WORKDIR}` is `tmp/reports/listeningmind-query-opportunity-{seed}-{timestamp}/` inside the running
+project (`{seed}` = the first seed, plus `-and{N}` when there are more — the folder name only has to
+be unique and readable, so it does not carry all 10).
 
 ---
 
