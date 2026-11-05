@@ -388,8 +388,10 @@ def render_query(args) -> str:
     # here. The other args.category usages below go through ca builders that
     # already html-escape it internally, so they stay unescaped to avoid
     # double-escaping.
+    # {{CATEGORY}} 는 <title> 에 평문으로 꽂히므로 칩 마크업이 아니라 문자열로 잇는다.
+    title_category = " · ".join(args.category)
     blocks = _common_blocks(
-        "query-opportunity", lang, html.escape(args.category), labels,
+        "query-opportunity", lang, html.escape(title_category), labels,
         title_key="agent.customerAnalysis.name",
         dash_tab_key="customerAnalysis.dash.personaTab",
     )
@@ -414,7 +416,8 @@ def render_query(args) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render ListeningMind.AI-style HTML report.")
     parser.add_argument("--skill", required=True, choices=["query-opportunity"])
-    parser.add_argument("--category", required=True)
+    parser.add_argument("--category", required=True, nargs="+",
+                        help="씨드 검색어 1개 이상 — 표지·목적 문구에 박힌다")
     # --gl = 분석 대상 시장 (MCP 조회와 표지의 시장명)
     # --lang = 리포트 언어 (라벨·폰트·본문). 생략하면 시장을 따른다.
     parser.add_argument("--gl", required=True, choices=["kr", "jp", "us"],

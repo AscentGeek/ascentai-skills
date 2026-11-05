@@ -36,11 +36,15 @@ You need three inputs, and **TARGET MARKET and REPORT LANGUAGE are independent o
 (analyzing the US market and writing the report in Japanese is a valid combination):
 
 > Starting the query opportunity analysis.
-> 1. **Seed keyword** — skip if you already gave it
+> 1. **Seed keywords (1–10)** — skip if you already gave them
 > 2. **TARGET MARKET (`gl`)** — the search market to analyze: `kr` · `jp` · `us`
 > 3. **REPORT LANGUAGE (`lang`)** — the language of the report: `kr` (Korean) · `jp` (Japanese) · `us` (English)
 
-If the seed is already given, proceed with it. If the market or the report language is not explicit
+**Check the seed count before anything else** (SKILL.md §Seed count rules): 1–10, no duplicates.
+Over 10 → stop and ask which to keep. The result is **one merged report**, not one per seed, so if
+the seeds are not in one category, tell the user and ask whether to split the run.
+
+If the seeds are already given, proceed with them. If the market or the report language is not explicit
 in the user's request, **ask once, in a single short question, and do not guess.** There is no
 default for either — never derive the report language from the market or the market from the report
 language. **Fix both values before any tool call.**
@@ -55,12 +59,17 @@ Do not invent data.
 
 Once you have the inputs:
 
+`<SEED_1>` … `<SEED_N>` are the seeds in the order the user gave them; `<SEED_1>` names the folder.
+
 ```bash
-SAFE_SEED=$(echo "<SEED>" | tr ' /\\:*?"<>|' '_')
+# 폴더 이름은 첫 씨드 + 나머지 개수로 짧게 둔다 (씨드 10개를 다 이어붙이지 않는다)
+SEEDS=("<SEED_1>" "<SEED_2>")          # 씨드 개수만큼
+SAFE_SEED=$(echo "${SEEDS[0]}" | tr ' /\\:*?"<>|' '_')
+[ "${#SEEDS[@]}" -gt 1 ] && SAFE_SEED="${SAFE_SEED}-and$(( ${#SEEDS[@]} - 1 ))"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 WORKDIR="$PWD/tmp/reports/listeningmind-query-opportunity-${SAFE_SEED}-${TIMESTAMP}"
 mkdir -p "$WORKDIR"
-echo "working folder: $WORKDIR"
+echo "working folder: $WORKDIR · 씨드 ${#SEEDS[@]}개"
 ```
 
 From here on, substitute the absolute path above for `{WORKDIR}`.
@@ -77,23 +86,34 @@ the details containing search volume, intent and monthly trend, and save it as `
 > If ① returns **exit 0**, the file is already filled, so **do not call MCP** — move on.
 > On **exit 2**, proceed to ②.
 
-**1a. List of related keywords** — `intent_finder`
+**1a. List of related keywords** — `intent_finder` · **one call per seed**
+
+Call it **once per seed**, not once with all seeds in the array. `intent_finder` returns a flat
+list of keyword strings with no field saying which seed produced each one, so a single combined
+call throws the origin away. Per-seed calls keep it, and the cache key stays identical to what the
+sibling skills use for the same seed (so a seed another report already fetched hits the cache).
+
+Repeat the two steps below for each seed, writing to **`lm_keyword_list_<i>.json`** (`<i>` = 1…N,
+in the order the user gave the seeds):
 
 ```bash
-# ① check the cache
+# ① check the cache · per seed
 python3 {SKILL_DIR}/scripts/mcp_cache.py lookup intent_finder \
-  --params '{"keywords":["<SEED>"],"gl":"<MARKET>","limit":1000,"sort":"volume_avg","order":"desc","volume_threshold":0}' \
-  --out "{WORKDIR}/lm_keyword_list.json"
+  --params '{"keywords":["<SEED_i>"],"gl":"<MARKET>","limit":1000,"sort":"volume_avg","order":"desc","volume_threshold":0}' \
+  --out "{WORKDIR}/lm_keyword_list_<i>.json"
 ```
 
 On a miss, call the **`intent_finder` MCP tool** with these parameters:
 
 ```json
-{"keywords": ["<SEED>"], "gl": "<MARKET>", "limit": 1000,
+{"keywords": ["<SEED_i>"], "gl": "<MARKET>", "limit": 1000,
  "sort": "volume_avg", "order": "desc", "volume_threshold": 0,
  "user_query": "<the user's utterance, verbatim>", "is_skills": true,
  "skill_desc": <the object in SKILL.md ### skill_desc>}
 ```
+
+> **`limit` stays 1000 per seed.** It caps the *list* and costs nothing extra to keep wide; the
+> actual budget constraint is `keyword_info` in Step 1b, which is capped per call, not per seed.
 
 > **`volume_threshold` must be `0`** — this collects **all** related keywords, exactly like the
 > ListeningMind web UI. Raising it cuts off every keyword whose monthly average search volume is
@@ -107,30 +127,75 @@ Dump the raw response verbatim and store it in the cache (`data` = an array of k
 sorted by search volume):
 
 ```bash
-cat > "{WORKDIR}/lm_keyword_list.json" <<'DUMP_EOF'
+cat > "{WORKDIR}/lm_keyword_list_<i>.json" <<'DUMP_EOF'
 <the entire raw intent_finder response JSON>
 DUMP_EOF
 
 # ② store in the cache · pass the length of the envelope's data array to --expect for verification
 python3 {SKILL_DIR}/scripts/mcp_cache.py store intent_finder \
-  --params '{"keywords":["<SEED>"],"gl":"<MARKET>","limit":1000,"sort":"volume_avg","order":"desc","volume_threshold":0}' \
-  --file "{WORKDIR}/lm_keyword_list.json" --expect <length of the data array>
+  --params '{"keywords":["<SEED_i>"],"gl":"<MARKET>","limit":1000,"sort":"volume_avg","order":"desc","volume_threshold":0}' \
+  --file "{WORKDIR}/lm_keyword_list_<i>.json" --expect <length of the data array>
 ```
+
+With a single seed this is exactly one call and the file is `lm_keyword_list_1.json`.
 
 **1b. Keyword details** — `keyword_info` · the **top 1,000** of the list above
 (the same cap as production QueryFinder — `ai-context-intent` size=1000 / `MAX_KEYWORDS=1000`)
 
-First take the top 1,000 from the list and build a parameter file:
+First merge the per-seed lists into one top-1,000 set and build a parameter file.
+
+**The 1,000-keyword cap is per call, not per seed** — it is a `keyword_info` limit, so N seeds share
+one budget of 1,000. Splitting it **evenly (`1000 ÷ N` per seed)** is what keeps every seed present
+in the report: a plain "take the global top 1,000 by volume" lets a high-volume seed crowd the others
+out entirely, so a user who entered 10 seeds can get a report where only 3 appear. The script below
+takes each seed's quota first, then refills any leftover (from seeds that returned fewer than their
+quota) with the highest-volume remaining keywords, so the full 1,000 is always used.
 
 ```bash
-python3 - "{WORKDIR}/lm_keyword_list.json" <<'MKPARAM' > "{WORKDIR}/kw_params.json"
-import json, sys
-d = json.load(open(sys.argv[1]))
-# Fetch details for all top 1,000, exactly like production (keyword_info maxItems=1000).
-# Cutting to e.g. 200 under-counts total search volume and group sums and diverges from production.
-kws = [k for k in d.get("data", []) if isinstance(k, str)][:1000]
-print(json.dumps({"keywords": kws, "gl": "<MARKET>", "data_type": "all"}, ensure_ascii=False))
+python3 - "{WORKDIR}" <<'MKPARAM' > "{WORKDIR}/kw_params.json"
+import json, sys, glob, os, re
+workdir = sys.argv[1]
+MAX_KW = 1000           # keyword_info maxItems — 호출당 상한 (씨드당이 아니다)
+
+# 씨드 순서대로 lm_keyword_list_1..N.json 을 읽는다
+paths = sorted(glob.glob(os.path.join(workdir, "lm_keyword_list_*.json")),
+               key=lambda p: int(re.search(r"_(\d+)\.json$", p).group(1)))
+lists = []
+for p in paths:
+    d = json.load(open(p, encoding="utf-8"))
+    lists.append([k for k in d.get("data", []) if isinstance(k, str)])
+
+n = len(lists)
+quota = max(MAX_KW // n, 1)
+picked, seen = [], set()
+# ① 씨드별 균등 배분 — 모든 씨드가 리포트에 남는 것을 보장한다
+for lst in lists:
+    took = 0
+    for k in lst:
+        if took >= quota:
+            break
+        if k not in seen:
+            seen.add(k); picked.append(k); took += 1
+# ② 남은 자리를 검색량 상위(각 리스트의 앞쪽)로 채운다 — 1,000을 낭비하지 않는다
+for lst in lists:
+    for k in lst:
+        if len(picked) >= MAX_KW:
+            break
+        if k not in seen:
+            seen.add(k); picked.append(k)
+    if len(picked) >= MAX_KW:
+        break
+picked = picked[:MAX_KW]
+print(json.dumps({"keywords": picked, "gl": "<MARKET>", "data_type": "all"}, ensure_ascii=False))
 MKPARAM
+
+# 씨드별로 몇 건이 뽑혔는지 눈으로 확인한다 (0건인 씨드가 있으면 안 된다)
+python3 -c "
+import json; print('keyword_info 로 보낼 키워드:', len(json.load(open('{WORKDIR}/kw_params.json'))['keywords']))"
+```
+
+With a single seed this is just "the top 1,000 of that one list" — identical to the previous
+behaviour.
 
 # ① check the cache
 python3 {SKILL_DIR}/scripts/mcp_cache.py lookup keyword_info \
@@ -228,9 +293,18 @@ reads it directly (no transformation needed — each record contains `keyword` �
 
 ```bash
 python3 {SKILL_DIR}/_shared/render/query_aggregate.py context \
-  --raw "{WORKDIR}/lm_query.json" --seed "<SEED>" --gl <MARKET> --date <YYYY-MM-DD> \
+  --raw "{WORKDIR}/lm_query.json" \
+  --seed "<SEED_1>" "<SEED_2>" \
+  --gl <MARKET> --date <YYYY-MM-DD> \
   --out "{WORKDIR}/lm_query_result.json"
 ```
+
+`--seed` takes every seed, in the order the user gave them. `keyword_info` returns one flat list, so
+pass the single merged `lm_query.json` to `--raw`; the aggregator then maps each keyword back to its
+seed using the per-seed lists it already has. It **rejects more than 10 seeds and any duplicate**,
+deduplicates keywords that several seeds returned (otherwise their search volume is counted twice and
+every group total is inflated), and prints the per-seed distribution. **If it warns that a seed kept
+zero keywords, stop and tell the user** — that seed contributed nothing to the report.
 
 `lm_query_result.json` contains `volume_avg` · `intents` per keyword, plus the `csv` text to feed
 into the LLM analysis. Read `{WORKDIR}/lm_query_result.json` and use the `csv` value inside it as the
@@ -247,6 +321,13 @@ yourself and save the result **as JSON only** to `{WORKDIR}/lm_groups_raw.json`.
 
 You are a search data insight analyst. Your goal is to analyze the related query data and derive the
 **search intent (search purpose)**, the **brand/non-brand landscape**, and strategic insights.
+
+With **several seeds**, the csv is their merged related-query set, and you analyze it as **one
+landscape**: group by search purpose across all of it, and do not split the groups by which seed a
+keyword came from (the csv does not tell you, by design). Where the seeds are competing brands or
+substitutes, that overlap is itself the finding — a purpose group drawing keywords from several
+seeds is shared demand, and one that does not is demand specific to its corner of the category.
+Read it qualitatively; never state which seed is bigger, and never count seeds.
 
 **Input**: each row of `csv` = `keyword, volume_avg, i, n, c, t, trend`
 - `volume_avg` = **monthly average search volume**. Always use this value for search volume
@@ -395,7 +476,7 @@ First extract only the keywords that actually appear on screen:
 
 ```bash
 python3 {SKILL_DIR}/_shared/render/query_aggregate.py keywords \
-  --groups "{WORKDIR}/lm_groups.json" --category "<SEED>" \
+  --groups "{WORKDIR}/lm_groups.json" --category "<SEED_1>" "<SEED_2>" \
   --out "{WORKDIR}/kw_to_translate.json"
 ```
 
@@ -417,7 +498,7 @@ python3 {SKILL_DIR}/_shared/render/render_report.py --skill query-opportunity \
   --groups "{WORKDIR}/lm_groups.json" \
   --actions "{WORKDIR}/lm_actions.json" \
   --meta "{WORKDIR}/lm_query_result.json" \
-  --category "<SEED>" --gl <MARKET> --lang <REPORT_LANGUAGE> --date <YYYY-MM-DD> \
+  --category "<SEED_1>" "<SEED_2>" --gl <MARKET> --lang <REPORT_LANGUAGE> --date <YYYY-MM-DD> \
   --out "{WORKDIR}/query-opportunity-report.html"
 # If you did Step 5.5, append --translations "{WORKDIR}/lm_keyword_tr.json"
 ```
