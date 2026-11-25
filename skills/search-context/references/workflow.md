@@ -58,7 +58,7 @@ brief.md를 Read하고 **짧게** 쓴다. 사용자는 내용이 많은 것을 �
 - 원칙: brief.md에 없는 사실·키워드를 지어내지 않는다. 숫자로 단정하지 않는다(경로 수는 표본). 근거가 약하면 "추정". 출력 언어 = REPORT LANGUAGE, 키워드는 원문.
 
 ```json
-{"summary": "…", "actions": [{"title": "…", "why": "… (E3-1)", "how": "…", "keywords": ["…"]}]}
+{"summary": "…", "actions": [{"title": "…", "why": "… (「나이키」 검색 결과 3위(한국경제))", "how": "…", "keywords": ["…"]}]}
 ```
 
 ## Step 6 — 렌더링 + 확인

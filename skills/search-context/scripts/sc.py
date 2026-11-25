@@ -276,21 +276,21 @@ def clean(t, n=500):
 
 
 LABELS = {
-    "kr": {"title": "Search Context", "market": "시장", "vol": "월 검색량", "paths": "경로", "kws": "키워드", "summary": "요약",
+    "kr": {"title": "Search Context", "hTitle": "검색 맥락 분석", "hPurpose": "배경과 목적", "hIntro": "시드 키워드를 지나는 검색 경로를 모아 요약·마케팅 할 일·경로 맵을 만들고, 페이지 안에서 경로를 골라 검색 결과 근거로 검색 목적을 분석합니다.", "hDate": "수집", "market": "시장", "vol": "월 검색량", "paths": "경로", "kws": "키워드", "summary": "요약",
            "actions": "마케팅 관점에서 할 일", "why": "근거", "how": "실행", "map": "경로 맵",
            "mapHint": "시드를 가운데 두고 왼쪽은 그 전에, 오른쪽은 그 뒤에 검색한 것입니다. 키워드를 누르면 시드부터 그 키워드까지의 경로가 선택되고, 맵 아래 「선택한 경로」에서 그 경로의 검색 목적을 분석할 수 있습니다. 처음에는 전체가 맞춤으로 보이고, 휠로 확대·축소합니다.",
            "nTip": "맵·질문에 쓰는 경로 수. 받은 순서대로 앞에서부터", "find": "키워드 찾기", "listOpen": "목록", "sel": "선택한 경로", "selHint": "맵에서 키워드를 눌러 경로를 고르세요.",
            "saved": "저장된 분석", "noSaved": "아직 저장된 분석이 없습니다.", "evidence": "근거 SERP (시드와 주요 분기)",
            "fit": "맞춤", "popOn": "호버 카드", "popTip": "끄면 마우스를 올려도 카드와 강조가 뜨지 않고, 선택한 경로만 또렷하게 보입니다", "more": "개 더", "less": "− 접기", "passing": "이 지점을 지나는 경로", "analyze": "경로 분석", "reanalyze": "다시 분석", "open": "보기", "del": "삭제",
            "aio": "AI 개요", "top3": "검색 결과 1~3위", "noaio": "AI 개요 없음", "foot": "경로는 리스닝마인드 패스파인더 현재 시점 표본입니다. SERP는 저장된 Google 스냅샷이며 수집일이 키워드마다 다를 수 있습니다. 해석은 위 데이터만 근거로 Claude가 작성했습니다."},
-    "us": {"title": "Search Context", "market": "Market", "vol": "Monthly volume", "paths": "paths", "kws": "keywords", "summary": "Summary",
+    "us": {"title": "Search Context", "hTitle": "Search Context Analysis", "hPurpose": "Background and purpose", "hIntro": "Collects the search paths that pass through a seed keyword, builds a summary, marketing actions and a path map, and analyses search intent from SERP evidence for a path you pick inside the page.", "hDate": "Collected", "market": "Market", "vol": "Monthly volume", "paths": "paths", "kws": "keywords", "summary": "Summary",
            "actions": "Marketing to-dos", "why": "Why", "how": "How", "map": "Path map",
            "mapHint": "The seed sits in the middle: searches before it on the left, after it on the right. Click a keyword to select the path from the seed to it, then analyze its search purpose in “Selected path” below. The map opens fitted; scroll to zoom.",
            "nTip": "Number of paths used by the map and chat, in the order received", "find": "Find a keyword", "listOpen": "List", "sel": "Selected path", "selHint": "Click a keyword on the map to pick a path.",
            "saved": "Saved analyses", "noSaved": "No saved analyses yet.", "evidence": "Evidence SERPs (seed and main branches)",
            "fit": "Fit", "popOn": "Hover cards", "popTip": "When off, hovering shows no cards or highlights and only the selected path stands out", "more": " more", "less": "− collapse", "passing": "paths through this point", "analyze": "Analyze path", "reanalyze": "Re-analyze", "open": "Open", "del": "Delete",
            "aio": "AI Overview", "top3": "Top 3 results", "noaio": "No AI Overview", "foot": "Paths are a current ListeningMind PathFinder sample. SERPs are stored Google snapshots; collection dates can differ. Interpretation by Claude from the data above only."},
-    "jp": {"title": "Search Context", "market": "市場", "vol": "月間検索数", "paths": "経路", "kws": "キーワード", "summary": "要約",
+    "jp": {"title": "Search Context", "hTitle": "検索コンテキスト分析", "hPurpose": "背景と目的", "hIntro": "シードキーワードを通る検索経路を集めて要約・マーケティングの打ち手・経路マップを作り、ページ内で経路を選んで検索結果の根拠から検索目的を分析します。", "hDate": "収集", "market": "市場", "vol": "月間検索数", "paths": "経路", "kws": "キーワード", "summary": "要約",
            "actions": "マーケティング観点のやること", "why": "根拠", "how": "実行", "map": "経路マップ",
            "mapHint": "シードを中央に、左はその前、右はその後の検索です。キーワードを押すとシードからそのキーワードまでの経路が選ばれ、マップ下の「選択した経路」で検索目的を分析できます。最初は全体表示で、ホイールで拡大・縮小します。",
            "nTip": "マップと質問で使う経路数（取得順に先頭から）", "find": "キーワード検索", "listOpen": "一覧", "sel": "選択した経路", "selHint": "マップでキーワードを押して経路を選んでください。",
@@ -300,10 +300,23 @@ LABELS = {
 }
 
 CSS = """
-:root{--bg:#f6f7f9;--panel:#fff;--fg:#1d2330;--muted:#5d6676;--line:#e3e6eb;--chip:#eef1f5;--accent:#2f5bd3;--hl:#d4472f;--ok:#2e8b57;--part:#b7791f;--bad:#c43d2f;
---sans:"Pretendard","Noto Sans KR","Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;color-scheme:light}
+:root{--bg:#F7F8FA;--panel:#FFFFFF;--fg:#1E2A3A;--muted:#586882;--line:#E3E8F2;--chip:#F7F8FA;--accent:#7F18FF;--hl:#FF247A;--ok:#2e8b57;--part:#8A6600;--bad:#C43D2F;--notice:#7F18FF;--notice-bg:#FEF9FF;--cover-a:rgb(10,5,16);--cover-b:rgb(26,8,48);--cover-c:rgb(13,21,40);--glow-1:rgba(127,24,255,.33);--glow-2:rgba(24,140,255,.18);--radius:12px;--shadow-xs:0 1px 2px rgba(30,42,58,.04);
+--sans:"Noto Sans KR","Pretendard","Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171c;--panel:#1c2027;--fg:#e6e9ee;--muted:#9aa3b2;--line:#2c323c;--chip:#262b34;--accent:#7f9cff;--hl:#ff8a6b;--ok:#5cc28a;--part:#e0a84b;--bad:#ff8a7c;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#14171c;--panel:#1c2027;--fg:#e6e9ee;--muted:#9aa3b2;--line:#2c323c;--chip:#262b34;--accent:#7f9cff;--hl:#ff8a6b;--ok:#5cc28a;--part:#e0a84b;--bad:#ff8a7c;color-scheme:dark}
+/* 헤더 카드 · 공용 리포트(_core/styles/report-shell.css)와 같은 모양 */
+.dash-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-xs);overflow:hidden}
+.dash-cover{background:linear-gradient(135deg,var(--cover-a) 0%,var(--cover-b) 50%,var(--cover-c) 100%);padding:22px 28px;position:relative;overflow:hidden}
+.dash-cover::before{content:"";position:absolute;top:-50px;right:-30px;width:200px;height:200px;background:radial-gradient(circle,var(--glow-1) 0%,transparent 70%);pointer-events:none}
+.dash-cover::after{content:"";position:absolute;bottom:-30px;left:35%;width:160px;height:160px;background:radial-gradient(circle,var(--glow-2) 0%,transparent 70%);pointer-events:none}
+.dash-eyebrow{font-size:11px;font-weight:600;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;position:relative}
+.dash-title{font-size:20px;font-weight:700;color:#fff;line-height:1.35;margin:0 0 8px;position:relative}
+.dash-seed{font-size:13px;color:rgba(255,255,255,.55);position:relative}
+.dash-meta{font-size:11px;color:rgba(255,255,255,.35);margin-top:12px;position:relative}
+.dash-purpose{padding:20px 24px;background:var(--bg);border-top:1px solid var(--line)}
+.dash-purpose b{display:block;font-size:11px;font-weight:700;color:var(--fg);letter-spacing:.08em;margin-bottom:4px}
+.dash-purpose p{font-size:14px;line-height:1.7;margin:0}
+
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 var(--sans)}
 .wrap{max-width:1280px;margin:0 auto;padding:24px 18px 48px;display:flex;flex-direction:column;gap:14px}
@@ -398,6 +411,8 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
 .svc .bd{padding:4px 14px 14px;border-left:4px solid var(--accent);margin:12px 14px 14px;background:var(--bg);border-radius:0 8px 8px 0}
 .svc .bd .purpose{display:none}
 .svc .acts2{display:flex;gap:6px;justify-content:flex-end;padding:0 14px 12px}
+.notice{border:1px solid var(--line);border-left:4px solid var(--notice);background:var(--notice-bg);border-radius:8px;padding:12px 14px;margin:0}
+.notice>strong{display:block;margin-bottom:4px}
 .banner{border:1px solid var(--part);color:var(--fg);background:var(--panel);border-radius:8px;padding:10px 12px;font-size:13px}
 .banner[hidden]{display:none}
 """
@@ -850,12 +865,18 @@ def cmd_render(a):
     H = [f'<!doctype html><html lang="{ {"kr": "ko", "jp": "ja"}.get(a.lang, "en") }"><head><meta charset="utf-8">',
          '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
          f'<title>{e(T["title"])} · {e(plan["seed"])}</title><style>{CSS}</style></head><body><div class="wrap">',
-         f'<div><div class="muted" style="font-size:12px">{e(T["title"])} · {e(T["market"])} {e(plan["gl"])} · {e(plan.get("date") or "")}</div><h1>「{e(plan["seed"])}」</h1></div>',
+         # 헤더 카드 · 공용 리포트와 같은 모양 (CSS 는 .dash-* 참조).
+         # KPI 는 따로 칩으로 두지 않고 메타 줄에 넣는다 — 공용 리포트가 쓰는
+         # 방식이고, 나누면 같은 숫자가 화면에 두 번 나온다.
+         f'<div class="dash-card"><div class="dash-cover">'
+         f'<div class="dash-eyebrow">{e(T["title"])} · {e(T["market"])} {e(plan["gl"])}</div>'
+         f'<div class="dash-title">{e(T["hTitle"])}</div>'
+         f'<div class="dash-seed">「{e(plan["seed"])}」</div>'
+         f'<div class="dash-meta">{e(T["hDate"])}: {e(plan.get("date") or "")} · '
+         f'{e(T["paths"])} <span id="kpi-paths">{plan["pathCount"]}</span>/{plan.get("total", plan["pathCount"])} · '
+         f'{e(T["kws"])} {plan["keywordCount"]} · {e(T["vol"])} {fmt(plan["seedVolume"])}</div>'
+         f'</div><div class="dash-purpose"><b>{e(T["hPurpose"])}</b><p>{e(T["hIntro"])}</p></div></div>',
          '<div class="banner" id="banner" hidden></div>',
-         '<div class="kpis">'
-         f'<div class="kpi"><small>{e(T["vol"])}</small><b class="mono">{fmt(plan["seedVolume"])}</b></div>'
-         f'<div class="kpi"><small>{e(T["paths"])}</small><b class="mono" id="kpi-paths">{plan["pathCount"]}</b> <span class="muted mono" style="font-size:12px">/ {plan.get("total", plan["pathCount"])}</span></div>'
-         f'<div class="kpi"><small>{e(T["kws"])}</small><b class="mono">{plan["keywordCount"]}</b></div></div>',
          f'<section class="box"><h2>{e(T["summary"])}</h2><p style="margin:0">{e(summary)}</p>',
          f'<h2 style="margin-top:14px">{e(T["actions"])}</h2><div class="acts">']
     for i, x in enumerate(acts):
