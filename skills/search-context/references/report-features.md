@@ -1,50 +1,50 @@
-# 리포트 필수 기능 목록 (v2)
+# Required report features (v2)
 
-리포트의 기능은 `scripts/sc.py`의 렌더러가 코드로 그린다. 렌더러를 고칠 때는 이 목록과 `scripts/check_report.py`를 함께 고친다.
-Step 7 뒤에 `check_report.py`가 하나라도 ✗를 내면 리포트를 넘기지 않는다.
+The report's features are drawn in code by the renderer in `scripts/sc.py`. When you change the renderer, change this list and `scripts/check_report.py` along with it.
+If `check_report.py` reports even one ✗ after Step 7, do not hand the report over.
 
-## 화면 순서 (내용은 적게)
-1. **머리** · 시드, 시장, 날짜, 월 검색량·경로 수·키워드 수
-2. **요약** (2~3문장) + **마케팅 관점에서 할 일** (M1… 3~5개: 할 일, 근거, 실행, 관련 키워드 칩 → 누르면 맵에서 그 경로 선택)
-3. **경로 맵** (주 기능)
-   - **경로 수 = 사용자가 처음 고른 수(100 · 200 · 300, 기본 300)**, 맵 머리의 「경로 100 / 200 / 300」은 받은 범위 안의 값만 보이고(하나뿐이면 숨김) 늘리고 줄임 → 맵·채팅 근거·경로 수 표시가 함께 바뀜, 보는 사람 브라우저에 기억
-   - 시드를 가운데 두고 왼쪽 = 앞 검색, 오른쪽 = 뒤 검색, 4단계, 선 굵기 = 경로 수
-   - **단계마다 상위 3개만** 보이고 나머지는 「+N개 더」, 누르면 펼치고 「− 접기」로 되돌림
-   - **「+N개 더」에 마우스를 올리면 숨은 키워드 모달**(키워드와 경로 수) · 모달의 키워드를 누르면 펼쳐서 그 경로 선택
-   - **키워드에 마우스를 올리면 그 키워드를 포함한 경로 전체를 강조**(같은 키워드가 다른 가지에 있으면 함께), 카드에서 바로 「이 경로 분석」 / 「선택」
-   - 맵 머리의 **「호버 카드」 토글**: 끄면 카드와 호버 강조를 멈추고 **선택한 경로만 또렷하게(나머지는 흐리게)** 보여 줌. 보는 사람 브라우저에 기억. 카드의 × 버튼과 Esc로 닫기
-   - **처음에는 「맞춤」으로 전체가 보인다**: viewBox를 실제로 그려진 범위(라벨 포함)에 맞추고, 맵 높이를 그림 비율에 맞춰 정한다(320px~화면 75%)
-   - 맵은 전체 폭, 「선택한 경로」 패널은 맵 아래
-   - 휠 확대/축소, 드래그 이동(화면 8px 판정), ＋ / − / 맞춤 / ◎
-   - 키워드 찾기(검색량순 목록) → 고르면 그 키워드까지의 경로 선택
-   - **키워드를 누르면(선택) 그 키워드를 포함한 모든 경로가 고정 강조**되고(같은 키워드가 다른 가지에 있으면 함께, 시드→키워드 경로는 더 굵게),
-     **떠 있던 모달은 닫혀** 경로 전체가 가려지지 않는다. 같은 키워드 위에 머물러도 모달이 다시 뜨지 않고, 다른 키워드로 옮기면 다시 뜬다.
-     다른 키워드에 잠깐 올리면 그 키워드 강조로 바뀌었다가 마우스를 떼면 선택 강조로 돌아온다. 선택 경로는 맵 아래 「선택한 경로」 패널에 표시
-4. **질문·경로 분석 채팅** (맵 아래, 「선택한 경로」 패널을 대체)
-   - 맨 위 **선택 경로 바**: 선택한 경로(클릭한 키워드 파란색), 지나는 경로 수, 「경로 분석」 / 「저장된 분석 보기」 / 「선택 해제」
-   - **대화 영역**: 사용자가 질문하면 사용자의 Claude(`sample`)가 **이 페이지의 경로 데이터만 근거로** 바로 답한다(스트리밍)
-     - 근거: 시드 다음·앞 검색 분기와 경로 수, 주요 분기의 다음 단계, 선택한 키워드를 포함한 경로(없으면 대표 경로) 최대 45개, 선택 경로의 저장된 분석, 리포트 요약·할 일, 앞선 대화
-     - 답 속 키워드(「」)는 칩으로 표시되고 누르면 맵에서 그 경로 선택 · SERP가 필요한 질문이면 「경로 분석」을 권함
-   - 경로 분석의 SERP는 ① 리포트를 만들 때 받은 SERP(E1…, 페이지에 들어 있음) ② 페이지 저장소 ③ ListeningMind `serp` 순서로 찾는다 · 이미 받은 SERP는 다시 사지 않는다
-   - **경로 분석**도 같은 대화 흐름에 카드로 들어간다(진행 단계 표시 → 결과: 목적·해석·인사이트·할 일·판정, 근거는 펼치기)
-   - **추천 질문 칩**: 선택이 없을 때(가장 큰 흐름, 마케팅 기회, 조건이 붙는 경로)와 있을 때(이 경로 분석, 앞뒤 검색, 비슷한 경로)가 다름
-   - 입력창: Enter 보내기, Shift+Enter 줄바꿈 · Claude·커넥터 미연결/미허용 시 안내와 「권한 설정 열기」
-   - 대화 기록은 보는 사람별 저장소(`data/users/me/chat/…`)에 남아 다시 열면 이어짐
-5. **저장된 분석** · 분석마다 **번호가 붙은 카드**(목적, 경로, 날짜, 「분석 내용 보기 ▾ / 접기 ▴」). 펼친 카드는 테두리·머리 배경으로 구분되고
-   본문은 왼쪽 색 띠 안에 들어가며, **한 번에 하나만 펼쳐진다**(다른 카드를 열면 앞의 카드는 닫힘). 맵에서 보기·삭제는 펼친 카드 아래. 펼치면 분석 내용(인사이트·할 일)이 보이고, 근거는 그 안에서 한 번 더 펼쳐야 보임
-   (리포트 하단의 별도 근거 SERP 섹션은 두지 않는다)
+## Screen order (keep the content light)
+1. **Header** · seed, market, date, monthly search volume · path count · keyword count
+2. **Summary** (2~3 sentences) + **What to do from a marketing perspective** (M1… 3~5 items: the to-do, the evidence, the execution, related keyword chips → clicking one selects that path on the map)
+3. **Path map** (the main feature)
+   - **Path count = the number the user chose at the start (100 · 200 · 300, default 300)**; the "100 / 200 / 300 paths" control in the map header shows only the values within the range received (hidden if there is only one) and raises or lowers it → the map, the chat evidence and the path count display all change together, remembered in the viewer's browser
+   - The seed sits in the middle, left = preceding searches, right = following searches, 4 levels, line thickness = path count
+   - **Only the top 3 per level** are shown, the rest behind "+N more", which expands on click and collapses again with "− collapse"
+   - **Hovering "+N more" shows a modal of the hidden keywords** (keyword and path count) · clicking a keyword in the modal expands it and selects that path
+   - **Hovering a keyword highlights every path that contains it** (including the same keyword on other branches), with "Analyze this path" / "Select" right on the card
+   - The **"Hover card" toggle** in the map header: turning it off stops the cards and the hover highlight and shows **only the selected path in full clarity (the rest dimmed)**. Remembered in the viewer's browser. Close with the card's × button or Esc
+   - **It starts at "Fit", showing everything**: the viewBox matches the actually drawn extent (labels included), and the map height is set to the drawing's aspect ratio (320px~75% of the screen)
+   - The map is full width; the "Selected path" (선택한 경로) panel sits below the map
+   - Wheel zoom, drag to pan (8px screen threshold), ＋ / − / Fit / ◎
+   - Keyword search (list ordered by search volume) → picking one selects the path up to that keyword
+   - **Clicking a keyword (selecting it) pins the highlight on every path that contains it** (including the same keyword on other branches, with the seed→keyword path drawn thicker),
+     and **any open modal closes** so the full path is not hidden. The modal does not reappear while the cursor stays on the same keyword, but does when it moves to another keyword.
+     Briefly hovering another keyword switches to that keyword's highlight, then returns to the selection highlight when the mouse leaves. The selected path is shown in the "Selected path" (선택한 경로) panel below the map
+4. **Question · path analysis chat** (below the map, replacing the "Selected path" (선택한 경로) panel)
+   - **Selected path bar** at the top: the selected path (the clicked keyword in blue), how many paths run through it, "Path analysis" (경로 분석) / "View saved analyses" / "Clear selection"
+   - **Conversation area**: when the user asks a question, the user's Claude (`sample`) answers immediately (streaming), **based only on this page's path data**
+     - Evidence: the branches searched after · before the seed and their path counts, the next level of the main branches, up to 45 paths containing the selected keyword (or representative paths if there are none), saved analyses of the selected path, the report summary · to-dos, and the earlier conversation
+     - Keywords in the answer (in 「」) are shown as chips, and clicking one selects that path on the map · if the question needs a SERP, "Path analysis" (경로 분석) is recommended
+   - The SERPs for path analysis are looked up in this order: ① the SERPs fetched when the report was built (E1…, embedded in the page) ② the page store ③ ListeningMind `serp` · a SERP already fetched is never paid for again
+   - **Path analysis** also enters the same conversation flow as a card (progress steps shown → result: purpose · interpretation · insights · to-dos · verdict, evidence behind an expander)
+   - **Suggested question chips**: different when nothing is selected (the biggest flow, marketing opportunities, paths with conditions attached) and when something is (analyze this path, the searches before and after, similar paths)
+   - Input box: Enter to send, Shift+Enter for a newline · when Claude or the connector is not connected or not permitted, guidance plus "Open permission settings"
+   - The conversation history is kept in a per-viewer store (`data/users/me/chat/…`) and resumes when the page is reopened
+5. **Saved analyses** · a **numbered card** per analysis (purpose, path, date, "View analysis ▾ / collapse ▴"). An expanded card is set apart by its border and header background,
+   its body sits inside a coloured left-hand band, and **only one is expanded at a time** (opening another closes the previous one). View on map · delete sit below the expanded card. Expanding shows the analysis content (insights · to-dos), and the evidence takes one more expand inside that
+   (no separate evidence SERP section at the bottom of the report)
 
-## 실행 도구별 차이 (`render --host`)
-- **claude** · 위 4·5 그대로(사용자의 Claude `sample` + ListeningMind `serp` + 저장소 `db`)
-- **chatgpt** · 페이지가 LLM을 부르지 않는다
-  - 「경로 분석 요청 복사」(선택 경로 바·호버 카드): 경로 + 분석 지시문(SERP는 ChatGPT가 ListeningMind 커넥터 `serp`로 조회, 근거는 「키워드」 AI 개요·「키워드」 검색 결과 N위(사이트명)처럼 말로, 읽기 쉬운 글로 답)을 복사
-  - 질문 입력: 경로 데이터 근거(위와 같음) + 앞선 질문 + 질문을 담은 요청문을 복사
-  - 대화 영역에 요청문과 「다시 복사」(자동 복사가 막히면 선택해 복사하라고 안내)
-  - Claude 연결·권한 안내, 저장된 분석, 대화 기록 저장은 나오지 않는다. 보이는 문구에 「Claude」가 없어야 한다
+## Differences by execution tool (`render --host`)
+- **claude** · 4 and 5 above exactly as written (the user's Claude `sample` + ListeningMind `serp` + the `db` store)
+- **chatgpt** · the page does not call an LLM
+  - "Copy path analysis request" (경로 분석 요청 복사) (on the selected path bar · hover card): copies the path plus the analysis instructions (ChatGPT looks up the SERP through the ListeningMind connector's `serp`; evidence stated in words, like "keyword" AI overview · "keyword" organic result #N (site name); answer in readable prose)
+  - Question input: copies a request text containing the path-data evidence (same as above) + the earlier questions + the question
+  - The request text and a "Copy again" button appear in the conversation area (if automatic copying is blocked, guidance to select and copy manually)
+  - Claude connection · permission guidance, saved analyses and conversation-history saving do not appear. The visible text must contain no "Claude"
 
-## 공통 동작
-- 맵의 빈 공간을 클릭하면 선택이 해제된다(드래그로 이동한 뒤 떼는 것은 클릭이 아님 · 경로 분석 진행 중에는 유지)
-- 호버 카드의 Target 키워드는 테두리만 있는 칩(본문색)으로, 채워진 「이 경로 분석」 버튼과 구분한다
+## Common behaviour
+- Clicking empty space on the map clears the selection (releasing after a drag to pan is not a click · the selection is kept while a path analysis is running)
+- The Target keyword on the hover card is an outline-only chip (body colour), to distinguish it from the filled "Analyze this path" button
 
-## 하지 않는 것
-- 과거 시점과의 비교(A/B), 전체 경로 목록, 유형·변화 카드, 요청 문장 복사
+## What we do not do
+- Comparison with a past time point (A/B), a full path list, type · change cards, copying a request sentence

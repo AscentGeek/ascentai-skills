@@ -1,14 +1,19 @@
 ---
 name: lm-search-context
 description: >-
-  Search Context 분석 · 한 키워드(시드)를 지나는 소비자 검색 경로를 ListeningMind MCP(path_finder · keyword_info · serp)로
-  읽어, 짧은 요약과 마케팅 관점의 할 일, 그리고 경로 맵 페이지를 만든다. 사용자는 맵에서 키워드를 눌러 경로를 고르고,
-  페이지 안에서 바로 그 경로의 검색 목적을 SERP(AI 개요 + 검색 결과 1~3위) 근거로 분석·저장한다.
-  "서치 컨텍스트", "Search Context 분석", "검색 맥락 분석", "이 키워드 왜 검색해?", "이 키워드 앞뒤로 뭘 검색해?",
-  "검색 경로 맵", "경로 분석", "검색 목적 분석", "SERP 기반 검색 의도 분석", "키워드 마케팅 할 일" 같은 요청,
-  영어("search context analysis", "search path map", "search intent from paths and SERP") ·
-  일본어(「検索コンテキスト分析」「検索経路マップ」「このキーワードの前後の検索」)로 물을 때 반드시 사용한다.
-  경로 전체 구조나 상위 여정 리포트만 원하면 lm-pathfinder-report를 쓴다.
+  Search Context analysis · Reads the consumer search paths that run through a single
+  keyword (the seed) with ListeningMind MCP (path_finder · keyword_info · serp), and
+  produces a short summary, a marketing to-do list, and a path map page. The user clicks
+  a keyword on the map to pick a path, and right inside the page that path's search
+  purpose is analyzed and saved on SERP evidence (AI overview + organic results 1-3).
+  Use it when the user asks for "search context analysis", "search path map",
+  "search intent from paths and SERP", or the same requests in Korean —
+  "서치 컨텍스트", "Search Context 분석", "검색 맥락 분석", "이 키워드 왜 검색해?",
+  "이 키워드 앞뒤로 뭘 검색해?", "검색 경로 맵", "경로 분석", "검색 목적 분석",
+  "SERP 기반 검색 의도 분석", "키워드 마케팅 할 일" — or in Japanese —
+  「検索コンテキスト分析」「検索経路マップ」「このキーワードの前後の検索」.
+  If the user only wants the whole path structure or a top-level journey report, use
+  lm-pathfinder-report instead.
 allowed-tools: Bash, Read, Write, path_finder, keyword_info, serp
 metadata:
   author: AscentKorea
@@ -16,81 +21,98 @@ metadata:
   tags: report, search context, search intent, serp
 ---
 
-# lm-search-context — Search Context 분석
+# lm-search-context — Search Context analysis
 
-키워드 하나는 여러 검색 경로가 지나가는 교차점이다. 경로 하나만 떼어 보면 목적이 하나로 보이지만,
-실제로는 서로 다른 맥락(앞에서 무엇을 찾다 왔고 뒤에서 어디로 가는지)이 겹쳐 있다. 이 스킬은
-**포커스 키워드**를 지나는 모든 경로를 두 시점으로 모아 그 맥락의 갈래와 변화를 읽고, 대표 경로는
-SERP 근거와 함께 처음부터 끝까지 연결해 검색 목적을 해석한다.
+One keyword is an intersection that many search paths run through. Look at a single path and
+the purpose seems singular, but in reality different contexts overlap (what the user was
+looking for before, and where they go next). This skill collects every path running through
+the **focus keyword** at two time points to read the branches and shifts in that context, and
+connects the representative paths end to end with SERP evidence to interpret the search purpose.
 
-## 전제 조건
+## Prerequisites
 
-- **ListeningMind MCP 커넥터가 연결돼 있어야 한다** — 데이터는 `path_finder` · `keyword_info` · `serp`
-  세 도구에서만 온다. 도구 호출이 "tool not found"로 실패하면 커넥터 연결을 요청하고 멈춘다.
-- python3(표준 라이브러리)만 쓴다. pip 설치가 필요 없다.
-- **API 키를 묻지 않는다.** 사용자가 API 키를 주어도 쓰지 않는다. **데이터를 지어내지 않는다.**
-- 요청에 개인정보(전화번호 · 이메일 · 신분증·카드·계좌 번호 등)가 있으면 MCP를 부르기 전에 멈추고 다시 요청받는다(아래 「user_query」).
+- **ListeningMind MCP connector must be connected** — data comes only from the three tools
+  `path_finder` · `keyword_info` · `serp`. If a tool call fails with "tool not found", ask the
+  user to connect the connector and stop.
+- python3 (standard library) only. No pip install needed.
+- **Never ask for an API key.** Do not use one even if the user offers it. **Do not invent data.**
+- If the request contains personal data (phone numbers · email · ID / card / account numbers, etc.),
+  stop before calling MCP and ask for the request again (see "user_query" below).
 
-## 실행
+## Execution
 
-요청이 들어오면 **먼저 `references/workflow.md`를 Read**하고 Step 0부터 순서대로 실행한다.
-`{SKILL_DIR}`는 이 SKILL.md가 있는 폴더의 절대 경로다.
+When a request comes in, **Read `references/workflow.md` first**, then execute from Step 0 in order.
+`{SKILL_DIR}` is the absolute path of the directory this SKILL.md sits in.
 
-## 무엇을 만드나 (v2)
+## What it produces (v2)
 
-- **현재 시점 하나만** 본다. 과거와의 비교는 하지 않는다.
-- 결과물은 내용을 적게: **요약(2~3문장) + 마케팅 관점에서 할 일(3~5개) + 경로 맵**.
-- **경로 수(PATHS)는 사용자가 100 · 200 · 300 중에서 고르고, 기본은 300**이다. 고른 수만큼 받아서 요약·마케팅 분석·처음 맵에 모두 쓴다.
-  페이지에서는 받은 범위 안에서 100 · 200 · 300으로 줄여 볼 수 있다(추가 호출 없음).
-- **주 기능은 경로 맵에서 경로를 골라 분석하는 것**이다. 키워드를 누르면 시드부터 그 키워드까지의 경로가 선택되고,
-  「경로 분석」을 누르면 페이지가 경로의 키워드마다 SERP(AI 개요 + 오가닉 1~3위)를 불러와 **사용자의 Claude로 바로 분석**해 보여 준다.
-  맵 아래 「질문·경로 분석」 채팅에서 경로 데이터에 대해 바로 질문할 수도 있다(사용자의 Claude가 이 페이지의 경로 데이터로 답함).
-  Claude나 ListeningMind 커넥터가 연결돼 있지 않으면 연결·권한 허용을 안내한다. 분석과 대화는 저장돼 다시 볼 수 있다.
-- **실행 도구에 맞춰 HTML을 만든다** (`render --host`, workflow.md Step 0·6·7):
-  - `claude` · Claude.ai에 게시하면 페이지가 사용자의 Claude와 ListeningMind 커넥터로 경로 분석·질문에 바로 답하고 저장한다.
-  - `chatgpt` · 페이지가 LLM을 직접 부를 수 없으므로, 「경로 분석 요청 복사」와 질문 입력이 경로 데이터를 담은 **요청문을 복사**하고
-    사용자는 ChatGPT 대화창에 붙여 넣는다(경로 분석의 SERP는 ChatGPT에 연결된 ListeningMind 커넥터가 조회). Claude 연결 안내·저장 기능은 나오지 않는다.
-- 필수 기능 목록은 `references/report-features.md`, 확인은 `scripts/check_report.py`.
+- Looks at **the current time point only**. No comparison against the past.
+- Keep the output light: **summary (2-3 sentences) + marketing to-dos (3-5) + path map**.
+- **The user picks the path count (PATHS) from 100 · 200 · 300, and the default is 300.** Fetch
+  that many and use them all for the summary, the marketing analysis and the initial map.
+  In the page the view can be narrowed to 100 · 200 · 300 within the fetched range (no extra calls).
+- **The main feature is picking a path on the map and analyzing it.** Clicking a keyword selects
+  the path from the seed to that keyword, and pressing "Analyze path" (경로 분석) makes the page
+  fetch a SERP (AI overview + organic 1-3) for each keyword on the path and **analyze it directly
+  with the user's Claude**.
+  The "Ask · Analyze path" (질문·경로 분석) chat below the map also takes questions about the path
+  data on the spot (the user's Claude answers from this page's path data).
+  If Claude or the ListeningMind connector is not connected, guide the user through connecting and
+  granting permission. Analyses and conversations are saved and can be revisited.
+- **Build the HTML for the running tool** (`render --host`, workflow.md Step 0 · 6 · 7):
+  - `claude` · published to Claude.ai, the page answers path analyses and questions directly through
+    the user's Claude and the ListeningMind connector, and saves them.
+  - `chatgpt` · the page cannot call an LLM itself, so "Copy path analysis request" (경로 분석 요청 복사)
+    and the question input **copy a request text** containing the path data, which the user pastes into
+    the ChatGPT conversation (the SERPs for the path analysis are fetched by the ListeningMind connector
+    attached to ChatGPT). The Claude connection guidance and the save feature do not appear.
+- The required feature list is in `references/report-features.md`; verify with `scripts/check_report.py`.
 
-## 실행 도구 (HOST) · 묻지 않고 스스로 정한다
+## Running tool (HOST) · decide it yourself, do not ask
 
-이 스킬을 실행하는 당신이 어떤 LLM 도구인지가 HOST다. Claude(claude.ai · Claude Code 등)면 `claude`, ChatGPT면 `chatgpt`.
-사용자에게 묻지 않는다. Step 6 `render`에 `--host`로 반드시 넘긴다(생략하면 `auto`가 파일 시스템으로 추정하지만, 명시가 기본이다).
+HOST is whichever LLM tool you — the one running this skill — are. Claude (claude.ai · Claude Code, etc.)
+is `claude`, ChatGPT is `chatgpt`. Do not ask the user. Always pass it to Step 6 `render` as `--host`
+(omitting it makes `auto` guess from the file system, but being explicit is the default).
 
-## 입력 (Step 0에서 한 번에 확인)
+## Inputs (confirm all at once at Step 0)
 
-1. **시드 키워드** (예: 패딩)
+1. **Seed keyword** — written in the target market's language (e.g. `robot vacuum` for `us`, `패딩` for `kr`)
 2. **TARGET MARKET (`gl`)** — `kr` · `jp` · `us`
-3. **REPORT LANGUAGE (`lang`)** — `kr` · `jp` · `us` (시장과 독립. 서로 추론하지 않는다)
-4. **PATHS (경로 수)** — `100` · `200` · `300`, **기본 300**
+3. **REPORT LANGUAGE (`lang`)** — `kr` · `jp` · `us` (independent of the market. Never infer one from the other)
+4. **PATHS (path count)** — `100` · `200` · `300`, **default 300**
 
-시장이나 리포트 언어가 요청에 분명하지 않으면 **한 번, 짧게 묻고** 추측하지 않는다.
-그때 **경로 수도 같은 질문에 함께 묻는다**(선택지 100 · 200 · 300, 「기본 300」이라고 표시). 사용자가 경로 수를 고르지 않거나
-시장·언어가 이미 분명해 묻지 않는 경우에는 300으로 진행하고, 시작 안내에 「경로 300개」라고 적는다. 100 · 200 · 300 밖의 수를 말하면 가장 가까운 값으로 맞추고 알린다.
+If market or report language is not explicit in the request, **ask once, briefly** and do not guess.
+When you do, **ask for the path count in the same question** (options 100 · 200 · 300, marked
+"default 300"). If the user does not pick a path count, or market and language are already clear so
+you do not ask, proceed with 300 and write "300 paths" (경로 300개) in the start notice. If the user
+names a number outside 100 · 200 · 300, snap it to the nearest value and say so.
 
-## 산출물
+## Output
 
-`{WORKDIR}/report.html` (단일 HTML · 라이트/다크). Claude.ai에서는 capabilities를 선언해 아티팩트로 게시하고, ChatGPT에서는 HTML 파일로 건넨다.
+`{WORKDIR}/report.html` (a single HTML file · light/dark). On Claude.ai, declare capabilities and
+publish it as an artifact; on ChatGPT, hand it over as an HTML file.
 
-## 데이터 호출 비용 (사용자에게 미리 알린다)
+## Data call cost (tell the user up front)
 
-사용자에게는 이 두 줄로 알린다(REPORT LANGUAGE로 옮겨 쓴다).
+Tell the user with these two lines (translated into REPORT LANGUAGE).
 
-- **리포트 1건: 약 5 Lima**
-- **경로 분석: SERP 1개당 0.1 Lima**
+- **One report: about 5 Lima**
+- **Path analysis: 0.1 Lima per SERP**
 
-호출 내역이나 도구별 단가는 사용자에게 나열하지 않는다.
-(참고 · 리포트는 처음에 SERP를 최대 6개 받는다. 경로 분석은 경로의 키워드마다 SERP 1개를 쓰고, 이미 받은 SERP — 처음 받은 것 포함 — 는 다시 받지 않는다.
-금액은 2026-11-24 실제 청구액 기준. 실행 뒤 비용을 말할 때는 응답의 `cost_detail.total_cost` 합계를 쓴다.)
+Do not list the call breakdown or per-tool unit prices to the user.
+(For reference · the report fetches at most 6 SERPs up front. Path analysis uses one SERP per keyword
+on the path, and SERPs already fetched — including the initial ones — are not fetched again.
+Amounts are based on actual charges as of 2026-11-24. When reporting cost after a run, use the sum of
+`cost_detail.total_cost` from the responses.)
 
 ---
 
-## MCP 호출 프로토콜 (lm-pathfinder-report와 같은 방식)
+## MCP call protocol (same as lm-pathfinder-report)
 
-데이터는 **ListeningMind MCP 도구**에서 온다. 호출자가 코드가 아니라 **당신(LLM)**이므로
-① 캐시 확인 ② 응답 파일 확보, 두 가지가 당신 책임이다.
+Data comes from the **ListeningMind MCP tools**. Because the caller is **you (the LLM)** and not code,
+two things are your responsibility: ① check the cache ② secure the response file.
 
-### SKILL_DIR 찾기 (모든 Bash 명령 맨 앞에)
+### Discover SKILL_DIR (at the top of every Bash command)
 
 ```bash
 SKILL_DIR=$(find ~/.claude/skills ~/.claude/plugins /mnt/skills /mnt/user-data \
@@ -101,123 +123,143 @@ SKILL_DIR=$(find ~/.claude/skills ~/.claude/plugins /mnt/skills /mnt/user-data \
 echo "SKILL_DIR=$SKILL_DIR"
 ```
 
-비어 있으면 이 SKILL.md가 실제로 있는 폴더를 찾아 쓴다. 이후 `cd`를 하드코딩하지 않는다.
+If it comes back empty, find the directory this SKILL.md actually sits in and use that.
+Never hardcode a `cd` afterwards.
 
-### 호출마다 2단계 (예외 없음)
+### 2 steps per call (no exceptions)
 
 ```bash
-# ① 호출 전 · 캐시 확인
+# ① Before the call · check the cache
 python3 "$SKILL_DIR/scripts/mcp_cache.py" lookup <tool> \
-  --params '<MCP 파라미터 JSON>' --out "{WORKDIR}/<file>.json"
+  --params '<MCP parameter JSON>' --out "{WORKDIR}/<file>.json"
 ```
 
-- **exit 0 = 적중** · 파일이 이미 채워졌다 → **MCP를 부르지 않는다.**
-- **exit 2 = 미적중** · ②로 간다.
+- **exit 0 = hit** · the file is already filled → **do not call MCP.**
+- **exit 2 = miss** · go to ②.
 
 ```bash
-# ② MCP 호출 → 원본 응답을 그대로 파일로 → 캐시에 저장
+# ② Call MCP → dump the raw response verbatim to a file → store it in the cache
 python3 "$SKILL_DIR/scripts/mcp_cache.py" store <tool> \
-  --params '<①과 완전히 같은 JSON>' --file "{WORKDIR}/<file>.json" \
-  --expect <봉투의 data 배열 길이>
+  --params '<exactly the same JSON as in ①>' --file "{WORKDIR}/<file>.json" \
+  --expect <length of the envelope's data array>
 ```
 
-`--params`는 ①과 ②에서 **글자까지 같아야** 다음 실행에서 캐시가 맞는다.
+`--params` must be **identical character for character** in ① and ② for the cache to hit on the next run.
 
-### 응답 파일 규칙 (가장 중요)
+### Response file rules (the most important part)
 
-집계 스크립트는 MCP 응답을 **가공 없이** 읽는다.
+The aggregator script reads the MCP response **unprocessed**.
 
-- **파일은 경로로만 넘긴다.** 내용을 컨텍스트로 가져와 다시 쓰지 않는다(큰 응답에서 레코드가 빠진다).
-- **요약 · 발췌 · 재구성 금지.** **레코드 하나도 빼지 않는다.**
-- **호스트가 결과를 파일로 저장한 경우가 기본이다.** 본문 대신
-  `Tool result too large for context, stored at /mnt/user-data/tool_results/....json`(Claude.ai) 또는
-  `Error: result (N characters) exceeds maximum allowed tokens. Output has been saved to …/tool-results/….txt`(Claude Code)
-  가 온다. 앞의 `Error:`나 `.txt` 확장자에 속지 않는다 — 내용은 원본 JSON이다. **도구를 다시 부르지 않고**
-  `cp "<저장 경로>" "{WORKDIR}/<file>.json"` 한다.
-- **응답이 본문으로 온 경우에만** heredoc으로 원문 전체를 쓴다:
+- **Pass files around by path only.** Do not pull the contents into your context and rewrite them
+  (records drop out of large responses).
+- **No summarizing · excerpting · restructuring.** **Do not drop a single record.**
+- **The host saving the result to a file is the default case.** Instead of a body you get
+  `Tool result too large for context, stored at /mnt/user-data/tool_results/....json` (Claude.ai) or
+  `Error: result (N characters) exceeds maximum allowed tokens. Output has been saved to …/tool-results/….txt` (Claude Code).
+  Do not be fooled by the leading `Error:` or the `.txt` extension — the content is the raw JSON.
+  **Do not call the tool again**; just `cp "<saved path>" "{WORKDIR}/<file>.json"`.
+- **Only when the response arrived in the body**, write the entire raw text with a heredoc:
   ```bash
   cat > "{WORKDIR}/<file>.json" <<'DUMP_EOF'
-  <MCP 응답 JSON 원문 전체>
+  <the entire raw MCP response JSON>
   DUMP_EOF
   ```
-- **절대 금지** · 응답이 크다고 ① 조회 키워드 수를 줄이거나 ② 경로 `limit`을 낮추거나 ③ 레코드를
-  요약·발췌하는 것. 범위를 줄여야 할 것 같으면 진행하지 말고 사용자에게 알린다.
-### 큰 응답은 `download_url`로 받는다 (keyword_info · serp 기본)
+- **Absolutely forbidden** · because the response is large, ① reducing the number of keywords queried,
+  ② lowering the path `limit`, or ③ summarizing/excerpting records. If reducing scope seems unavoidable,
+  do not proceed — tell the user.
+### Fetch large responses with `download_url` (the default for keyword_info · serp)
 
-`keyword_info`(수백 개 키워드)와 `serp`(호출당 약 20~30KB × 최대 8회)는 응답이 커서 본문으로 받으면
-컨텍스트를 크게 차지하고, heredoc으로 옮겨 적다가 레코드가 빠질 위험이 있다. 이 두 도구는
-**`"response_format": "download_url"`로 부르고 `scripts/fetch_download.py`로 내려받는다**
-(`path_finder`도 같은 방식을 쓴다).
+`keyword_info` (hundreds of keywords) and `serp` (about 20~30KB per call × max 8 calls) have large
+responses: taking them in the body eats a lot of context, and copying them through a heredoc risks
+dropping records. Call these two tools **with `"response_format": "download_url"` and fetch them with
+`scripts/fetch_download.py`** (`path_finder` uses the same approach).
 
 ```bash
 python3 "$SKILL_DIR/scripts/fetch_download.py" \
-  --url "<응답 download.browser_download_url>" --sha256 "<download.sha256>" \
+  --url "<the response's download.browser_download_url>" --sha256 "<download.sha256>" \
   --expect <download.item_count> --out "{WORKDIR}/<file>.json"
-# serp 는 수집 시각이 파일에 없고 응답 메타에만 있으므로 --collected-at "<응답 collected_at>" 을 꼭 붙인다
+# for serp the collection time is not in the file, only in the response meta, so always add --collected-at "<the response's collected_at>"
 ```
 
-- 스크립트가 sha256을 검증한다. 실패하면 **도구를 다시 부르지 말고** 내려받기만 다시 한다.
-- 내려받은 파일은 `data` 배열만 들어 있다(봉투 없음). `sc.py` · `mcp_cache.py`는 두 형태를 모두 읽는다.
-- 내려받기가 네트워크 정책으로 막히면(github.com 차단) `response_format`을 빼고 다시 부르는 대신,
-  사용자에게 상황을 알리고 판단을 구한다(같은 데이터를 두 번 사게 되므로).
-- `response_format` · `user_query` · `is_skills` · `skill_desc`는 캐시 키에서 빠진다. 받는 방식이 달라도 같은 데이터로 친다.
+- The script verifies sha256. On failure, **do not call the tool again** — only redo the download.
+- The downloaded file contains just the `data` array (no envelope). `sc.py` · `mcp_cache.py` read both shapes.
+- If the download is blocked by network policy (github.com blocked), do not simply drop `response_format`
+  and call again — tell the user the situation and ask how to proceed (it would buy the same data twice).
+- `response_format` · `user_query` · `is_skills` · `skill_desc` are excluded from the cache key.
+  A different delivery method still counts as the same data.
 
-### 세션 캐시
+### Session cache
 
-`~/.lima-agents/mcp-cache/<session>/` · 같은 대화에서 같은 `(도구 + 파라미터)`는 다시 부르지 않는다.
-`path_finder`는 lm-pathfinder-report 등 형제 스킬과 파라미터가 같으면 그대로 적중한다.
-캐시를 우회하려면 `LIMA_MCP_REFRESH=1`.
+`~/.lima-agents/mcp-cache/<session>/` · within the same conversation, the same `(tool + parameters)`
+is not called again. `path_finder` hits directly when the parameters match a sibling skill such as
+lm-pathfinder-report.
+To bypass the cache, set `LIMA_MCP_REFRESH=1`.
 
-### user_query · 사용자가 무엇을 물었는지 기록
+### user_query · record what the user asked
 
-MCP 도구는 `user_query`를 받는다. 이 호출을 부른 **사용자 발화 원문**을 **모든 호출에** 넣는다(번역·요약·의역 금지).
+The MCP tools accept `user_query`. Put the **verbatim user message** that triggered the call into
+**every call** (no translation, summary or rewording).
 
 ```json
-"user_query": "<사용자 메시지 원문 그대로>"
+"user_query": "<the user's message, verbatim>"
 ```
 
-**개인정보가 있으면 멈춘다.** 사용자 메시지에 전화번호 · 이메일 주소 · 주민등록번호 등 신분증 번호 · 카드 번호 · 계좌번호 같은
-개인정보가 들어 있으면 **MCP를 하나도 부르지 않고 멈춘다.** 개인정보를 뺀 문장으로 요청을 다시 보내 달라고 사용자에게 요청한다.
-개인정보를 스스로 지우거나 가린 문장을 `user_query`에 넣고 진행하지 않는다(원문 그대로라는 규칙과 부딪히므로, 사용자가 다시 보낸 원문을 쓴다).
-이름만 있고 연락처·번호가 없으면 개인정보로 보지 않는다.
+**Stop if there is personal data.** If the user's message contains personal data — phone numbers ·
+email addresses · national ID or other ID numbers · card numbers · account numbers — **stop without
+calling a single MCP tool.** Ask the user to resend the request with the personal data removed.
+Do not strip or mask the personal data yourself and proceed with that sentence in `user_query`
+(it conflicts with the verbatim rule — use the original the user resends).
+A name alone, with no contact details or numbers, does not count as personal data.
 
-> 자동으로 붙지 않고, 캐시 키가 아니다 — `mcp_cache.py --params`에는 넣지 않는다.
+> It is not attached automatically and is not part of the cache key — do not put it in
+> `mcp_cache.py --params`.
 
-### is_skills · 스킬 경유 호출 표시
+### is_skills · mark the call as a skill call
 
-MCP 도구는 `is_skills`를 받는다. 기본값이 `false`이므로 **모든 호출에 `true`로** 보낸다(데이터와 과금은 같다).
+The MCP tools accept `is_skills`. It defaults to `false`, so send it **as `true` on every call**
+(the data and the billing are the same).
 
 ```json
 "is_skills": true
 ```
 
-> 자동으로 붙지 않고, 캐시 키가 아니다 — `mcp_cache.py --params`에는 넣지 않는다.
+> It is not attached automatically and is not part of the cache key — do not put it in
+> `mcp_cache.py --params`.
 
-### skill_desc · 어느 스킬·버전이 불렀는지 기록
+### skill_desc · record which skill and version made the call
 
-MCP 도구는 `skill_desc`를 받는다. 아래 객체를 **문자열이 아닌 JSON 객체 그대로**, `"is_skills": true` 옆에 **모든 호출에** 넣는다.
-버전은 이 파일 머리의 `metadata.version`과 같아야 한다.
+The MCP tools accept `skill_desc`. Put the object below into **every call**, **as a JSON object and
+not a string**, next to `"is_skills": true`. The version must match `metadata.version` at the head of
+this file.
 
 ```json
 "skill_desc": {"name": "__SKILL_NAME__", "version": "__SKILL_VERSION__"}
 ```
 
-> 자동으로 붙지 않고, 캐시 키가 아니다 — `mcp_cache.py --params`에는 넣지 않는다.
+> It is not attached automatically and is not part of the cache key — do not put it in
+> `mcp_cache.py --params`.
 
-### 호출은 한 번에 하나
+### One call at a time
 
-**MCP 도구 두 개를 동시에(병렬로) 부르지 않는다.** `serp`를 여러 키워드에 부를 때도 하나씩 차례로 부른다.
-동시 호출은 호출 제한(`Too Many Requests`)에 걸린다.
+**Never call two MCP tools at the same time (in parallel).** Even when calling `serp` for several
+keywords, call them one after another. Concurrent calls hit the rate limit (`Too Many Requests`).
 
-### 실패한 호출
+### Failed calls
 
-응답의 `result`가 `OK`가 아니거나(`FAILED` 등) 도구 오류가 오면 `reason`을 보고 다음처럼 한다. 이유를 짐작해 지어내지 않는다.
+If the response's `result` is not `OK` (`FAILED`, etc.) or a tool error comes back, read the `reason`
+and act as follows. Do not guess at or invent a cause.
 
-- `Too Many Requests` — 호출 제한이다. 잠시 기다렸다가 **같은 호출을 한 번 더** 부른다. 다시 실패하면 멈추고 사유를 그대로 알린다.
-- `Insufficient Lima` — 잔액이 다 됐다. 다시 불러도 소용없다. 멈추고 사유를 그대로 전하며 충전이 필요하다고 알린다.
-- `Account Locked` — 플랜이 만료됐다. 멈추고 사유를 그대로 전한다(잔액 문제가 아니다).
-- `Not Authenticated` · `Invalid API Key` — 키가 잘못됐거나 플랜 밖의 도구다. 멈추고 사유를 그대로 전하며 커넥터와 플랜을 확인해 달라고 한다.
-- `Internal Server Error` · `Service Unavailable` · 그 밖의 실패 — 서버 쪽 실패다. 과금 문제로 돌리지 않는다. 멈추고 사유를 그대로 전한다.
-- **실패한 응답은 캐시에 저장하지 않는다**(`mcp_cache.py store`도 거부한다). 다음 단계로 넘어가거나 데이터를 지어내지 않는다.
-- `serp` 하나가 실패하면 그 근거만 빼고 진행할 수 있다(`serp-trim`이 「SERP 없음」으로 표시한다). `path_finder` · `keyword_info`가 실패하면 리포트를 만들 수 없으니 멈춘다.
-- 비용은 응답의 `cost_detail.total_cost`로 확인된 값만 말하고, 남은 잔액은 말하지 않는다.
+- `Too Many Requests` — rate limited. Wait a moment and **call the same call once more**. If it fails
+  again, stop and report the reason as given.
+- `Insufficient Lima` — the balance is exhausted. Retrying will not help. Stop, report the reason as
+  given, and say a top-up is needed.
+- `Account Locked` — the plan has expired. Stop and report the reason as given (it is not a balance problem).
+- `Not Authenticated` · `Invalid API Key` — the key is wrong, or the tool is outside the plan. Stop,
+  report the reason as given, and ask the user to check the connector and the plan.
+- `Internal Server Error` · `Service Unavailable` · any other failure — a server-side failure. Do not
+  attribute it to billing. Stop and report the reason as given.
+- **Never store a failed response in the cache** (`mcp_cache.py store` rejects it too). Do not move on
+  to the next step or invent data.
+- If one `serp` fails, you can proceed without just that evidence (`serp-trim` marks it as
+  "No SERP" (SERP 없음)). If `path_finder` · `keyword_info` fail, the report cannot be built, so stop.
+- State only costs confirmed from the response's `cost_detail.total_cost`, and never state the remaining balance.
