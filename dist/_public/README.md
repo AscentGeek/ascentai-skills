@@ -16,6 +16,7 @@ Claude / ChatGPT / Gemini 용 스킬 배포 저장소입니다.
 | [lm-pathfinder-report.zip](./dist/lm-pathfinder-report.zip) | 패스파인더 리포트 — 검색 여정(CDJ) 분석 |
 | [lm-clusterfinder-report.zip](./dist/lm-clusterfinder-report.zip) | 클러스터파인더 리포트 — 검색 클러스터 지형 분석 |
 | [lm-total-report.zip](./dist/lm-total-report.zip) | 종합 리포트 — 3파인더 통합 분석 |
+| [lm-search-context.zip](./dist/lm-search-context.zip) | 검색 맥락 분석 — 한 키워드를 지나는 검색 경로를 모아 맵에서 경로를 골라 검색 목적을 분석 |
 
 ### DaaS · 데이터 API 로 쓰는 스킬
 
