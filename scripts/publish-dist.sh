@@ -73,11 +73,24 @@ mkdir -p "$WORK/dist"
 for e in "${ENTRIES[@]}"; do
   name="${e%%$'\t'*}"
   cp "$REPO_ROOT/dist/$name.zip" "$WORK/dist/$name.zip"
-  # 산출물 예시 · examples/<슬러그>.html · admin sync 잡이 이 평평한 구조를 기대한다.
-  #   스킬이 언어별로 갈리지 않으므로 스킬당 예시도 한 벌이다.
+  # 산출물 예시 · admin sync 잡(sync_skills._sync_examples)이 받는 두 형태를 그대로 옮긴다.
+  #
+  #   examples/<슬러그>.html      → 예시 1개
+  #   examples/<슬러그>/*.html    → 예시 여러 개 (언어별 등)
+  #
+  # 폴더 쪽은 한 단계만 본다 — sync 잡의 glob("*.html") 과 같은 깊이다.
+  # 언어를 상위 폴더로 두면(examples/ko/…) sync 가 'ko' 를 스킬 이름으로 읽는다.
   if [[ -f "$REPO_ROOT/examples/$name.html" ]]; then
     mkdir -p "$WORK/examples"
     cp "$REPO_ROOT/examples/$name.html" "$WORK/examples/$name.html"
+  elif [[ -d "$REPO_ROOT/examples/$name" ]]; then
+    shopt -s nullglob
+    ex=("$REPO_ROOT/examples/$name"/*.html)
+    shopt -u nullglob
+    if (( ${#ex[@]} )); then
+      mkdir -p "$WORK/examples/$name"
+      cp "${ex[@]}" "$WORK/examples/$name/"
+    fi
   fi
 done
 # 옛 평평한 구조로 올렸던 zip 잔재 제거

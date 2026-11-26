@@ -43,8 +43,30 @@ build_one() {
   local version;    version="$(yval "$sdir/skill.yaml" version)"
   local vendor;     vendor="$(yval "$sdir/skill.yaml" vendor_chart)"
 
+  local standalone; standalone="$(yval "$sdir/skill.yaml" standalone)"
+
   local stage; stage="$(mktemp -d)"
   local d="$stage/$skill_name"
+
+  # ── standalone 스킬 · 공용 렌더러를 쓰지 않는다 ──────────────────
+  #
+  #   산출물이 정적 리포트가 아닌 스킬이 있다 (대화형 경로 맵 등). 그런 스킬은
+  #   _core/render 의 조립 방식과 맞지 않아 자기 scripts/ 안에서 렌더한다.
+  #   _shared 를 억지로 넣으면 쓰지 않는 코드·스타일이 배포물에 섞이고,
+  #   라벨 검증(_shared/labels)에서 빌드가 멈춘다.
+  #
+  #   디자인은 토큰 수준에서 맞춘다 — 공용 CSS 를 싣는 대신 스킬이 같은 색·
+  #   폰트·헤더 카드 값을 제 스타일에 적는다.
+  if [[ "$standalone" == "true" ]]; then
+    mkdir -p "$d"/{scripts,references}
+    cp "$CORE/LICENSE.txt"             "$d/LICENSE.txt"
+    cp "$sdir"/scripts/*.py            "$d/scripts/"
+    cp "$sdir/SKILL.md"                "$d/SKILL.md"
+    cp "$sdir"/references/*.md         "$d/references/" 2>/dev/null || true
+    build_finish "$d" "$stage" "$name" "$skill_name" "$version"
+    return $?
+  fi
+
   mkdir -p "$d"/{_shared/{render,styles,templates,labels},scripts,references}
 
   # ── 공통 코드 (_core) ──
@@ -88,6 +110,14 @@ build_one() {
       || { echo "  ✗ $name · $rl 라벨 없음" >&2; rm -rf "$stage"; return 1; }
   done
 
+
+  build_finish "$d" "$stage" "$name" "$skill_name" "$version"
+}
+
+# 공통 마무리 · frontmatter 주입 → 플레이스홀더 치환 → zip
+# standalone 여부와 무관하게 같은 규약을 적용한다.
+build_finish() {
+  local d="$1" stage="$2" name="$3" skill_name="$4" version="$5"
   # ── frontmatter 주입 · version · service_type · locale ──
   #   admin 은 SKILL.md 의 metadata.version 을 읽어 카탈로그에 기록한다.
   #   버전의 출처는 skill.yaml 하나로 두고 빌드가 여기에 박는다 —
@@ -117,7 +147,8 @@ build_one() {
   #   버전을 사람이 두 곳에 적지 않게 하려는 것이다 (출처는 skill.yaml).
   #   남은 플레이스홀더가 있으면 admin 에 그대로 기록되므로 빌드를 멈춘다.
   local md
-  for md in "$d/SKILL.md" "$d"/references/*.md; do
+  # scripts/*.py 도 본다 — standalone 스킬은 렌더러가 제 버전을 찍는다
+  for md in "$d/SKILL.md" "$d"/references/*.md "$d"/scripts/*.py; do
     [[ -f "$md" ]] || continue
     sed -e "s/__SKILL_NAME__/$skill_name/g" -e "s/__SKILL_VERSION__/$version/g" "$md" > "$md.tmp" \
       && mv "$md.tmp" "$md"

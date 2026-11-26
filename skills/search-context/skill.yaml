@@ -1,0 +1,15 @@
+name: search-context
+version: "1.0.0"
+slug: search-context
+mcp_tools: [path_finder, keyword_info, serp]
+vendor_chart: false
+# 리포트를 쓸 수 있는 언어 · 실행 시 --lang 으로 고른다
+report_langs: [kr, jp, us]
+# 공용 렌더러(_core)를 쓰지 않는다.
+#
+# 산출물이 정적 리포트가 아니라 **페이지 안에서 경로를 골라 분석하는 대화형
+# 맵**이라, _shared/render 의 조립 방식과 맞지 않는다. 렌더링은 scripts/sc.py
+# 한 곳에서 한다. 디자인은 토큰만 공용과 맞춘다 (헤더 카드·색·폰트).
+#
+# 라벨도 _shared/labels 가 아니라 sc.py 안의 LABELS·JS_T·GPT_T 표에 둔다.
+standalone: true

@@ -1,6 +1,19 @@
 {
   "_comment": "공개 배포 대상 · publish-dist.sh 가 이 목록만 public 리포로 복사한다. 여기 없는 스킬은 공개되지 않는다. 값은 공개할 버전 · zip 안 SKILL.md 의 metadata.version 과 일치해야 하며 다르면 배포가 중단된다.",
-  "_repo": "(이관 시 타팀이 지정)",
-  "_note": "한국어판 검증 완료 전까지 비워 둔다. 검증이 끝난 스킬만 여기 올린다.",
-  "skills": {}
+  "_repo": "https://github.com/ascentkorea/ascent-skills-dist",
+  "_note": "SaaS(접미사 없음) 와 DaaS(-daas) 를 한 리포에 함께 올린다. publish-dist.sh 가 이 파일을 통째로 덮어쓰므로 DaaS 항목도 함께 적어 둔다 — 빼면 공개 리포에서 그 정보가 사라진다.",
+  "skills": {
+    "lm-brand-competition": "1.0.1",
+    "lm-clusterfinder-report": "3.0.1",
+    "lm-pathfinder-report": "3.0.1",
+    "lm-queryfinder-report": "3.1.0",
+    "lm-search-context": "1.0.0",
+    "lm-search-demand-report": "1.0.1",
+    "lm-season-trend-report": "1.0.0",
+    "lm-total-report": "3.0.1",
+    "lm-clusterfinder-report-daas": "0.2.4",
+    "lm-pathfinder-report-daas": "0.2.4",
+    "lm-queryfinder-report-daas": "0.2.4",
+    "lm-total-report-daas": "0.2.4"
+  }
 }

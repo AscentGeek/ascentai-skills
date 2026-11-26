@@ -4,3 +4,6 @@ __pycache__/
 .DS_Store
 dist/*.zip
 dist/*.bak
+
+# 로컬 작업 메모 · 저장소에 넣지 않는다
+.ar26-local/
