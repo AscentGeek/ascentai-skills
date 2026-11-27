@@ -14,6 +14,7 @@
     "lm-clusterfinder-report-daas": "0.2.4",
     "lm-pathfinder-report-daas": "0.2.4",
     "lm-queryfinder-report-daas": "0.2.4",
-    "lm-total-report-daas": "0.2.4"
+    "lm-total-report-daas": "0.2.4",
+    "lm-search-context-daas": "0.1.0"
   }
 }
