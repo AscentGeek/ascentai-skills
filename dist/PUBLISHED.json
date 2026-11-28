@@ -11,10 +11,10 @@
     "lm-search-demand-report": "1.0.1",
     "lm-season-trend-report": "1.0.0",
     "lm-total-report": "3.0.1",
-    "lm-clusterfinder-report-daas": "0.2.4",
-    "lm-pathfinder-report-daas": "0.2.4",
-    "lm-queryfinder-report-daas": "0.2.4",
-    "lm-total-report-daas": "0.2.4",
-    "lm-search-context-daas": "0.1.0"
+    "lm-clusterfinder-report-daas": "1.0.0",
+    "lm-pathfinder-report-daas": "1.0.0",
+    "lm-queryfinder-report-daas": "1.0.0",
+    "lm-total-report-daas": "1.0.0",
+    "lm-search-context-daas": "1.0.0"
   }
 }
